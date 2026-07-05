@@ -1,0 +1,303 @@
+import React, { useState, useEffect } from "react";
+import { AlertCircle, CheckCircle, Loader2, Vote } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { User, Election, Position, Candidate, Vote as VoteType } from "./types";
+import LoginPage from "./components/LoginPage";
+import AppShell from "./components/AppShell";
+import NotificationModal from "./components/NotificationModal";
+import DashboardTab from "./components/DashboardTab";
+import ElectionTab from "./components/ElectionTab";
+import PositionsTab from "./components/PositionsTab";
+import CandidatesTab from "./components/CandidatesTab";
+import UsersTab from "./components/UsersTab";
+import VotePage from "./components/VotePage";
+import ResultsPage from "./components/ResultsPage";
+import ChangePasswordTab from "./components/ChangePasswordTab";
+import { DashboardSkeletonPage } from "./components/Skeleton";
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  const [elections, setElections] = useState<Election[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [votes, setVotes] = useState<VoteType[]>([]);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  const setErrorNotification = (msg: string) => {
+    setNotification({ message: msg, type: "error" });
+  };
+
+  const setSuccessNotification = (msg: string) => {
+    setNotification({ message: msg, type: "success" });
+  };
+
+  useEffect(() => {
+    if (notification) {
+      const t = setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+      return () => clearTimeout(t);
+    }
+  }, [notification]);
+
+  const fetchGlobalData = async (authToken: string, isAdmin: boolean) => {
+    setDataLoading(true);
+    try {
+      const headers = { Authorization: `Bearer ${authToken}` };
+
+      const [elRes, posRes, candRes] = await Promise.all([
+        fetch("/api/elections", { headers }),
+        fetch("/api/positions", { headers }),
+        fetch("/api/candidates", { headers }),
+      ]);
+
+      if (elRes.ok) setElections(await elRes.json());
+      if (posRes.ok) setPositions(await posRes.json());
+      if (candRes.ok) setCandidates(await candRes.json());
+
+      if (isAdmin) {
+        const [usersRes, votesRes] = await Promise.all([
+          fetch("/api/users", { headers }),
+          fetch("/api/votes", { headers }),
+        ]);
+        if (usersRes.ok) setUsers(await usersRes.json());
+        if (votesRes.ok) setVotes(await votesRes.json());
+      }
+    } catch (err) {
+      console.error("Failed to sync system data", err);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  const handleRefreshData = async () => {
+    if (token && user) {
+      await fetchGlobalData(token, user.role === "admin");
+    }
+  };
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem("civicflow_token");
+    if (!savedToken) {
+      setAuthLoading(false);
+      return;
+    }
+
+    const verifyToken = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${savedToken}` },
+        });
+        const data = await response.json();
+        if (response.ok && data.user) {
+          setUser(data.user);
+          setToken(savedToken);
+          setActiveTab(data.user.role === "admin" ? "dashboard" : "vote");
+          await fetchGlobalData(savedToken, data.user.role === "admin");
+        } else {
+          localStorage.removeItem("civicflow_token");
+        }
+      } catch (err) {
+        console.error("Token verification failed", err);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    verifyToken();
+  }, []);
+
+  const handleLoginSuccess = async (newUser: User, newToken: string) => {
+    localStorage.setItem("civicflow_token", newToken);
+    setUser(newUser);
+    setToken(newToken);
+    setActiveTab(newUser.role === "admin" ? "dashboard" : "vote");
+    await fetchGlobalData(newToken, newUser.role === "admin");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("civicflow_token");
+    setUser(null);
+    setToken(null);
+    setElections([]);
+    setPositions([]);
+    setCandidates([]);
+    setUsers([]);
+    setSuccessNotification("Signed out securely");
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-main)] flex flex-col items-center justify-center space-y-4">
+        <div className="p-4 bg-white border border-zinc-100 rounded-3xl shadow-md flex items-center justify-center text-violet-600 animate-pulse">
+          <Vote size={32} />
+        </div>
+        <div className="flex items-center gap-2 text-zinc-500 font-medium text-xs tracking-wider uppercase">
+          <Loader2 className="animate-spin" size={14} />
+          Connecting to Secure Gateway...
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !token) {
+    return (
+      <>
+        <LoginPage
+          onLoginSuccess={handleLoginSuccess}
+          setErrorNotification={setErrorNotification}
+          setSuccessNotification={setSuccessNotification}
+        />
+        {notification && (
+          <NotificationModal
+            message={notification.message}
+            type={notification.type}
+            onClose={() => setNotification(null)}
+          />
+        )}
+      </>
+    );
+  }
+
+  const renderActiveContent = () => {
+    if (dataLoading && elections.length === 0) {
+      return <DashboardSkeletonPage />;
+    }
+
+    switch (activeTab) {
+      case "dashboard":
+        return (
+          <DashboardTab
+            currentUser={user}
+            users={users}
+            votes={votes}
+            elections={elections}
+            positions={positions}
+            candidates={candidates}
+            onSelectTab={setActiveTab}
+            token={token || ""}
+            onRefreshData={handleRefreshData}
+          />
+        );
+      case "elections":
+        return (
+          <ElectionTab
+            elections={elections}
+            onRefreshData={handleRefreshData}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+            token={token}
+          />
+        );
+      case "positions":
+        return (
+          <PositionsTab
+            elections={elections}
+            positions={positions}
+            onRefreshData={handleRefreshData}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+            token={token}
+          />
+        );
+      case "candidates":
+        return (
+          <CandidatesTab
+            elections={elections}
+            positions={positions}
+            candidates={candidates}
+            users={users}
+            onRefreshData={handleRefreshData}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+            token={token}
+          />
+        );
+      case "users":
+        return (
+          <UsersTab
+            users={users}
+            onRefreshData={handleRefreshData}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+            token={token}
+          />
+        );
+      case "vote":
+        return (
+          <VotePage
+            user={user}
+            elections={elections}
+            positions={positions}
+            candidates={candidates}
+            token={token}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+          />
+        );
+      case "results":
+        return (
+          <ResultsPage
+            user={user}
+            elections={elections}
+            positions={positions}
+            candidates={candidates}
+            token={token}
+          />
+        );
+      case "password":
+        return (
+          <ChangePasswordTab
+            token={token || ""}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <AppShell
+      user={user}
+      onLogout={handleLogout}
+      token={token}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      setErrorNotification={setErrorNotification}
+      setSuccessNotification={setSuccessNotification}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 15, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -15, scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 220, damping: 22 }}
+          className="h-full"
+        >
+          {renderActiveContent()}
+        </motion.div>
+      </AnimatePresence>
+
+      {notification && (
+        <NotificationModal
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+    </AppShell>
+  );
+}

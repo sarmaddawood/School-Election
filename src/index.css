@@ -1,0 +1,466 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300..900;1,300..900&family=Outfit:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
+
+  --color-accent-gold: #f59e0b;
+  --color-accent-silver: #94a3b8;
+  --color-accent-bronze: #b45309;
+
+  --animate-aurora: aurora 20s infinite linear;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+
+  --shadow-glow-violet: 0 0 15px rgba(139, 92, 246, 0.15);
+  --shadow-glow-amber: 0 0 15px rgba(245, 158, 11, 0.15);
+  --shadow-bento: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
+@keyframes aurora {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main, #030014);
+  background-image: var(--bg-image, radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 40%), radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 50%));
+  background-attachment: fixed;
+  color: var(--text-main, #f4f4f5);
+  min-height: 100vh;
+  transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.theme-light {
+  --bg-main: #f8fafc;
+  --bg-image: radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.05) 0%, transparent 50%);
+  --text-main: #0f172a;
+  
+  --color-white: #0f172a;
+  --color-black: #ffffff;
+  
+  --color-zinc-50: #18181b;
+  --color-zinc-100: #27272a;
+  --color-zinc-200: #3f3f46;
+  --color-zinc-300: #52525b;
+  --color-zinc-400: #71717a;
+  --color-zinc-500: #a1a1aa;
+  --color-zinc-600: #d4d4d8;
+  --color-zinc-700: #e4e4e7;
+  --color-zinc-800: #f4f4f5;
+  --color-zinc-900: #fafafa;
+  --color-zinc-950: #ffffff;
+}
+
+/* Glassmorphism custom classes */
+.glass-panel {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.03));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              border 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-radius 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              backdrop-filter 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              -webkit-backdrop-filter 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.theme-light .glass-panel {
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  background: var(--glass-hover-bg, rgba(255, 255, 255, 0.06));
+  border-color: var(--glass-hover-border, rgba(255, 255, 255, 0.15));
+  box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+body.theme-light .glass-panel-hover:hover {
+  --glass-hover-bg: rgba(255, 255, 255, 0.9);
+  --glass-hover-border: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.1);
+}
+
+.glass-input {
+  background: var(--input-bg, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  color: var(--text-main, #ffffff);
+  transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              border 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.theme-light .glass-input {
+  --input-bg: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+.glass-input:focus {
+  background: var(--input-focus-bg, rgba(255, 255, 255, 0.05));
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  outline: none;
+}
+
+body.theme-light .glass-input:focus {
+  --input-focus-bg: rgba(255, 255, 255, 0.8);
+}
+
+.glass-card {
+  background: var(--card-bg, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.05));
+  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-radius 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.theme-light .glass-card {
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --card-border: rgba(0, 0, 0, 0.05);
+}
+
+.text-gradient {
+  background: var(--text-grad, linear-gradient(135deg, #ffffff 30%, #a78bfa 100%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.theme-light .text-gradient {
+  --text-grad: linear-gradient(135deg, #0f172a 30%, #7c3aed 100%);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scroll-bg, rgba(255, 255, 255, 0.02));
+}
+body.theme-light ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  --scroll-bg: rgba(0, 0, 0, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb, rgba(255, 255, 255, 0.1));
+  border-radius: 9999px;
+}
+body.theme-light ::-webkit-scrollbar-thumb {
+  --scroll-thumb: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover, rgba(255, 255, 255, 0.2));
+}
+body.theme-light ::-webkit-scrollbar-thumb:hover {
+  --scroll-thumb-hover: rgba(0, 0, 0, 0.2);
+}
+
+/* ==========================================================================
+   MULTI-THEME STYLING ENGINE
+   ========================================================================== */
+
+/* --- 1. GLASSMORPHISM (Dark) --- */
+body.theme-glassmorphism {
+  --bg-main: #030014;
+  --bg-image: radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+              radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.08) 0%, transparent 50%);
+  --text-main: #f4f4f5;
+}
+
+/* --- 2. MATERIAL DESIGN (Dark/Vibrant) --- */
+body.theme-material {
+  --bg-main: #121212;
+  --bg-image: none;
+  --text-main: #e0e0e0;
+}
+body.theme-material .glass-panel {
+  background: #1e1e1e !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-material .glass-panel-hover:hover {
+  background: #252525 !important;
+  box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+body.theme-material .glass-input {
+  background: #2c2c2c !important;
+  border-radius: 4px !important;
+  border: none !important;
+  border-bottom: 2px solid rgba(139, 92, 246, 0.5) !important;
+  color: #ffffff !important;
+}
+body.theme-material .glass-input:focus {
+  border-bottom-color: #8b5cf6 !important;
+  box-shadow: none !important;
+}
+
+/* --- 3. FLAT DESIGN (Light/Clean) --- */
+body.theme-flat {
+  --bg-main: #f1f5f9;
+  --bg-image: none;
+  --text-main: #1e293b;
+  --color-white: #1e293b;
+  --color-black: #ffffff;
+}
+body.theme-flat .glass-panel {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-flat .glass-panel-hover:hover {
+  border-color: #7c3aed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+body.theme-flat .glass-input {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  color: #1e293b !important;
+}
+body.theme-flat .glass-input:focus {
+  border-color: #7c3aed !important;
+  box-shadow: none !important;
+}
+
+/* --- 4. MINIMALIST UI (Light/Monochrome) --- */
+body.theme-minimalist {
+  --bg-main: #ffffff;
+  --bg-image: none;
+  --text-main: #09090b;
+}
+body.theme-minimalist .glass-panel {
+  background: transparent !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-minimalist .glass-panel-hover:hover {
+  border-color: #09090b !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+body.theme-minimalist .glass-input {
+  background: transparent !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 4px !important;
+  color: #09090b !important;
+}
+body.theme-minimalist .glass-input:focus {
+  border-color: #09090b !important;
+  box-shadow: none !important;
+}
+
+/* --- 5. NEUMORPHISM (Soft Tactile Light) --- */
+body.theme-neumorphism {
+  --bg-main: #edf2f7;
+  --bg-image: none;
+  --text-main: #2d3748;
+}
+body.theme-neumorphism .glass-panel {
+  background: #edf2f7 !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 6px 6px 12px #cbd5e0, -6px -6px 12px #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-neumorphism .glass-panel-hover:hover {
+  box-shadow: inset 4px 4px 8px #cbd5e0, inset -4px -4px 8px #ffffff !important;
+  transform: translateY(0) !important;
+}
+body.theme-neumorphism .glass-input {
+  background: #edf2f7 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: inset 2px 2px 5px #cbd5e0, inset -2px -2px 5px #ffffff !important;
+  color: #2d3748 !important;
+}
+body.theme-neumorphism .glass-input:focus {
+  box-shadow: inset 1px 1px 3px #cbd5e0, inset -1px -1px 3px #ffffff, 0 0 8px rgba(139, 92, 246, 0.3) !important;
+}
+
+/* --- 6. AURORA UI (Deep Glowing Ambient) --- */
+body.theme-aurora {
+  --bg-main: #06021a;
+  --bg-image: radial-gradient(circle at 10% 25%, rgba(124, 58, 237, 0.22) 0%, transparent 45%),
+              radial-gradient(circle at 90% 75%, rgba(244, 63, 94, 0.18) 0%, transparent 45%),
+              radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.15) 0%, transparent 50%);
+  --text-main: #f8fafc;
+}
+body.theme-aurora .glass-panel {
+  background: rgba(10, 6, 32, 0.45) !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.05) !important;
+}
+body.theme-aurora .glass-panel-hover:hover {
+  border-color: rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.15), 0 0 30px rgba(139, 92, 246, 0.1) !important;
+}
+
+/* --- 7. BENTO BOX UI (Satisfying Structure Light) --- */
+body.theme-bento {
+  --bg-main: #f8fafc;
+  --bg-image: none;
+  --text-main: #0f172a;
+}
+body.theme-bento .glass-panel {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-bento .glass-panel-hover:hover {
+  transform: translateY(-3px) scale(1.005) !important;
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.06) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+}
+body.theme-bento .glass-input {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  color: #0f172a !important;
+}
+body.theme-bento .glass-input:focus {
+  border-color: #8b5cf6 !important;
+  background: #ffffff !important;
+}
+
+/* --- 8. NEO-BRUTALISM (High Contrast Playful) --- */
+body.theme-neobrutalism {
+  --bg-main: #fef08a;
+  --bg-image: radial-gradient(#000000 1.5px, transparent 1.5px);
+  --text-main: #000000;
+}
+body.theme-neobrutalism .glass-panel {
+  background: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 5px 5px 0px 0px #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-neobrutalism .glass-panel-hover:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 7px 7px 0px 0px #000000 !important;
+}
+body.theme-neobrutalism .glass-input {
+  background: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 0px !important;
+  color: #000000 !important;
+  box-shadow: 2px 2px 0px 0px #000000 !important;
+}
+body.theme-neobrutalism .glass-input:focus {
+  box-shadow: 3px 3px 0px 0px #000000 !important;
+  outline: none !important;
+}
+
+/* --- 9. SKEUOMORPHISM (Tactile Bevel & Glow) --- */
+body.theme-skeuomorphism {
+  --bg-main: #1a202c;
+  --bg-image: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+  --text-main: #e2e8f0;
+}
+body.theme-skeuomorphism .glass-panel {
+  background: linear-gradient(145deg, #2d3748, #1a202c) !important;
+  border-radius: 16px !important;
+  border: 1px solid #4a5568 !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.theme-skeuomorphism .glass-panel-hover:hover {
+  background: linear-gradient(145deg, #323e52, #1d2432) !important;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+}
+body.theme-skeuomorphism .glass-input {
+  background: #11151d !important;
+  border: 1px solid #4a5568 !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.6) !important;
+  color: #ffffff !important;
+}
+body.theme-skeuomorphism .glass-input:focus {
+  border-color: #8b5cf6 !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 0 10px rgba(139,92,246,0.3) !important;
+}
+
+/* Custom View Transition cross-fade for the entire document */
+::view-transition-old(root) {
+  animation: 400ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out;
+}
+::view-transition-new(root) {
+  animation: 400ms cubic-bezier(0.4, 0, 0.2, 1) both fade-in;
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+

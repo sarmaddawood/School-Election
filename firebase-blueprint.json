@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account in the E-Voting system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "teacher", "student"] }
+      },
+      "required": ["id", "username", "fullName", "password", "role"]
+    },
+    "Election": {
+      "title": "Election",
+      "description": "An election event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "startsAt": { "type": "string", "format": "date-time" },
+        "endsAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "startsAt", "endsAt"]
+    },
+    "Position": {
+      "title": "Position",
+      "description": "A leadership or organizational role to be voted on",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "electionId": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "electionId", "name"]
+    },
+    "Candidate": {
+      "title": "Candidate",
+      "description": "A candidate nominated for a position in an election",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "electionId": { "type": "string" },
+        "positionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "manifesto": { "type": "string" },
+        "voteCount": { "type": "integer" }
+      },
+      "required": ["id", "electionId", "positionId", "userId", "fullName"]
+    },
+    "Vote": {
+      "title": "Vote",
+      "description": "A ballot cast by a user for a candidate",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "electionId": { "type": "string" },
+        "positionId": { "type": "string" },
+        "voterId": { "type": "string" },
+        "candidateId": { "type": "string" }
+      },
+      "required": ["id", "electionId", "positionId", "voterId", "candidateId"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Registered voters and system administrators"
+    },
+    "elections/{electionId}": {
+      "schema": "Election",
+      "description": "Created school elections"
+    },
+    "positions/{positionId}": {
+      "schema": "Position",
+      "description": "Configured voting positions for elections"
+    },
+    "candidates/{candidateId}": {
+      "schema": "Candidate",
+      "description": "Nominated candidates for positions"
+    },
+    "votes/{voteId}": {
+      "schema": "Vote",
+      "description": "Cast ballots"
+    }
+  }
+}

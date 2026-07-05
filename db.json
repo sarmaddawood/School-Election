@@ -1,0 +1,15 @@
+{
+  "users": [
+    {
+      "id": "admin-1",
+      "username": "admin",
+      "password": "ChangeMe!2026Vote",
+      "fullName": "System Administrator",
+      "role": "admin"
+    }
+  ],
+  "elections": [],
+  "positions": [],
+  "candidates": [],
+  "votes": []
+}
