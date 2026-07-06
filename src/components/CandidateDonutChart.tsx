@@ -92,7 +92,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
   return (
     <div
       ref={containerRef}
-      className="flex flex-col sm:flex-row items-center justify-center gap-8 bg-white/2 border border-white/5 rounded-2xl p-6 shadow-inner"
+      className="flex flex-col sm:flex-row items-center justify-center gap-8 bg-zinc-50 border border-zinc-200 rounded-2xl p-6 shadow-inner"
       id="candidate-donut-container"
     >
       {/* Chart Section */}
@@ -139,13 +139,13 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
                   {hoveredIndex !== null ? "Selected" : "Leading"}
                 </span>
-                <p className="text-xs font-bold text-zinc-100 truncate">
+                <p className="text-xs font-bold text-zinc-900 truncate">
                   {activeDetail.name.split(" ")[0]}
                 </p>
-                <p className="text-lg font-mono font-bold text-white leading-none pt-0.5">
+                <p className="text-lg font-mono font-bold text-zinc-900 leading-none pt-0.5">
                   {activeDetail.percentage}%
                 </p>
-                <p className="text-[10px] text-zinc-400 font-medium">
+                <p className="text-[10px] text-zinc-500 font-medium">
                   {activeDetail.votes} {activeDetail.votes === 1 ? "vote" : "votes"}
                 </p>
               </motion.div>
@@ -163,7 +163,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
                   Total Votes
                 </p>
-                <p className="text-lg font-mono font-bold text-zinc-300 leading-none">
+                <p className="text-lg font-mono font-bold text-zinc-700 leading-none">
                   {totalVotes}
                 </p>
               </motion.div>
@@ -174,7 +174,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
 
       {/* Legend Section */}
       <div className="flex-1 w-full space-y-3" id="donut-chart-legend">
-        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-white/5 pb-1.5">
+        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-200 pb-1.5">
           Ballot Distribution
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
@@ -182,7 +182,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
             if (item.id === "placeholder") {
               return (
                 <div key={item.id} className="flex items-center gap-2 py-0.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-white/10" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-zinc-100" />
                   <span className="text-xs text-zinc-500 font-medium italic">No recorded votes</span>
                 </div>
               );
@@ -211,9 +211,9 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                       transform: isHovered ? "scale(1.2)" : "scale(1)",
                     }}
                   />
-                  <span className="text-zinc-300 font-medium truncate">{item.name}</span>
+                  <span className="text-zinc-700 font-medium truncate">{item.name}</span>
                 </div>
-                <span className="font-mono text-zinc-400 shrink-0 font-semibold pl-1">
+                <span className="font-mono text-zinc-500 shrink-0 font-semibold pl-1">
                   {item.percentage}%
                 </span>
               </div>

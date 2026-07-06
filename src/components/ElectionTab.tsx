@@ -180,17 +180,17 @@ export default function ElectionTab({
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <h2 className="font-display font-semibold text-2xl text-white tracking-tight">
+          <h2 className="font-display font-semibold text-2xl text-zinc-900 tracking-tight">
             Election Management
           </h2>
-          <p className="text-sm text-zinc-400">Configure election names, dates, and settings</p>
+          <p className="text-sm text-zinc-500">Configure election names, dates, and settings</p>
         </div>
         {!showForm && (
           <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-violet-500/25 cursor-pointer transition-all"
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-violet-500/25 cursor-pointer transition-all"
           >
             <Plus size={16} />
             Create Election
@@ -209,9 +209,9 @@ export default function ElectionTab({
           >
             <form
               onSubmit={handleSubmit}
-              className="glass-panel rounded-2xl p-6 space-y-5 shadow-2xl border border-white/10"
+              className="glass-panel rounded-2xl p-6 space-y-5 shadow-2xl border border-zinc-200"
             >
-              <div className="flex justify-between items-center border-b border-white/5 pb-3">
+              <div className="flex justify-between items-center border-b border-zinc-200 pb-3">
                 <h3 className="font-display font-semibold text-gradient text-base">
                   {editingElection ? "Edit Election" : "New Election Details"}
                 </h3>
@@ -220,7 +220,7 @@ export default function ElectionTab({
                   whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="p-1.5 hover:bg-white/5 rounded-lg text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  className="p-1.5 hover:bg-zinc-50 rounded-lg text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </motion.button>
@@ -228,7 +228,7 @@ export default function ElectionTab({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[10px] font-bold text-zinc-300 tracking-wider uppercase">
+                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase">
                     Election Title
                   </label>
                   <motion.input
@@ -243,7 +243,7 @@ export default function ElectionTab({
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[10px] font-bold text-zinc-300 tracking-wider uppercase">
+                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase">
                     Description
                   </label>
                   <motion.textarea
@@ -257,7 +257,7 @@ export default function ElectionTab({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-300 tracking-wider uppercase flex items-center gap-1.5">
+                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase flex items-center gap-1.5">
                     <Calendar size={14} /> Starts At
                   </label>
                   <motion.input
@@ -271,7 +271,7 @@ export default function ElectionTab({
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-300 tracking-wider uppercase flex items-center gap-1.5">
+                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase flex items-center gap-1.5">
                     <Clock size={14} /> Ends At
                   </label>
                   <motion.input
@@ -285,13 +285,13 @@ export default function ElectionTab({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-white/10 hover:bg-white/5 text-zinc-300 hover:text-white text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                  className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 text-xs font-semibold rounded-xl transition-all cursor-pointer"
                 >
                   Cancel
                 </motion.button>
@@ -300,7 +300,7 @@ export default function ElectionTab({
                   whileTap={{ scale: 0.98 }}
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-lg shadow-violet-600/20"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-lg shadow-violet-600/20"
                 >
                   {submitting ? "Saving..." : "Save Election"}
                 </motion.button>
@@ -333,11 +333,11 @@ export default function ElectionTab({
                 stiffness: 300,
                 damping: 20,
               }}
-              className="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl border border-white/5 transition-all"
+              className="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl border border-zinc-200 transition-all"
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-start gap-3">
-                  <h3 className="font-display font-semibold text-white text-base leading-snug">
+                  <h3 className="font-display font-semibold text-zinc-900 text-base leading-snug">
                     {el.title}
                   </h3>
                   <motion.span
@@ -345,22 +345,22 @@ export default function ElectionTab({
                     transition={{ duration: 2, repeat: Infinity }}
                     className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                       phase === "live"
-                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                        ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
                         : phase === "upcoming"
-                        ? "bg-amber-500/10 text-amber-300 border border-amber-500/30"
-                        : "bg-white/5 text-zinc-400 border border-white/5"
+                        ? "bg-amber-500/10 text-amber-600 border border-amber-500/30"
+                        : "bg-zinc-50 text-zinc-500 border border-zinc-200"
                     }`}
                   >
                     {phase}
                   </motion.span>
                 </div>
-                <p className="text-xs text-zinc-300 line-clamp-3 leading-relaxed">
+                <p className="text-xs text-zinc-700 line-clamp-3 leading-relaxed">
                   {el.description || "No description provided."}
                 </p>
               </div>
 
               <div className="space-y-3 pt-2">
-                <div className="border-t border-white/5 pt-3 space-y-1.5 text-xs text-zinc-400 font-medium">
+                <div className="border-t border-zinc-200 pt-3 space-y-1.5 text-xs text-zinc-500 font-medium">
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Starts:</span>
                     <span>{new Date(el.startsAt).toLocaleString()}</span>
@@ -376,7 +376,7 @@ export default function ElectionTab({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleOpenEdit(el)}
-                    className="p-2 hover:bg-white/5 border border-white/5 rounded-xl text-zinc-300 hover:text-white transition-all cursor-pointer"
+                    className="p-2 hover:bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-700 hover:text-zinc-900 transition-all cursor-pointer"
                   >
                     <Edit2 size={14} />
                   </motion.button>
@@ -384,7 +384,7 @@ export default function ElectionTab({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => handleDelete(el.id)}
-                    className="p-2 hover:bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 transition-all cursor-pointer"
+                    className="p-2 hover:bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-600 transition-all cursor-pointer"
                   >
                     <Trash2 size={14} />
                   </motion.button>
@@ -397,18 +397,18 @@ export default function ElectionTab({
         {elections.length === 0 && (
           <motion.div
             variants={cardVariants}
-            className="col-span-1 md:col-span-2 glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 border border-white/5"
+            className="col-span-1 md:col-span-2 glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 border border-zinc-200"
           >
             <motion.div
               animate={{ rotate: [0, 5, -5, 0] }}
               transition={{ duration: 4, repeat: Infinity }}
-              className="p-4 bg-white/3 border border-white/5 rounded-2xl text-zinc-400 shadow-md"
+              className="p-4 bg-white/3 border border-zinc-200 rounded-2xl text-zinc-500 shadow-md"
             >
-              <Calendar size={32} className="text-zinc-400" />
+              <Calendar size={32} className="text-zinc-500" />
             </motion.div>
             <div className="space-y-1">
-              <p className="font-semibold text-white">No Elections Configured</p>
-              <p className="text-xs text-zinc-400 max-w-sm leading-relaxed">
+              <p className="font-semibold text-zinc-900">No Elections Configured</p>
+              <p className="text-xs text-zinc-500 max-w-sm leading-relaxed">
                 Get started by creating your first school election. Add positions and candidates afterward.
               </p>
             </div>
@@ -416,7 +416,7 @@ export default function ElectionTab({
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={handleOpenCreate}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-violet-600/20"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-violet-600/20"
             >
               Create First Election
             </motion.button>

@@ -8,12 +8,12 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-zinc-950/95 border border-white/10 p-3 rounded-xl shadow-xl text-xs space-y-1">
-        <p className="font-bold text-white">{label}</p>
-        <p className="text-violet-400 font-semibold">
-          Turnout: <span className="text-white font-bold">{payload[0].value}%</span>
+      <div className="bg-white border border-zinc-200 p-3 rounded-xl shadow-xl text-xs space-y-1">
+        <p className="font-bold text-zinc-900">{label}</p>
+        <p className="text-indigo-600 font-semibold">
+          Turnout: <span className="text-zinc-900 font-bold">{payload[0].value}%</span>
         </p>
-        <p className="text-zinc-400 font-medium">
+        <p className="text-zinc-500 font-medium">
           Ballots: {payload[0].payload.voted} / {payload[0].payload.total}
         </p>
       </div>
@@ -227,14 +227,14 @@ export default function DashboardTab({
       value: users.length,
       detail: `${studentCount} Students • ${teacherCount} Teachers`,
       icon: Users,
-      color: "text-violet-300 bg-violet-500/10 border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]",
+      color: "text-indigo-500 bg-indigo-500/10 border-indigo-200 shadow-[0_0_15px_rgba(139,92,246,0.1)]",
     },
     {
       label: "Voter Turnout",
       value: `${turnoutPercentage}%`,
       detail: `${uniqueVotersCount} of ${users.length} active`,
       icon: Percent,
-      color: "text-amber-300 bg-amber-500/10 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]",
+      color: "text-amber-600 bg-amber-500/10 border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]",
     },
     {
       label: "Total Elections",
@@ -248,7 +248,7 @@ export default function DashboardTab({
       value: positions.length,
       detail: `${candidates.length} Candidates nominated`,
       icon: Award,
-      color: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]",
+      color: "text-emerald-600 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]",
     },
     {
       label: "Total Votes Cast",
@@ -288,10 +288,10 @@ export default function DashboardTab({
     >
       {/* Title */}
       <motion.div variants={itemVariants}>
-        <h2 className="font-display font-semibold text-2xl text-white tracking-tight">
+        <h2 className="font-display font-semibold text-2xl text-zinc-900 tracking-tight">
           System Administration Dashboard
         </h2>
-        <p className="text-sm text-zinc-400">At-a-glance telemetry of real-time polling metrics and system registries</p>
+        <p className="text-sm text-zinc-500">At-a-glance telemetry of real-time polling metrics and system registries</p>
       </motion.div>
 
       {/* Stats row */}
@@ -302,16 +302,16 @@ export default function DashboardTab({
             variants={itemVariants}
             whileHover={{ scale: 1.02, y: -4, borderColor: "rgba(255,255,255,0.1)" }}
             whileTap={{ scale: 0.98 }}
-            className="p-5 glass-panel rounded-2xl flex items-center justify-between cursor-pointer border border-white/5 transition-colors"
+            className="p-5 glass-panel rounded-2xl flex items-center justify-between cursor-pointer border border-zinc-200 transition-colors"
           >
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
                 {stat.label}
               </span>
-              <p className="text-3xl font-display font-bold text-white leading-tight">
+              <p className="text-3xl font-display font-bold text-zinc-900 leading-tight">
                 {stat.value}
               </p>
-              <p className="text-xs text-zinc-300 font-medium">{stat.detail}</p>
+              <p className="text-xs text-zinc-700 font-medium">{stat.detail}</p>
             </div>
             <div className={`p-3 rounded-xl border ${stat.color} shrink-0`}>
               <stat.icon size={22} />
@@ -324,20 +324,20 @@ export default function DashboardTab({
         {/* Active Election status */}
         <motion.div
           variants={itemVariants}
-          className="lg:col-span-12 glass-panel rounded-2xl p-6 space-y-6 border border-white/5 shadow-2xl"
+          className="lg:col-span-12 glass-panel rounded-2xl p-6 space-y-6 border border-zinc-200 shadow-2xl"
         >
-          <div className="flex justify-between items-center border-b border-white/5 pb-4">
+          <div className="flex justify-between items-center border-b border-zinc-200 pb-4">
             <div>
-              <h3 className="font-display font-semibold text-lg text-white tracking-tight">
+              <h3 className="font-display font-semibold text-lg text-zinc-900 tracking-tight">
                 Active Election Status
               </h3>
-              <p className="text-xs text-zinc-400">Current ongoing polling operations</p>
+              <p className="text-xs text-zinc-500">Current ongoing polling operations</p>
             </div>
             {activeElection && (
               <motion.span
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+                className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.15)]"
               >
                 Live Now
               </motion.span>
@@ -352,14 +352,14 @@ export default function DashboardTab({
             >
               <Countdown startsAt={activeElection.startsAt} endsAt={activeElection.endsAt} />
 
-              <div className="bg-white/3 rounded-2xl border border-white/5 p-5 space-y-3 shadow-md">
+              <div className="bg-white/3 rounded-2xl border border-zinc-200 p-5 space-y-3 shadow-md">
                 <h4 className="font-display font-semibold text-gradient text-base">
                   {activeElection.title}
                 </h4>
-                <p className="text-sm text-zinc-300 leading-relaxed">
+                <p className="text-sm text-zinc-700 leading-relaxed">
                   {activeElection.description || "No description provided."}
                 </p>
-                <div className="pt-2 text-xs text-zinc-400 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/5">
+                <div className="pt-2 text-xs text-zinc-500 flex flex-wrap gap-x-6 gap-y-2 border-t border-zinc-200">
                   <span>
                     <strong>Starts:</strong>{" "}
                     {new Date(activeElection.startsAt).toLocaleString()}
@@ -385,12 +385,12 @@ export default function DashboardTab({
                   <motion.div
                     key={index}
                     whileHover={{ scale: 1.02 }}
-                    className="p-4 bg-white/2 rounded-xl border border-white/5 text-center shadow-inner transition-all"
+                    className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 text-center shadow-inner transition-all"
                   >
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
                       {item.label}
                     </span>
-                    <span className="text-2xl font-bold text-white mt-1 block">
+                    <span className="text-2xl font-bold text-zinc-900 mt-1 block">
                       {item.value}
                     </span>
                   </motion.div>
@@ -398,9 +398,9 @@ export default function DashboardTab({
               </div>
 
               {/* Turnout Progress Bars for Active Elections */}
-              <div className="space-y-4 border-t border-white/5 pt-5" id="active-elections-turnout-progress">
-                <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <Percent size={12} className="text-violet-400 animate-pulse" />
+              <div className="space-y-4 border-t border-zinc-200 pt-5" id="active-elections-turnout-progress">
+                <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                  <Percent size={12} className="text-indigo-600 animate-pulse" />
                   Real-time Voter Turnout Progress
                 </h4>
                 
@@ -408,18 +408,18 @@ export default function DashboardTab({
                   {activeElections.map((el) => {
                     const { votedCount, totalCount, percentage } = getElectionTurnout(el.id);
                     return (
-                      <div key={el.id} className="space-y-2 bg-white/2 rounded-xl p-4 border border-white/5 shadow-inner">
+                      <div key={el.id} className="space-y-2 bg-zinc-50 rounded-xl p-4 border border-zinc-200 shadow-inner">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="font-semibold text-zinc-200 truncate max-w-[200px]" title={el.title}>
+                          <span className="font-semibold text-zinc-900 truncate max-w-[200px]" title={el.title}>
                             {el.title}
                           </span>
-                          <span className="font-mono font-bold text-violet-300">
+                          <span className="font-mono font-bold text-indigo-500">
                             {percentage}% Voted
                           </span>
                         </div>
                         
                         {/* Progress Track */}
-                        <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden relative">
+                        <div className="w-full h-2.5 bg-zinc-50 rounded-full overflow-hidden relative">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${percentage}%` }}
@@ -450,13 +450,13 @@ export default function DashboardTab({
               <motion.div
                 animate={{ rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 4, repeat: Infinity }}
-                className="p-4 bg-white/3 border border-white/5 rounded-2xl text-zinc-400 shadow-md"
+                className="p-4 bg-white/3 border border-zinc-200 rounded-2xl text-zinc-500 shadow-md"
               >
                 <AlertCircle size={32} className="text-zinc-500" />
               </motion.div>
               <div className="space-y-1">
-                <p className="font-medium text-zinc-200">No active election</p>
-                <p className="text-xs text-zinc-400 max-w-sm leading-relaxed">
+                <p className="font-medium text-zinc-900">No active election</p>
+                <p className="text-xs text-zinc-500 max-w-sm leading-relaxed">
                   There are no live elections accepting votes right now. Prepare or schedule one from the Elections control center.
                 </p>
               </div>
@@ -464,7 +464,7 @@ export default function DashboardTab({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => onSelectTab("elections")}
-                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-violet-600/25"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-violet-600/25"
               >
                 Go to Elections
               </motion.button>
@@ -477,15 +477,15 @@ export default function DashboardTab({
       {currentUser?.role === "admin" && (
         <motion.div
           variants={itemVariants}
-          className="glass-panel rounded-2xl p-6 border border-white/5 shadow-2xl space-y-6"
+          className="glass-panel rounded-2xl p-6 border border-zinc-200 shadow-2xl space-y-6"
         >
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-zinc-200 pb-4">
             <div>
-              <h3 className="font-display font-semibold text-lg text-white tracking-tight flex items-center gap-2">
-                <Award className="text-violet-400" size={20} />
+              <h3 className="font-display font-semibold text-lg text-zinc-900 tracking-tight flex items-center gap-2">
+                <Award className="text-indigo-600" size={20} />
                 Voter Turnout Intelligence
               </h3>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-zinc-500">
                 Real-time voter participation percentages by grade level or faculty departments
               </p>
             </div>
@@ -497,29 +497,29 @@ export default function DashboardTab({
                   <select
                     value={turnoutElectionId}
                     onChange={(e) => setTurnoutElectionId(e.target.value)}
-                    className="px-3.5 py-1.5 bg-white/3 border border-white/5 hover:border-white/10 rounded-xl text-xs font-semibold appearance-none cursor-pointer pr-8 text-white outline-none transition-colors"
+                    className="px-3.5 py-1.5 bg-white/3 border border-zinc-200 hover:border-zinc-200 rounded-xl text-xs font-semibold appearance-none cursor-pointer pr-8 text-zinc-900 outline-none transition-colors"
                   >
                     {elections.map((el) => (
-                      <option key={el.id} value={el.id} className="bg-black text-white">
+                      <option key={el.id} value={el.id} className="bg-black text-zinc-900">
                         {el.title}
                       </option>
                     ))}
                   </select>
                   <ChevronDown
                     size={12}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
                   />
                 </div>
               )}
 
               {/* Toggle tabs */}
-              <div className="p-0.5 bg-white/3 border border-white/5 rounded-xl flex">
+              <div className="p-0.5 bg-white/3 border border-zinc-200 rounded-xl flex">
                 <button
                   onClick={() => setTurnoutTab("students")}
                   className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                     turnoutTab === "students"
-                      ? "bg-violet-600 text-white shadow-md shadow-violet-600/15"
-                      : "text-zinc-400 hover:text-zinc-200"
+                      ? "bg-indigo-600 text-zinc-900 shadow-md shadow-violet-600/15"
+                      : "text-zinc-500 hover:text-zinc-900"
                   }`}
                 >
                   Student Grades
@@ -528,8 +528,8 @@ export default function DashboardTab({
                   onClick={() => setTurnoutTab("faculty")}
                   className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
                     turnoutTab === "faculty"
-                      ? "bg-violet-600 text-white shadow-md shadow-violet-600/15"
-                      : "text-zinc-400 hover:text-zinc-200"
+                      ? "bg-indigo-600 text-zinc-900 shadow-md shadow-violet-600/15"
+                      : "text-zinc-500 hover:text-zinc-900"
                   }`}
                 >
                   Faculty Depts
@@ -596,15 +596,15 @@ export default function DashboardTab({
             {chartData.map((item, index) => (
               <div
                 key={index}
-                className="p-3 bg-white/2 border border-white/5 rounded-xl space-y-1 text-center"
+                className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-1 text-center"
               >
-                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide block truncate">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide block truncate">
                   {item.name}
                 </span>
-                <span className="text-lg font-display font-bold text-white block">
+                <span className="text-lg font-display font-bold text-zinc-900 block">
                   {item.turnout}%
                 </span>
-                <span className="text-[10px] text-zinc-400 block">
+                <span className="text-[10px] text-zinc-500 block">
                   {item.voted} of {item.total} voted
                 </span>
               </div>

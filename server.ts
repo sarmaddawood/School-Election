@@ -231,6 +231,7 @@ async function startServer() {
       username: user.username,
       fullName: user.fullName,
       role: user.role,
+      yearLevel: user.yearLevel,
     };
   }
 
@@ -308,6 +309,7 @@ async function startServer() {
           username: user.username,
           fullName: user.fullName,
           role: user.role,
+          yearLevel: user.yearLevel,
         },
         token: `mock-token-${user.id}`,
       });
@@ -387,6 +389,7 @@ async function startServer() {
         fullName,
         password,
         role,
+        yearLevel: req.body.yearLevel || null,
       };
 
       await setDoc(doc(clientDb, "users", newUser.id), newUser);
@@ -550,8 +553,8 @@ async function startServer() {
     }
 
     try {
-      const electionDoc = await doc(clientDb, "elections", electionId).get();
-      if (!electionDoc.exists) {
+      const electionDoc = await getDoc(doc(clientDb, "elections", electionId));
+      if (!electionDoc.exists()) {
         res.status(400).json({ error: "Invalid election" });
         return;
       }
@@ -626,15 +629,15 @@ async function startServer() {
   });
 
   app.post("/api/candidates", requireAdmin, async (req: Request, res: Response) => {
-    const { electionId, positionId, userId, manifesto } = req.body;
+    const { electionId, positionId, userId, manifesto, party, photoUrl } = req.body;
     if (!electionId || !positionId || !userId) {
       res.status(400).json({ error: "Election, position, and user are required" });
       return;
     }
 
     try {
-      const userDoc = await doc(clientDb, "users", userId).get();
-      if (!userDoc.exists) {
+      const userDoc = await getDoc(doc(clientDb, "users", userId));
+      if (!userDoc.exists()) {
         res.status(400).json({ error: "Invalid student/teacher selected" });
         return;
       }
@@ -659,6 +662,9 @@ async function startServer() {
         fullName: user.fullName,
         manifesto: manifesto || "",
         voteCount: 0,
+        yearLevel: user.yearLevel || null,
+        party: party || null,
+        photoUrl: photoUrl || null,
       };
 
       await setDoc(doc(clientDb, "candidates", newCandidate.id), newCandidate);
@@ -732,8 +738,14 @@ async function startServer() {
 
     try {
       const user = (req as any).user;
-      const electionDoc = await doc(clientDb, "elections", electionId).get();
-      if (!electionDoc.exists) {
+      
+      if (user.role !== "student") {
+        res.status(403).json({ error: "Only students are authorized to vote" });
+        return;
+      }
+      
+      const electionDoc = await getDoc(doc(clientDb, "elections", electionId));
+      if (!electionDoc.exists()) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
@@ -822,7 +834,8 @@ async function startServer() {
           username: `student${i + 1}`,
           password: "password123",
           fullName: name,
-          role: "student"
+          role: "student",
+          yearLevel: (i % 4) + 9 // Randomly year 9 to 12
         });
       });
 
@@ -863,6 +876,9 @@ async function startServer() {
           fullName: "Alex Rivera",
           manifesto: "Empowering student voice through regular assemblies, expanding library study hours, and launching a student peer-to-peer tutoring network.",
           voteCount: 14,
+          party: "Progressive Student Alliance",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s1",
+          yearLevel: 9,
         },
         {
           id: "c-demo-2",
@@ -872,6 +888,9 @@ async function startServer() {
           fullName: "Jordan Patel",
           manifesto: "Pioneering green energy projects on campus, enriching cafeteria food quality, and securing extra funding for independent student clubs.",
           voteCount: 11,
+          party: "Green Campus Coalition",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s2",
+          yearLevel: 10,
         },
         {
           id: "c-demo-3",
@@ -881,6 +900,9 @@ async function startServer() {
           fullName: "Sophia Martinez",
           manifesto: "Implementing monthly student wellness breaks, introducing local community service drives, and launching a direct digital suggestion box.",
           voteCount: 8,
+          party: "Wellness First",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s7",
+          yearLevel: 11,
         },
         {
           id: "c-demo-4",
@@ -890,6 +912,9 @@ async function startServer() {
           fullName: "Liam Neeson",
           manifesto: "Unlocking physical potential! Organizing competitive inter-house athletic cups, renewing gym equipment, and modernizing field training.",
           voteCount: 18,
+          party: "Athletic Vanguard",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s4",
+          yearLevel: 12,
         },
         {
           id: "c-demo-5",
@@ -899,6 +924,9 @@ async function startServer() {
           fullName: "Chloe Bennett",
           manifesto: "Fostering athletic inclusion. Organizing non-competitive weekend fun-runs, updating recreational equipment, and celebrating our team spirit.",
           voteCount: 12,
+          party: "Inclusive Sports",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s5",
+          yearLevel: 9,
         },
         {
           id: "c-demo-6",
@@ -908,6 +936,9 @@ async function startServer() {
           fullName: "Daniel Kim",
           manifesto: "Unleashing student creativity through school-wide murals, interactive darkroom workshops, and a permanent student art exhibition gallery.",
           voteCount: 13,
+          party: "Creative Minds",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s6",
+          yearLevel: 10,
         },
         {
           id: "c-demo-7",
@@ -917,6 +948,9 @@ async function startServer() {
           fullName: "Ava Dubois",
           manifesto: "Championing student expressions! Supporting digital film festivals, audio synthesis labs, and funding classic drama plays.",
           voteCount: 17,
+          party: "Arts Revival",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s9",
+          yearLevel: 9,
         },
         {
           id: "c-ended-1",
@@ -926,6 +960,9 @@ async function startServer() {
           fullName: "Ryan Gallagher",
           manifesto: "Academic resilience, shared excellence, and celebrating the unforgettable milestones of our graduating cohort.",
           voteCount: 22,
+          party: "Senior Unity",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s8",
+          yearLevel: 12,
         },
         {
           id: "c-ended-2",
@@ -935,6 +972,9 @@ async function startServer() {
           fullName: "Emma Watson",
           manifesto: "Fostering analytical mindset, critical research opportunities, and empowering the next generation of scientific explorers.",
           voteCount: 18,
+          party: "Future Scientists",
+          photoUrl: "https://i.pravatar.cc/150?u=u-s3",
+          yearLevel: 11,
         },
       ];
 

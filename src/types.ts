@@ -5,6 +5,7 @@ export interface User {
   username: string;
   fullName: string;
   role: UserRole;
+  yearLevel?: number;
 }
 
 export interface Election {
@@ -29,6 +30,9 @@ export interface Candidate {
   fullName: string;
   manifesto: string;
   voteCount: number;
+  yearLevel?: number;
+  party?: string;
+  photoUrl?: string;
 }
 
 export interface Vote {

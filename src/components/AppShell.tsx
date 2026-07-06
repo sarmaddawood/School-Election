@@ -4,6 +4,7 @@ import {
   Vote,
   LayoutDashboard,
   Calendar,
+  CalendarDays,
   Award,
   Users,
   BarChart3,
@@ -13,6 +14,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { User as UserType } from "../types";
+import ConfirmModal from "./ConfirmModal";
+// @ts-ignore
+import schoolElectionLogo from "../assets/images/school_election_logo_1783276555365.jpg";
 
 interface AppShellProps {
   user: UserType;
@@ -38,12 +42,13 @@ export default function AppShell({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 880);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
   const isThemeLight = false;
 
   useEffect(() => {
-    document.body.classList.add("theme-glassmorphism");
-    localStorage.setItem("ui-theme", "glassmorphism");
+    document.body.className = "theme-light";
+    localStorage.setItem("ui-theme", "light");
   }, []);
 
 
@@ -64,10 +69,17 @@ export default function AppShell({
           { id: "candidates", label: "Candidates", icon: Users },
           { id: "users", label: "Users Registry", icon: User },
           { id: "results", label: "Results Board", icon: BarChart3 },
+          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
+        ]
+      : user.role === "teacher"
+      ? [
+          { id: "results", label: "Results Board", icon: BarChart3 },
+          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
         ]
       : [
           { id: "vote", label: "Cast Ballot", icon: Vote },
           { id: "results", label: "Results Board", icon: BarChart3 },
+          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
         ];
 
   const containerVariants = {
@@ -117,42 +129,29 @@ export default function AppShell({
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row text-white relative bg-[var(--bg-main)]">
-      {/* Background ambient blobs inside shell */}
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 0.9, 1.1, 1],
-          opacity: [0.05, 0.08, 0.04, 0.06, 0.05],
-        }}
-        transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600 blur-[120px] pointer-events-none z-0"
-      />
-      <motion.div
-        animate={{
-          scale: [1, 0.85, 1.15, 1.02, 1],
-          opacity: [0.05, 0.03, 0.07, 0.04, 0.05],
-        }}
-        transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        className="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-fuchsia-600 blur-[120px] pointer-events-none z-0"
-      />
-
+    <div className="min-h-[100dvh] flex flex-col md:flex-row text-zinc-900 relative bg-white">
       {!isMobile ? (
         <motion.aside
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ type: "spring", stiffness: 80, damping: 18 }}
-          className="w-64 glass-panel border-r border-white/5 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-2xl z-20"
+          className="w-64 glass-panel border-r border-zinc-200 flex flex-col justify-between shrink-0 h-screen sticky top-0 shadow-2xl z-20"
         >
           <div className="space-y-6 pt-6">
             <div className="px-6 flex items-center gap-3">
               <motion.div
-                whileHover={{ rotate: 15, scale: 1.1 }}
-                className="p-2 bg-violet-500/10 rounded-2xl border border-violet-400/20 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.15)] cursor-pointer"
+                whileHover={{ rotate: 5, scale: 1.1 }}
+                className="h-9 w-9 bg-indigo-500/10 rounded-xl border border-violet-400/20 overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.15)] cursor-pointer"
               >
-                <Vote size={20} />
+                <img
+                  src={schoolElectionLogo}
+                  alt="School Election Logo"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
               </motion.div>
               <span className="font-display font-semibold text-base tracking-tight text-gradient">
-                E-Voting
+                School Election
               </span>
             </div>
  
@@ -160,26 +159,26 @@ export default function AppShell({
               <div className={`transition-colors duration-200 rounded-2xl shadow-md overflow-hidden ${
                 isThemeLight 
                   ? "bg-black/3 border border-black/5" 
-                  : "bg-white/3 border border-white/5"
+                  : "bg-white/3 border border-zinc-200"
               }`}>
                 {/* Profile Trigger */}
                 <button
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                   className={`w-full text-left p-4 flex items-center justify-between gap-3 transition-colors duration-200 cursor-pointer group ${
-                    isThemeLight ? "hover:bg-black/3" : "hover:bg-white/2"
+                    isThemeLight ? "hover:bg-black/3" : "hover:bg-zinc-50"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white font-bold flex items-center justify-center text-xs font-display border border-white/10 uppercase shadow-md shrink-0 group-hover:scale-105 transition-transform duration-250">
+                    <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-zinc-900 font-bold flex items-center justify-center text-xs font-display border border-zinc-200 uppercase shadow-md shrink-0 group-hover:scale-105 transition-transform duration-250">
                       {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                     </div>
                     <div className="min-w-0">
                       <p className={`text-xs font-semibold truncate transition-colors duration-200 ${
-                        isThemeLight ? "text-zinc-800" : "text-zinc-100"
+                        isThemeLight ? "text-zinc-800" : "text-zinc-900"
                       }`}>
                         {user.fullName}
                       </p>
-                      <p className="text-[10px] font-bold uppercase text-violet-400 tracking-wider mt-0.5">
+                      <p className="text-[10px] font-bold uppercase text-indigo-600 tracking-wider mt-0.5">
                         {user.role}
                       </p>
                     </div>
@@ -188,7 +187,7 @@ export default function AppShell({
                     animate={{ rotate: isProfileDropdownOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                     className={`shrink-0 transition-colors duration-200 ${
-                      isThemeLight ? "text-zinc-500" : "text-zinc-400"
+                      isThemeLight ? "text-zinc-500" : "text-zinc-500"
                     }`}
                   >
                     <ChevronDown size={14} />
@@ -206,7 +205,7 @@ export default function AppShell({
                       className="overflow-hidden"
                     >
                       <div className={`px-4 pb-4 pt-1 space-y-2 border-t transition-colors duration-200 ${
-                        isThemeLight ? "border-black/5" : "border-white/5"
+                        isThemeLight ? "border-black/5" : "border-zinc-200"
                       }`}>
                         <motion.button
                           whileHover={{ scale: 1.02, backgroundColor: isThemeLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)" }}
@@ -215,7 +214,7 @@ export default function AppShell({
                           className={`w-full py-1.5 rounded-xl text-[10px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
                             isThemeLight
                               ? "bg-black/5 text-zinc-700 border-black/5 hover:border-black/10 hover:text-zinc-900"
-                              : "bg-white/5 text-zinc-300 border-white/5 hover:border-white/10 hover:text-white"
+                              : "bg-zinc-50 text-zinc-700 border-zinc-200 hover:border-zinc-200 hover:text-zinc-900"
                           }`}
                         >
                           <Key size={10} />
@@ -249,11 +248,11 @@ export default function AppShell({
                     className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 cursor-pointer border relative overflow-hidden group transition-colors duration-200 ${
                       isActive
                         ? isThemeLight
-                          ? "text-violet-700 font-bold border-violet-500/25 shadow-[0_0_15px_rgba(139,92,246,0.08)] bg-violet-600/10"
-                          : "text-violet-300 font-bold border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.12)] bg-violet-600/5"
+                          ? "text-violet-700 font-bold border-violet-500/25 shadow-[0_0_15px_rgba(139,92,246,0.08)] bg-indigo-600/10"
+                          : "text-indigo-500 font-bold border-indigo-200 shadow-[0_0_15px_rgba(139,92,246,0.12)] bg-indigo-600/5"
                         : isThemeLight
                           ? "text-zinc-600 border-transparent hover:text-zinc-950 hover:bg-black/5"
-                          : "text-zinc-400 border-transparent hover:text-zinc-200 hover:bg-white/2"
+                          : "text-zinc-500 border-transparent hover:text-zinc-900 hover:bg-zinc-50"
                     }`}
                   >
                     {isActive && (
@@ -279,8 +278,8 @@ export default function AppShell({
                         size={16}
                         className={`transition-colors duration-200 ${
                           isActive
-                            ? isThemeLight ? "text-violet-600" : "text-violet-400"
-                            : isThemeLight ? "text-zinc-500 group-hover:text-zinc-950" : "text-zinc-400 group-hover:text-zinc-200"
+                            ? isThemeLight ? "text-violet-600" : "text-indigo-600"
+                            : isThemeLight ? "text-zinc-500 group-hover:text-zinc-950" : "text-zinc-500 group-hover:text-zinc-900"
                         }`}
                       />
                       {item.label}
@@ -295,7 +294,7 @@ export default function AppShell({
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="p-3 border-t border-white/5 space-y-1.5"
+            className="p-3 border-t border-zinc-200 space-y-1.5"
           >
             {/* Theme Accordion - Removed */}
 
@@ -307,11 +306,11 @@ export default function AppShell({
                 backgroundColor: isThemeLight ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.1)",
               }}
               whileTap={{ scale: 0.98 }}
-              onClick={onLogout}
+              onClick={() => setShowConfirmLogout(true)}
               className={`w-full px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-3 transition-colors duration-200 cursor-pointer border border-transparent ${
                 isThemeLight
                   ? "text-zinc-600 hover:text-red-600"
-                  : "text-zinc-400 hover:text-red-400"
+                  : "text-zinc-500 hover:text-red-400"
               }`}
             >
               <span className="flex items-center gap-3">
@@ -322,23 +321,33 @@ export default function AppShell({
             <div className="px-4 py-2 text-[10px] text-zinc-500 font-medium">
               © 2026 E-Voting Inc.
             </div>
+            <ConfirmModal
+              isOpen={showConfirmLogout}
+              onClose={() => setShowConfirmLogout(false)}
+              onConfirm={onLogout}
+            />
           </motion.div>
         </motion.aside>
       ) : (
         <motion.header
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="sticky top-0 bg-[var(--bg-main)]/80 backdrop-blur-md border-b border-white/5 px-4 py-3 flex justify-between items-center z-40 shadow-lg shrink-0"
+          className="sticky top-0 bg-[var(--bg-main)]/80 backdrop-blur-md border-b border-zinc-200 px-4 py-3 flex justify-between items-center z-40 shadow-lg shrink-0"
         >
           <div className="flex items-center gap-2">
             <motion.div
-              whileHover={{ rotate: 15 }}
-              className="p-1.5 bg-violet-500/10 text-violet-400 rounded-xl border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]"
+              whileHover={{ rotate: 5, scale: 1.05 }}
+              className="h-8 w-8 bg-indigo-500/10 rounded-lg border border-indigo-200 overflow-hidden shadow-[0_0_15px_rgba(139,92,246,0.15)]"
             >
-              <Vote size={18} />
+              <img
+                src={schoolElectionLogo}
+                alt="School Election Logo"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover"
+              />
             </motion.div>
             <span className="font-display font-semibold text-sm tracking-tight text-gradient">
-              E-Voting
+              School Election
             </span>
           </div>
 
@@ -347,7 +356,7 @@ export default function AppShell({
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="h-8 w-8 rounded-full bg-violet-500/10 text-violet-300 border border-violet-500/20 flex items-center justify-center font-bold text-xs uppercase"
+                className="h-8 w-8 rounded-full bg-indigo-500/10 text-indigo-500 border border-indigo-200 flex items-center justify-center font-bold text-xs uppercase"
               >
                 {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
               </motion.button>
@@ -359,24 +368,27 @@ export default function AppShell({
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95, y: 5 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-48 bg-black border border-white/10 rounded-2xl shadow-2xl p-2 space-y-1.5 z-50 backdrop-blur-xl"
+                    className="absolute right-0 mt-2 w-48 bg-black border border-zinc-200 rounded-2xl shadow-2xl p-2 space-y-1.5 z-50 backdrop-blur-xl"
                   >
-                    <div className="px-3 py-2 border-b border-white/5">
-                      <p className="text-xs font-semibold text-zinc-100 truncate">{user.fullName}</p>
-                      <p className="text-[9px] font-bold uppercase text-violet-400 tracking-wider mt-0.5">{user.role}</p>
+                    <div className="px-3 py-2 border-b border-zinc-200">
+                      <p className="text-xs font-semibold text-zinc-900 truncate">{user.fullName}</p>
+                      <p className="text-[9px] font-bold uppercase text-indigo-600 tracking-wider mt-0.5">{user.role}</p>
                     </div>
                     <button
                       onClick={() => {
                         onTabChange("password");
                         setShowProfileMenu(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-xs font-semibold text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
+                      className="w-full px-3 py-2 text-left text-xs font-semibold text-zinc-700 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
                     >
                       <Key size={13} />
                       Change Password
                     </button>
                     <button
-                      onClick={onLogout}
+                      onClick={() => {
+                        setShowConfirmLogout(true);
+                        setShowProfileMenu(false);
+                      }}
                       className="w-full px-3 py-2 text-left text-xs font-semibold text-red-400 hover:bg-red-500/10 rounded-lg flex items-center gap-2 cursor-pointer transition-colors"
                     >
                       <LogOut size={13} />
@@ -386,6 +398,11 @@ export default function AppShell({
                 )}
               </AnimatePresence>
             </div>
+            <ConfirmModal
+              isOpen={showConfirmLogout}
+              onClose={() => setShowConfirmLogout(false)}
+              onConfirm={onLogout}
+            />
           </div>
         </motion.header>
       )}
@@ -399,7 +416,7 @@ export default function AppShell({
           variants={mobileContainerVariants}
           initial="hidden"
           animate="visible"
-          className="fixed bottom-0 left-0 right-0 bg-[var(--bg-main)]/90 backdrop-blur-lg border-t border-white/5 py-2.5 px-4 flex justify-around items-center z-40 shadow-2xl"
+          className="fixed bottom-0 left-0 right-0 bg-[var(--bg-main)]/90 backdrop-blur-lg border-t border-zinc-200 py-2.5 px-4 flex justify-around items-center z-40 shadow-2xl"
         >
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -411,13 +428,13 @@ export default function AppShell({
                 whileTap={{ scale: 0.9 }}
                 whileHover={{ scale: 1.05 }}
                 className={`flex flex-col items-center gap-1 cursor-pointer transition-colors duration-200 relative py-1 px-3.5 rounded-xl ${
-                  isActive ? "text-violet-400 font-bold" : "text-zinc-400 hover:text-zinc-200"
+                  isActive ? "text-indigo-600 font-bold" : "text-zinc-500 hover:text-zinc-900"
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="activeTabBackgroundMobile"
-                    className="absolute inset-0 bg-violet-500/10 rounded-xl z-0"
+                    className="absolute inset-0 bg-indigo-500/10 rounded-xl z-0"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}

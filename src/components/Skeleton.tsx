@@ -18,7 +18,7 @@ export function SkeletonPulse({ className = "", children }: SkeletonPulseProps) 
 // Single Card Skeleton
 export function CardSkeleton() {
   return (
-    <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-4">
+    <div className="glass-panel rounded-2xl p-5 border border-zinc-200 space-y-4">
       <div className="flex items-center gap-3">
         <SkeletonPulse className="h-10 w-10 rounded-xl" />
         <div className="space-y-1.5 flex-1">
@@ -39,7 +39,7 @@ export function StatsSkeleton() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="glass-panel rounded-2xl p-5 border border-white/5 space-y-3">
+        <div key={i} className="glass-panel rounded-2xl p-5 border border-zinc-200 space-y-3">
           <div className="flex justify-between items-center">
             <SkeletonPulse className="h-8 w-8 rounded-lg" />
             <SkeletonPulse className="h-4 w-12 rounded-full" />
@@ -57,14 +57,14 @@ export function StatsSkeleton() {
 // Table / Directory Skeleton
 export function TableSkeleton() {
   return (
-    <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-5">
-      <div className="flex justify-between items-center pb-3 border-b border-white/5">
+    <div className="glass-panel rounded-2xl p-5 border border-zinc-200 space-y-5">
+      <div className="flex justify-between items-center pb-3 border-b border-zinc-200">
         <SkeletonPulse className="h-5 w-32 rounded-lg" />
         <SkeletonPulse className="h-8 w-48 rounded-xl" />
       </div>
       <div className="space-y-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+          <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-200 last:border-0">
             <div className="flex items-center gap-3 flex-1">
               <SkeletonPulse className="h-8 w-8 rounded-full" />
               <div className="space-y-1.5 flex-1 max-w-[150px]">
@@ -91,8 +91,8 @@ export function TableSkeleton() {
 // Podium / Results Skeleton
 export function PodiumSkeleton() {
   return (
-    <div className="glass-panel rounded-2xl p-6 border border-white/5 space-y-6">
-      <div className="border-b border-white/5 pb-4 flex justify-between items-center">
+    <div className="glass-panel rounded-2xl p-6 border border-zinc-200 space-y-6">
+      <div className="border-b border-zinc-200 pb-4 flex justify-between items-center">
         <div className="space-y-2">
           <SkeletonPulse className="h-5 w-40 rounded-lg" />
           <SkeletonPulse className="h-3 w-56 rounded-md" />
@@ -154,7 +154,7 @@ export function CandidateVoteGridSkeleton() {
     <div className="space-y-8">
       {/* Position Header Placeholder */}
       <div className="space-y-4">
-        <div className="flex justify-between items-center border-b border-white/5 pb-2">
+        <div className="flex justify-between items-center border-b border-zinc-200 pb-2">
           <div className="flex items-center gap-2">
             <SkeletonPulse className="h-5 w-5 rounded-md" />
             <SkeletonPulse className="h-5 w-36 rounded-md" />
@@ -165,7 +165,7 @@ export function CandidateVoteGridSkeleton() {
         {/* Candidate Cards Grid Placeholder */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2].map((i) => (
-            <div key={i} className="glass-panel rounded-2xl p-5 border border-white/5 space-y-5 min-h-[220px] flex flex-col justify-between">
+            <div key={i} className="glass-panel rounded-2xl p-5 border border-zinc-200 space-y-5 min-h-[220px] flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <SkeletonPulse className="h-10 w-10 rounded-xl" />
@@ -205,7 +205,7 @@ export function DashboardSkeletonPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
           {/* Main activity chart card */}
-          <div className="glass-panel rounded-2xl p-6 border border-white/5 space-y-4 h-[320px]">
+          <div className="glass-panel rounded-2xl p-6 border border-zinc-200 space-y-4 h-[320px]">
             <div className="flex justify-between items-center">
               <SkeletonPulse className="h-5 w-40 rounded-lg" />
               <SkeletonPulse className="h-4 w-20 rounded-md" />
@@ -232,7 +232,7 @@ export function DashboardSkeletonPage() {
 
         {/* Sidebar content */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-4">
+          <div className="glass-panel rounded-2xl p-5 border border-zinc-200 space-y-4">
             <SkeletonPulse className="h-5 w-32 rounded-lg" />
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
@@ -247,7 +247,7 @@ export function DashboardSkeletonPage() {
             </div>
           </div>
 
-          <div className="glass-panel rounded-2xl p-5 border border-white/5 space-y-4">
+          <div className="glass-panel rounded-2xl p-5 border border-zinc-200 space-y-4">
             <SkeletonPulse className="h-5 w-36 rounded-lg" />
             <SkeletonPulse className="h-10 w-full rounded-xl" />
           </div>

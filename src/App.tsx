@@ -12,6 +12,7 @@ import CandidatesTab from "./components/CandidatesTab";
 import UsersTab from "./components/UsersTab";
 import VotePage from "./components/VotePage";
 import ResultsPage from "./components/ResultsPage";
+import CalendarTab from "./components/CalendarTab";
 import ChangePasswordTab from "./components/ChangePasswordTab";
 import { DashboardSkeletonPage } from "./components/Skeleton";
 
@@ -102,7 +103,7 @@ export default function App() {
         if (response.ok && data.user) {
           setUser(data.user);
           setToken(savedToken);
-          setActiveTab(data.user.role === "admin" ? "dashboard" : "vote");
+          setActiveTab(data.user.role === "admin" ? "dashboard" : data.user.role === "teacher" ? "results" : "vote");
           await fetchGlobalData(savedToken, data.user.role === "admin");
         } else {
           localStorage.removeItem("civicflow_token");
@@ -121,7 +122,7 @@ export default function App() {
     localStorage.setItem("civicflow_token", newToken);
     setUser(newUser);
     setToken(newToken);
-    setActiveTab(newUser.role === "admin" ? "dashboard" : "vote");
+    setActiveTab(newUser.role === "admin" ? "dashboard" : newUser.role === "teacher" ? "results" : "vote");
     await fetchGlobalData(newToken, newUser.role === "admin");
   };
 
@@ -133,13 +134,12 @@ export default function App() {
     setPositions([]);
     setCandidates([]);
     setUsers([]);
-    setSuccessNotification("Signed out securely");
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[var(--bg-main)] flex flex-col items-center justify-center space-y-4">
-        <div className="p-4 bg-white border border-zinc-100 rounded-3xl shadow-md flex items-center justify-center text-violet-600 animate-pulse">
+      <div className="min-h-[100dvh] bg-[var(--bg-main)] flex flex-col items-center justify-center space-y-4">
+        <div className="p-4 bg-white border border-zinc-200 rounded-3xl shadow-md flex items-center justify-center text-violet-600 animate-pulse">
           <Vote size={32} />
         </div>
         <div className="flex items-center gap-2 text-zinc-500 font-medium text-xs tracking-wider uppercase">
@@ -234,7 +234,7 @@ export default function App() {
           />
         );
       case "vote":
-        return (
+        return user.role === "student" ? (
           <VotePage
             user={user}
             elections={elections}
@@ -243,7 +243,14 @@ export default function App() {
             token={token}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
+            onLogout={handleLogout}
           />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500">
+            <AlertCircle size={48} className="mb-4 text-zinc-500" />
+            <p className="font-display font-semibold text-zinc-900 text-xl">Not Authorized</p>
+            <p className="mt-2 text-sm text-zinc-500 max-w-sm text-center">Only students are permitted to cast votes in this election.</p>
+          </div>
         );
       case "results":
         return (
@@ -254,6 +261,10 @@ export default function App() {
             candidates={candidates}
             token={token}
           />
+        );
+      case "calendar":
+        return (
+          <CalendarTab elections={elections} />
         );
       case "password":
         return (

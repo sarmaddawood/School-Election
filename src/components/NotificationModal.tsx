@@ -23,27 +23,33 @@ export default function NotificationModal({ message, type, onClose }: Notificati
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className={`w-full max-w-sm p-6 rounded-3xl shadow-2xl border flex flex-col items-center gap-4 ${
-            type === "success"
-              ? "bg-white text-zinc-900 border-zinc-100"
-              : "bg-white text-zinc-900 border-red-200"
-          }`}
+          className="w-full max-w-sm p-6 rounded-3xl shadow-2xl glass-panel border border-zinc-200 flex flex-col items-center gap-5"
         >
           {type === "success" ? (
-            <CheckCircle className="text-emerald-500" size={48} />
+            <div className="h-16 w-16 bg-emerald-500/10 text-emerald-600 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+              <CheckCircle size={32} />
+            </div>
           ) : (
-            <AlertCircle className="text-red-500" size={48} />
+            <div className="h-16 w-16 bg-rose-500/10 text-rose-600 rounded-2xl flex items-center justify-center border border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.15)] animate-pulse">
+              <AlertCircle size={32} />
+            </div>
           )}
-          <h3 className="text-lg font-bold">
-            {type === "success" ? "Success" : "Error"}
-          </h3>
-          <p className="text-sm text-center opacity-80">{message}</p>
+          
+          <div className="space-y-1.5 text-center">
+            <h3 className="text-xl font-display font-semibold text-zinc-900 tracking-tight">
+              {type === "success" ? "Success" : "Error"}
+            </h3>
+            <p className="text-sm text-zinc-700 leading-relaxed font-medium">
+              {message}
+            </p>
+          </div>
+
           <button
             onClick={onClose}
-            className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+            className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] cursor-pointer shadow-lg ${
               type === "success"
-                ? "bg-zinc-900 text-white hover:bg-zinc-700"
-                : "bg-red-600 text-white hover:bg-red-700"
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-violet-500/25"
+                : "bg-rose-600 hover:bg-rose-700 text-zinc-900 shadow-rose-500/25"
             }`}
           >
             Close

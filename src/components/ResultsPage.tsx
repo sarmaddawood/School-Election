@@ -112,11 +112,11 @@ export default function ResultsPage({
         className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <h2 className="font-display font-semibold text-2xl text-white tracking-tight flex items-center gap-2">
-            <BarChart3 className="text-violet-400 animate-pulse" size={24} />
+          <h2 className="font-display font-semibold text-2xl text-zinc-900 tracking-tight flex items-center gap-2">
+            <BarChart3 className="text-indigo-600 animate-pulse" size={24} />
             Election Results
           </h2>
-          <p className="text-sm text-zinc-400">Live counts for administrators and finalized tallies for voters</p>
+          <p className="text-sm text-zinc-500">Live counts for administrators and finalized tallies for voters</p>
         </div>
 
         {elections.length > 0 && (
@@ -124,17 +124,17 @@ export default function ResultsPage({
             <select
               value={selectedElectionId}
               onChange={(e) => setSelectedElectionId(e.target.value)}
-              className="w-full px-4 py-2.5 glass-input rounded-xl text-xs font-semibold appearance-none cursor-pointer pr-10 text-white outline-none"
+              className="w-full px-4 py-2.5 glass-input rounded-xl text-xs font-semibold appearance-none cursor-pointer pr-10 text-zinc-900 outline-none"
             >
               {elections.map((el) => (
-                <option key={el.id} value={el.id} className="bg-black text-white">
+                <option key={el.id} value={el.id} className="bg-black text-zinc-900">
                   {el.title}
                 </option>
               ))}
             </select>
             <ChevronDown
               size={14}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
             />
           </div>
         )}
@@ -143,37 +143,37 @@ export default function ResultsPage({
       {elections.length === 0 ? (
         <motion.div
           variants={itemVariants}
-          className="glass-panel rounded-2xl p-16 text-center space-y-4 shadow-2xl border border-white/5"
+          className="glass-panel rounded-2xl p-16 text-center space-y-4 shadow-2xl border border-zinc-200"
         >
           <BarChart3 size={32} className="mx-auto text-zinc-500" />
-          <p className="font-medium text-zinc-300">No Elections Created Yet</p>
-          <p className="text-xs text-zinc-400">Elections and ballot boards must exist to see analytics.</p>
+          <p className="font-medium text-zinc-700">No Elections Created Yet</p>
+          <p className="text-xs text-zinc-500">Elections and ballot boards must exist to see analytics.</p>
         </motion.div>
       ) : isSealed ? (
         <div className="space-y-6">
           <motion.div
             variants={itemVariants}
-            className="glass-panel text-white rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-2xl border border-white/10"
+            className="glass-panel text-zinc-900 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-2xl border border-zinc-200"
           >
-            <div className="absolute top-[-30%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-600/10 blur-[80px]" />
+            <div className="absolute top-[-30%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/10 blur-[80px]" />
 
             <div className="relative z-10 space-y-6 max-w-xl">
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 3, repeat: Infinity }}
-                className="p-3 bg-white/5 border border-white/10 rounded-2xl text-violet-400 w-fit shadow-md"
+                className="p-3 bg-zinc-50 border border-zinc-200 rounded-2xl text-indigo-600 w-fit shadow-md"
               >
                 <Lock size={28} />
               </motion.div>
 
               <div className="space-y-2">
-                <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest block">
+                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block">
                   Election Integrity Guard
                 </span>
-                <h3 className="font-display font-semibold text-2xl md:text-3xl text-white tracking-tight">
+                <h3 className="font-display font-semibold text-2xl md:text-3xl text-zinc-900 tracking-tight">
                   Ballot tallies are sealed until voting completes.
                 </h3>
-                <p className="text-zinc-300 text-sm leading-relaxed pt-1">
+                <p className="text-zinc-700 text-sm leading-relaxed pt-1">
                   To ensure complete election integrity, results are cryptographically isolated and will be released simultaneously to all students and faculty once the final voting deadline expires.
                 </p>
               </div>
@@ -210,15 +210,15 @@ export default function ResultsPage({
               <motion.div
                 key={pos.id}
                 variants={itemVariants}
-                className="glass-panel rounded-2xl p-6 shadow-2xl space-y-8 border border-white/5"
+                className="glass-panel rounded-2xl p-6 shadow-2xl space-y-8 border border-zinc-200"
               >
-                <div className="border-b border-white/5 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                <div className="border-b border-zinc-200 pb-4 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                   <div>
-                    <h3 className="font-display font-semibold text-white text-lg flex items-center gap-2">
-                      <Award className="text-violet-400" size={20} />
+                    <h3 className="font-display font-semibold text-zinc-900 text-lg flex items-center gap-2">
+                      <Award className="text-indigo-600" size={20} />
                       {pos.name}
                     </h3>
-                    <p className="text-xs text-zinc-400">
+                    <p className="text-xs text-zinc-500">
                       Winner determination board • {totalVotes} total votes cast
                     </p>
                   </div>
@@ -227,9 +227,9 @@ export default function ResultsPage({
                     <motion.span
                       initial={{ scale: 0.9, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
-                      className="flex items-center gap-1.5 px-3 py-1 bg-violet-500/10 border border-violet-500/30 rounded-full text-violet-300 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_8px_#8b5cf622]"
+                      className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-300 rounded-full text-indigo-500 text-[10px] font-bold uppercase tracking-wider shadow-[0_0_8px_#8b5cf622]"
                     >
-                      <Trophy size={12} className="text-amber-400" />
+                      <Trophy size={12} className="text-amber-600" />
                       Winner: {first.fullName.split(" ")[0]}
                     </motion.span>
                   )}
@@ -248,27 +248,27 @@ export default function ResultsPage({
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ type: "spring", delay: posIdx * 0.1 + 0.2 }}
-                                className="h-8 w-8 rounded-full bg-white/5 text-zinc-300 font-bold text-xs flex items-center justify-center font-display mb-2 border border-white/10 shadow-md"
+                                className="h-8 w-8 rounded-full bg-zinc-50 text-zinc-700 font-bold text-xs flex items-center justify-center font-display mb-2 border border-zinc-200 shadow-md"
                               >
                                 {second.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                               </motion.div>
-                              <span className="text-[10px] font-semibold text-zinc-300 truncate max-w-full pb-1 text-center">
+                              <span className="text-[10px] font-semibold text-zinc-700 truncate max-w-full pb-1 text-center">
                                 {second.fullName.split(" ")[0]}
                               </span>
-                              <span className="text-xs font-bold text-zinc-400 font-mono pb-2">
+                              <span className="text-xs font-bold text-zinc-500 font-mono pb-2">
                                 {second.voteCount}
                               </span>
                               <motion.div
                                 initial={{ height: 0 }}
                                 animate={{ height: 96 }}
                                 transition={{ duration: 0.8, ease: "easeOut", delay: posIdx * 0.1 }}
-                                className="w-full bg-white/5 border border-white/10 rounded-t-xl flex items-center justify-center font-bold text-zinc-400 text-sm shadow-md"
+                                className="w-full bg-zinc-50 border border-zinc-200 rounded-t-xl flex items-center justify-center font-bold text-zinc-500 text-sm shadow-md"
                               >
                                 2nd
                               </motion.div>
                             </>
                           ) : (
-                            <div className="w-full bg-white/2 border border-dashed border-white/10 rounded-t-xl h-12" />
+                            <div className="w-full bg-zinc-50 border border-dashed border-zinc-200 rounded-t-xl h-12" />
                           )}
                         </div>
 
@@ -280,33 +280,33 @@ export default function ResultsPage({
                                 animate={{ y: [0, -4, 0] }}
                                 transition={{ repeat: Infinity, duration: 2.5 }}
                               >
-                                <Trophy size={20} className="text-amber-400 mb-1" />
+                                <Trophy size={20} className="text-amber-600 mb-1" />
                               </motion.div>
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ type: "spring", delay: posIdx * 0.1 + 0.1 }}
-                                className="h-10 w-10 rounded-full bg-amber-500/10 text-amber-300 font-bold text-xs flex items-center justify-center font-display mb-2 border border-amber-500/30 shadow-[0_0_12px_#f59e0b22]"
+                                className="h-10 w-10 rounded-full bg-amber-500/10 text-amber-600 font-bold text-xs flex items-center justify-center font-display mb-2 border border-amber-500/30 shadow-[0_0_12px_#f59e0b22]"
                               >
                                 {first.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                               </motion.div>
-                              <span className="text-xs font-semibold text-zinc-100 truncate max-w-full pb-1 text-center">
+                              <span className="text-xs font-semibold text-zinc-900 truncate max-w-full pb-1 text-center">
                                 {first.fullName.split(" ")[0]}
                               </span>
-                              <span className="text-sm font-bold text-amber-400 font-mono pb-2">
+                              <span className="text-sm font-bold text-amber-600 font-mono pb-2">
                                 {first.voteCount}
                               </span>
                               <motion.div
                                 initial={{ height: 0 }}
                                 animate={{ height: 144 }}
                                 transition={{ duration: 0.8, ease: "easeOut", delay: posIdx * 0.1 }}
-                                className="w-full bg-amber-500/10 border border-amber-500/30 rounded-t-xl flex items-center justify-center font-bold text-amber-300 text-base shadow-lg"
+                                className="w-full bg-amber-500/10 border border-amber-500/30 rounded-t-xl flex items-center justify-center font-bold text-amber-600 text-base shadow-lg"
                               >
                                 1st
                               </motion.div>
                             </>
                           ) : (
-                            <div className="w-full bg-white/2 border border-dashed border-white/10 rounded-t-xl h-12" />
+                            <div className="w-full bg-zinc-50 border border-dashed border-zinc-200 rounded-t-xl h-12" />
                           )}
                         </div>
 
@@ -322,7 +322,7 @@ export default function ResultsPage({
                               >
                                 {third.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                               </motion.div>
-                              <span className="text-[10px] font-semibold text-zinc-300 truncate max-w-full pb-1 text-center">
+                              <span className="text-[10px] font-semibold text-zinc-700 truncate max-w-full pb-1 text-center">
                                 {third.fullName.split(" ")[0]}
                               </span>
                               <span className="text-xs font-bold text-orange-400 font-mono pb-2">
@@ -338,7 +338,7 @@ export default function ResultsPage({
                               </motion.div>
                             </>
                           ) : (
-                            <div className="w-full bg-white/2 border border-dashed border-white/10 rounded-t-xl h-12" />
+                            <div className="w-full bg-zinc-50 border border-dashed border-zinc-200 rounded-t-xl h-12" />
                           )}
                         </div>
                       </div>
@@ -350,13 +350,13 @@ export default function ResultsPage({
                         const pct = totalVotes > 0 ? Math.round((cand.voteCount / totalVotes) * 100) : 0;
                         return (
                           <div key={cand.id} className="space-y-1.5">
-                            <div className="flex justify-between items-center text-xs font-semibold text-zinc-300">
+                            <div className="flex justify-between items-center text-xs font-semibold text-zinc-700">
                               <span>{cand.fullName}</span>
-                              <span className="font-mono text-zinc-400">
+                              <span className="font-mono text-zinc-500">
                                 {cand.voteCount} {cand.voteCount === 1 ? "vote" : "votes"} ({pct}%)
                               </span>
                             </div>
-                            <div className="w-full bg-white/5 h-2.5 rounded-full overflow-hidden border border-white/5">
+                            <div className="w-full bg-zinc-50 h-2.5 rounded-full overflow-hidden border border-zinc-200">
                               <motion.div
                                 initial={{ width: "0%" }}
                                 animate={{ width: `${pct}%` }}
@@ -372,7 +372,7 @@ export default function ResultsPage({
                 )}
 
                 {sorted.length > 0 && (
-                  <div className="border-t border-white/5 pt-6 mt-2">
+                  <div className="border-t border-zinc-200 pt-6 mt-2">
                     <CandidateDonutChart
                       totalVotes={totalVotes}
                       data={sorted.map((cand) => ({
@@ -395,7 +395,7 @@ export default function ResultsPage({
           })}
 
           {electionPositions.length === 0 && (
-            <div className="glass-panel rounded-2xl p-16 text-center text-zinc-400 shadow-xl border border-white/5">
+            <div className="glass-panel rounded-2xl p-16 text-center text-zinc-500 shadow-xl border border-zinc-200">
               No positions configured for this election.
             </div>
           )}

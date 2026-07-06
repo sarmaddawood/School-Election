@@ -54,21 +54,21 @@ export default function ChangePasswordTab({
       className="max-w-xl mx-auto space-y-6 pt-10"
     >
       <div className="text-center space-y-2 mb-8">
-        <div className="h-16 w-16 bg-violet-500/10 text-violet-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-violet-500/20 shadow-lg">
+        <div className="h-16 w-16 bg-indigo-500/10 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-200 shadow-lg">
           <ShieldCheck size={32} />
         </div>
         <h2 className="text-2xl font-display font-semibold text-gradient">
           Account Security
         </h2>
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-zinc-500">
           Update your password to keep your account secure.
         </p>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl shadow-xl border border-white/5">
+      <div className="glass-panel p-6 md:p-8 rounded-3xl shadow-xl border border-zinc-200">
         <form onSubmit={handlePasswordChange} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
               Current Password
             </label>
             <div className="relative">
@@ -85,7 +85,7 @@ export default function ChangePasswordTab({
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
               New Password
             </label>
             <div className="relative">
@@ -107,7 +107,7 @@ export default function ChangePasswordTab({
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={updatingPassword}
-              className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl cursor-pointer flex items-center justify-center shadow-lg shadow-violet-500/25 transition-colors"
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl cursor-pointer flex items-center justify-center shadow-lg shadow-violet-500/25 transition-colors"
             >
               {updatingPassword ? (
                 <>

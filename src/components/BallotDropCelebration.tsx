@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ShieldCheck, Sparkles, Check, Lock, Database } from "lucide-react";
+import { ShieldCheck, Sparkles, Check, Lock, Database, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ConfettiParticle {
   id: number;
@@ -23,6 +24,7 @@ interface BallotDropCelebrationProps {
   onClose: () => void;
   candidateName: string;
   positionName: string;
+  onLogout?: () => void;
 }
 
 export default function BallotDropCelebration({
@@ -30,6 +32,7 @@ export default function BallotDropCelebration({
   onClose,
   candidateName,
   positionName,
+  onLogout,
 }: BallotDropCelebrationProps) {
   const [particles, setParticles] = useState<ConfettiParticle[]>([]);
   const [step, setStep] = useState<"floating" | "dropping" | "burst" | "secured">("floating");
@@ -183,7 +186,7 @@ export default function BallotDropCelebration({
             opacity: [0.15, 0.25, 0.15],
           }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute w-[400px] h-[400px] rounded-full bg-violet-600/20 blur-[100px] pointer-events-none"
+          className="absolute w-[400px] h-[400px] rounded-full bg-indigo-600/20 blur-[100px] pointer-events-none"
         />
 
         <div className="relative w-full max-w-lg flex flex-col items-center">
@@ -270,12 +273,12 @@ export default function BallotDropCelebration({
                     y: step === "dropping" ? { duration: 1.1, ease: "easeIn" } : { type: "spring", stiffness: 80, damping: 14 },
                     opacity: { duration: 0.9 },
                   }}
-                  className="absolute z-20 w-72 bg-gradient-to-b from-[#18133b] to-[#0d0924] border border-violet-500/30 rounded-2xl p-5 shadow-[0_15px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between h-44 cursor-default"
+                  className="absolute z-20 w-72 bg-gradient-to-b from-[#18133b] to-[#0d0924] border border-indigo-300 rounded-2xl p-5 shadow-[0_15px_40px_rgba(0,0,0,0.6)] flex flex-col justify-between h-44 cursor-default"
                   style={{ transformStyle: "preserve-3d" }}
                 >
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <span className="text-[9px] font-bold text-violet-400 uppercase tracking-widest flex items-center gap-1">
+                      <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1">
                         <ShieldCheck size={10} /> Official Ballot
                       </span>
                       <span className="text-[8px] font-mono text-zinc-500">
@@ -286,19 +289,19 @@ export default function BallotDropCelebration({
                   </div>
 
                   <div className="space-y-1 text-center py-2">
-                    <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-semibold">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
                       Ballot Selection
                     </p>
-                    <p className="text-sm font-display font-bold text-white">
+                    <p className="text-sm font-display font-bold text-zinc-900">
                       {candidateName}
                     </p>
-                    <p className="text-[10px] text-violet-300 font-medium">
+                    <p className="text-[10px] text-indigo-500 font-medium">
                       for {positionName}
                     </p>
                   </div>
 
-                  <div className="flex justify-between items-center border-t border-white/5 pt-2.5">
-                    <span className="text-[8px] font-mono text-emerald-400 uppercase flex items-center gap-1 font-bold">
+                  <div className="flex justify-between items-center border-t border-zinc-200 pt-2.5">
+                    <span className="text-[8px] font-mono text-emerald-600 uppercase flex items-center gap-1 font-bold">
                       <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
                       Verified Profile
                     </span>
@@ -315,7 +318,7 @@ export default function BallotDropCelebration({
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 120, damping: 18 }}
-              className="w-80 bg-black/80 border border-violet-500/20 rounded-3xl p-6 shadow-2xl relative flex flex-col items-center justify-center space-y-4 z-10 overflow-hidden"
+              className="w-80 bg-black/80 border border-indigo-200 rounded-3xl p-6 shadow-2xl relative flex flex-col items-center justify-center space-y-4 z-10 overflow-hidden"
               style={{
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255,255,255,0.05)",
               }}
@@ -324,7 +327,7 @@ export default function BallotDropCelebration({
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-500/5 to-transparent h-full w-full pointer-events-none" />
 
               {/* Secure Ballot Slot on top of box */}
-              <div className="w-56 bg-zinc-950 rounded-full h-4 border-2 border-violet-500/30 shadow-[inset_0_2px_8px_rgba(0,0,0,0.9)] relative flex items-center justify-center overflow-visible">
+              <div className="w-56 bg-white rounded-full h-4 border-2 border-indigo-300 shadow-[inset_0_2px_8px_rgba(0,0,0,0.9)] relative flex items-center justify-center overflow-visible">
                 {/* Glowing Laser line */}
                 <motion.div
                   animate={
@@ -366,8 +369,8 @@ export default function BallotDropCelebration({
                   transition={step === "dropping" ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.5 }}
                   className={`w-14 h-14 rounded-full border border-dashed flex items-center justify-center transition-colors ${
                     step === "burst" || step === "secured"
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                      : "border-violet-500/30 bg-violet-500/5 text-violet-400"
+                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600"
+                      : "border-indigo-300 bg-indigo-500/5 text-indigo-600"
                   }`}
                 >
                   {step === "burst" || step === "secured" ? (
@@ -395,7 +398,7 @@ export default function BallotDropCelebration({
               </div>
 
               <div className="text-center space-y-1 z-10">
-                <p className="text-xs font-semibold text-zinc-300">
+                <p className="text-xs font-semibold text-zinc-700">
                   {step === "floating" && "Cryptographic Sealing..."}
                   {step === "dropping" && "Transferring Ballot Securely..."}
                   {step === "burst" && "Ballot Accepted!"}
@@ -417,7 +420,7 @@ export default function BallotDropCelebration({
                 exit={{ opacity: 0, y: 15, scale: 0.95 }}
                 className="mt-6 w-full bg-gradient-to-br from-[#0e0a29] to-[#060414] border border-emerald-500/20 rounded-2xl p-5 shadow-2xl space-y-4 text-center z-10"
               >
-                <div className="flex items-center justify-center gap-2 text-emerald-400">
+                <div className="flex items-center justify-center gap-2 text-emerald-600">
                   <Sparkles size={16} className="animate-pulse" />
                   <span className="text-xs font-bold uppercase tracking-widest font-display text-gradient-emerald">
                     Ballot Securely Lodged
@@ -426,42 +429,65 @@ export default function BallotDropCelebration({
                 </div>
 
                 <div className="space-y-1 text-center">
-                  <h4 className="text-sm font-semibold text-white leading-snug">
+                  <h4 className="text-sm font-semibold text-zinc-900 leading-snug">
                     Your vote has been cast for {candidateName}
                   </h4>
-                  <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
+                  <p className="text-xs text-zinc-500 max-w-sm mx-auto leading-relaxed">
                     This selection has been encrypted and committed to the secure school blockchain registry. The voter identity remains anonymous.
                   </p>
                 </div>
 
                 {/* Simulated Ledger Receipt */}
-                <div className="bg-black/40 rounded-xl p-3 border border-white/5 space-y-1.5 text-left font-mono text-[9px] text-zinc-500">
+                <div className="bg-black/40 rounded-xl p-3 border border-zinc-200 space-y-1.5 text-left font-mono text-[9px] text-zinc-500">
                   <div className="flex justify-between">
                     <span>REGISTRY INDEX:</span>
-                    <span className="text-zinc-300">#CF-REG-{Math.floor(Math.random() * 90000) + 10000}</span>
+                    <span className="text-zinc-700">#CF-REG-{Math.floor(Math.random() * 90000) + 10000}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>SECURITY HASH:</span>
-                    <span className="text-violet-400 truncate w-36 text-right">
+                    <span className="text-indigo-600 truncate w-36 text-right">
                       {auditHash}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>DOUBLE-VOTE GUARD:</span>
-                    <span className="text-emerald-400 flex items-center gap-1 font-bold">
+                    <span className="text-emerald-600 flex items-center gap-1 font-bold">
                       <Check size={10} /> ACTIVE
                     </span>
                   </div>
                 </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.03, backgroundColor: "#10b981" }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={onClose}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold tracking-wide uppercase transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
-                >
-                  Done • Return to Board
-                </motion.button>
+                {/* QR Code for Tracking */}
+                <div className="flex flex-col items-center gap-2 pt-2">
+                  <div className="p-2 bg-white rounded-xl">
+                    <QRCodeSVG value={`civicflow:track:${auditHash}`} size={90} />
+                  </div>
+                  <p className="text-[10px] text-zinc-500 max-w-[200px] leading-tight">
+                    Scan with your mobile phone to anonymously track your ballot and securely logout.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.03, backgroundColor: "rgba(255,255,255,0.1)" }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={onClose}
+                    className="flex-1 py-2.5 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 rounded-xl text-xs font-bold tracking-wide uppercase transition-all border border-zinc-200 cursor-pointer"
+                  >
+                    Close
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03, backgroundColor: "#8b5cf6" }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      onClose();
+                      if (onLogout) onLogout();
+                    }}
+                    className="flex-[2] py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold tracking-wide uppercase transition-all shadow-lg shadow-violet-600/20 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <QrCode size={14} /> Scan & Logout
+                  </motion.button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
