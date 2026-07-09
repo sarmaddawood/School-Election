@@ -11,6 +11,7 @@ import {
   LogOut,
   User,
   Key,
+  Activity,
 } from "lucide-react";
 import { User as UserType } from "../types";
 import ConfirmModal from "./ConfirmModal";
@@ -61,6 +62,7 @@ export default function AppShell({
           { id: "users", label: "Users Registry", icon: User },
           { id: "results", label: "Results Board", icon: BarChart3 },
           { id: "calendar", label: "Election Calendar", icon: CalendarDays },
+          { id: "diagnostics", label: "System Diagnostics", icon: Activity },
         ]
       : user.role === "teacher"
       ? [

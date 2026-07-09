@@ -295,8 +295,8 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Run initial auto-seed validation
-  await ensureDatabaseSeeded();
+  // Run initial auto-seed validation in the background without blocking port binding
+  ensureDatabaseSeeded().catch(err => console.error("Background seeding failed:", err));
 
   // Authentication validation middleware
   async function getAuthenticatedUser(req: Request) {
@@ -341,7 +341,11 @@ async function startServer() {
   async function requireAdmin(req: Request, res: Response, next: NextFunction) {
     try {
       const user = await getAuthenticatedUser(req);
-      if (!user || user.role !== "admin") {
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      if (user.role !== "admin") {
         res.status(403).json({ error: "Forbidden: Admin access required" });
         return;
       }
@@ -708,7 +712,7 @@ async function startServer() {
 
     try {
       const electionDoc = await db.collection("elections").doc(electionId).get();
-      if (!electionDoc.exists()) {
+      if (!electionDoc.exists) {
         res.status(400).json({ error: "Invalid election" });
         return;
       }
@@ -732,7 +736,7 @@ async function startServer() {
     try {
       const positionRef = db.collection("positions").doc(id);
       const positionDoc = await getDoc(positionRef);
-      if (!positionDoc.exists()) {
+      if (!positionDoc.exists) {
         res.status(404).json({ error: "Position not found" });
         return;
       }
@@ -791,7 +795,7 @@ async function startServer() {
 
     try {
       const userDoc = await db.collection("users").doc(userId).get();
-      if (!userDoc.exists()) {
+      if (!userDoc.exists) {
         res.status(400).json({ error: "Invalid student/teacher selected" });
         return;
       }
@@ -839,7 +843,7 @@ async function startServer() {
     try {
       const candidateRef = db.collection("candidates").doc(id);
       const candidateDoc = await getDoc(candidateRef);
-      if (!candidateDoc.exists()) {
+      if (!candidateDoc.exists) {
         res.status(404).json({ error: "Candidate not found" });
         return;
       }
@@ -901,7 +905,7 @@ async function startServer() {
       }
       
       const electionDoc = await db.collection("elections").doc(electionId).get();
-      if (!electionDoc.exists()) {
+      if (!electionDoc.exists) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
@@ -983,15 +987,40 @@ Requirements:
 3. Do NOT include any greetings, intros, outros, or surrounding quotation marks. Return ONLY the polished manifesto text.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: prompt,
       });
 
       const polishedText = response.text ? response.text.trim() : draft;
       res.json({ manifesto: polishedText });
     } catch (err: any) {
-      console.error("Gemini manifesto polish failed:", err);
-      res.status(500).json({ error: err.message || "Manifesto polish failed" });
+      console.warn("Gemini manifesto polish failed, using elegant local optimizer fallback:", err.message);
+      
+      let polishedText = draft || "I promise to represent all students and organize great events!";
+      const cleanDraft = draft ? draft.trim() : "";
+      
+      if (positionName.toLowerCase().includes("president")) {
+        polishedText = cleanDraft 
+          ? `As President, I am dedicated to making our vision a reality: ${cleanDraft.replace(/^i want to /i, "")} Let's build a more inclusive, connected campus together.`
+          : "Dedicated to amplifying student voices, improving campus facilities, and creating a vibrant, inclusive student culture through collaborative action.";
+      } else if (positionName.toLowerCase().includes("sport") || positionName.toLowerCase().includes("captain")) {
+        polishedText = cleanDraft 
+          ? `Empowering our athletes and boosting school spirit: ${cleanDraft.replace(/^i want to /i, "")} Let's win together!`
+          : "Fostering school spirit and fitness by organizing inclusive intramural tournaments, upgrading sporting gear, and celebrating every student's athletic journey.";
+      } else if (positionName.toLowerCase().includes("art") || positionName.toLowerCase().includes("creative")) {
+        polishedText = cleanDraft 
+          ? `Unleashing student creativity: ${cleanDraft.replace(/^i want to /i, "")} Let's paint a brighter future.`
+          : "Unleashing our school's creative potential by showcasing student artwork, organizing talent showcases, and securing state-of-the-art creative supplies.";
+      } else {
+        polishedText = cleanDraft 
+          ? `Vision for ${positionName}: ${cleanDraft.replace(/^i want to /i, "")} Let's work as one.`
+          : `Committed to serving our community with integrity, open communication, and innovative projects to enhance the student experience.`;
+      }
+
+      res.json({ 
+        manifesto: polishedText,
+        warning: "Offline mode enabled. Suggested via heuristic campaign optimizer."
+      });
     }
   });
 
@@ -1222,7 +1251,7 @@ Requirements:
         if (!snap.empty) {
           const deleteBatch = db.batch();
           snap.forEach((doc) => {
-            deleteBatch.delete(doc.ref);
+            deleteBatch.delete(db.collection(colName).doc(doc.id));
           });
           await deleteBatch.commit();
         }

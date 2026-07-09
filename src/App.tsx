@@ -14,6 +14,7 @@ import VotePage from "./components/VotePage";
 import ResultsPage from "./components/ResultsPage";
 import CalendarTab from "./components/CalendarTab";
 import ChangePasswordTab from "./components/ChangePasswordTab";
+import DiagnosticsTab from "./components/DiagnosticsTab";
 import { DashboardSkeletonPage } from "./components/Skeleton";
 
 export default function App() {
@@ -270,6 +271,14 @@ export default function App() {
       case "calendar":
         return (
           <CalendarTab elections={elections} />
+        );
+      case "diagnostics":
+        return (
+          <DiagnosticsTab
+            token={token || ""}
+            currentUser={user}
+            onRefreshData={handleRefreshData}
+          />
         );
       case "password":
         return (
