@@ -1,83 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import {
-  Vote,
-  LayoutDashboard,
-  Calendar,
-  CalendarDays,
-  Award,
-  Users,
-  BarChart3,
-  LogOut,
-  User,
-  Key,
-} from "lucide-react";
-import { User as UserType } from "../types";
-import ConfirmModal from "./ConfirmModal";
+import re
 
-// @ts-ignore
-import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
+with open('src/components/AppShell.tsx', 'r') as f:
+    content = f.read()
 
-interface AppShellProps {
-  user: UserType;
-  onLogout: () => void;
-  token: string;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-  children: React.ReactNode;
-  setErrorNotification: (msg: string) => void;
-  setSuccessNotification: (msg: string) => void;
-}
+# I need to rewrite the `return (...)` of AppShell.
 
-export default function AppShell({
-  user,
-  onLogout,
-  token,
-  activeTab,
-  onTabChange,
-  children,
-  setErrorNotification,
-  setSuccessNotification,
-}: AppShellProps) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 880);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 880);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const navItems =
-    user.role === "admin"
-      ? [
-          { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-          { id: "elections", label: "Elections", icon: Calendar },
-          { id: "positions", label: "Positions", icon: Award },
-          { id: "candidates", label: "Candidates", icon: Users },
-          { id: "users", label: "Users Registry", icon: User },
-          { id: "results", label: "Results Board", icon: BarChart3 },
-          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
-        ]
-      : user.role === "teacher"
-      ? [
-          { id: "results", label: "Results Board", icon: BarChart3 },
-          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
-        ]
-      : [
-          { id: "vote", label: "Cast Ballot", icon: Vote },
-          { id: "results", label: "Results Board", icon: BarChart3 },
-          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
-        ];
-
+replacement = """
   return (
-    <div className="h-[100dvh] w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
+    <div className="h-screen w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-[var(--surface)] border-b border-[var(--border)] shrink-0">
+      <div className="md:hidden flex justify-between items-center p-4 bg-[var(--surface)] border-b border-[var(--border)]">
         <div className="flex items-center gap-3">
           <img src={bolinaoLogo} alt="Logo" className="w-8 h-8 rounded bg-white object-contain" />
           <div className="font-display text-sm font-bold uppercase">BSF E-Voting</div>
@@ -120,12 +53,12 @@ export default function AppShell({
 
         <div className="mt-auto p-4 bg-black/20 rounded relative">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                <div className="w-8 h-8 bg-[var(--accent)] text-[var(--bg)] flex items-center justify-center font-bold text-[0.7rem] shrink-0">
+                <div className="w-8 h-8 bg-[var(--accent)] text-[var(--bg)] flex items-center justify-center font-bold text-[0.7rem]">
                     {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                 </div>
-                <div className="text-[0.7rem] overflow-hidden">
-                    <p className="font-semibold uppercase truncate">{user.fullName}</p>
-                    <p className="opacity-40 uppercase truncate">{user.role}</p>
+                <div className="text-[0.7rem]">
+                    <p className="font-semibold uppercase truncate max-w-[120px]">{user.fullName}</p>
+                    <p className="opacity-40 uppercase">{user.role}</p>
                 </div>
             </div>
 
@@ -164,8 +97,8 @@ export default function AppShell({
         </div>
       </aside>
 
-      <main className="p-4 md:p-10 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0">
-        <header className="hidden md:flex justify-between items-end mb-12 shrink-0">
+      <main className="p-4 md:p-10 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative">
+        <header className="hidden md:flex justify-between items-end mb-12">
             <div>
                 <span className="font-mono text-[0.65rem] text-[var(--accent)] opacity-80 mb-2 block">TELEMETRY_MAIN_00</span>
                 <h2 className="font-display text-4xl uppercase leading-none tracking-tight">ADMINISTRATION<br/>TELEMETRY</h2>
@@ -179,7 +112,7 @@ export default function AppShell({
         {children}
       </main>
 
-      <footer className="hidden md:flex md:col-start-2 px-10 py-4 border-t border-[var(--border)] font-mono text-[0.6rem] opacity-40 justify-between shrink-0 bg-[var(--bg)]">
+      <footer className="hidden md:flex md:col-start-2 px-10 py-4 border-t border-[var(--border)] font-mono text-[0.6rem] opacity-40 justify-between">
         <span>© 2026 BOLINAO SCHOOL OF FISHERIES</span>
         <span>SECURITY PROTOCOL: v4.1.2_SECURE</span>
       </footer>
@@ -187,7 +120,7 @@ export default function AppShell({
       {/* Mobile Bottom Nav */}
       <AnimatePresence>
         {isMobile && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)]/95 backdrop-blur-lg border-t border-[var(--border)] flex flex-wrap justify-center gap-1 p-2 z-40 shrink-0">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)]/95 backdrop-blur-lg border-t border-[var(--border)] flex flex-wrap justify-center gap-1 p-2 z-40">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -215,3 +148,11 @@ export default function AppShell({
     </div>
   );
 }
+"""
+
+content = re.sub(r'return \(\s*<div className="min-h-\[100dvh\].*?\);\s*}', replacement, content, flags=re.DOTALL)
+
+with open('src/components/AppShell.tsx', 'w') as f:
+    f.write(content)
+
+print("Done")

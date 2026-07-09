@@ -6,12 +6,14 @@ interface ChangePasswordTabProps {
   token: string;
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
+  onSuccess?: () => void;
 }
 
 export default function ChangePasswordTab({
   token,
   setErrorNotification,
   setSuccessNotification,
+  onSuccess,
 }: ChangePasswordTabProps) {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -40,6 +42,9 @@ export default function ChangePasswordTab({
       setSuccessNotification("Password changed successfully!");
       setOldPassword("");
       setNewPassword("");
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {
@@ -49,54 +54,55 @@ export default function ChangePasswordTab({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-xl mx-auto space-y-6 pt-10"
+      className="max-w-xl mx-auto space-y-6 pt-10 font-mono text-white"
     >
       <div className="text-center space-y-2 mb-8">
-        <div className="h-16 w-16 bg-indigo-500/10 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-200 shadow-lg">
+        <div className="h-16 w-16 bg-[#E6FE52]/10 text-[#E6FE52] rounded-none flex items-center justify-center mx-auto mb-4 border border-[#E6FE52]/30">
           <ShieldCheck size={32} />
         </div>
-        <h2 className="text-2xl font-display font-semibold text-gradient">
-          Account Security
+        <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">SECURITY_ENCRYPT_09</span>
+        <h2 className="text-2xl font-display font-black text-white uppercase tracking-wider">
+          ACCOUNT PASSWORD SECURITY
         </h2>
-        <p className="text-sm text-zinc-500">
-          Update your password to keep your account secure.
+        <p className="text-xs text-[rgba(255,255,255,0.45)]">
+          Update authorization password variables to keep your voting ledger secure.
         </p>
       </div>
 
-      <div className="glass-panel p-6 md:p-8 rounded-3xl shadow-xl border border-zinc-200">
+      <div className="glass-panel p-6 md:p-8">
         <form onSubmit={handlePasswordChange} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-wider">
               Current Password
             </label>
             <div className="relative">
-              <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(255,255,255,0.4)]" />
               <input
                 type="password"
                 required
                 placeholder="••••••••"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-sm outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52]"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+            <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-wider">
               New Password
             </label>
             <div className="relative">
-              <Key size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+              <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(255,255,255,0.4)]" />
               <input
                 type="password"
                 required
                 placeholder="••••••••"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 glass-input rounded-xl text-sm outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52]"
               />
             </div>
           </div>
@@ -107,15 +113,15 @@ export default function ChangePasswordTab({
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={updatingPassword}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl cursor-pointer flex items-center justify-center shadow-lg shadow-violet-500/25 transition-colors"
+              className="w-full py-3 bg-[#E6FE52] hover:bg-[#d6ec3d] text-black rounded-none font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center transition-all"
             >
               {updatingPassword ? (
                 <>
-                  <Loader2 size={16} className="animate-spin mr-2" />
-                  Updating Security Settings...
+                  <Loader2 size={14} className="animate-spin mr-2" />
+                  UPDATING_SECURITY_KEY...
                 </>
               ) : (
-                "Update Password"
+                "UPDATE PASSWORD VARIABLES"
               )}
             </motion.button>
           </div>

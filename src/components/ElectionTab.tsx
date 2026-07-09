@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle } from "lucide-react";
 import { Election, ElectionPhase } from "../types";
+import ConfirmModal from "./ConfirmModal";
 
 interface ElectionTabProps {
   elections: Election[];
@@ -26,6 +27,7 @@ export default function ElectionTab({
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [deleteConfirmElection, setDeleteConfirmElection] = useState<{ id: string; title: string } | null>(null);
 
   const getPhase = (startStr: string, endStr: string): ElectionPhase => {
     const now = new Date();
@@ -121,14 +123,13 @@ export default function ElectionTab({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this election? This will cascade delete all associated positions, candidates, and votes!"
-      )
-    ) {
-      return;
-    }
+  const handleDelete = (id: string, title: string) => {
+    setDeleteConfirmElection({ id, title });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmElection) return;
+    const { id } = deleteConfirmElection;
 
     try {
       const response = await fetch(`/api/elections/${id}`, {
@@ -143,10 +144,12 @@ export default function ElectionTab({
         throw new Error(data.error || "Failed to delete election");
       }
 
-      setSuccessNotification("Election and all cascading records deleted");
+      setSuccessNotification("Election and all cascading records deleted successfully");
       await onRefreshData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
+    } finally {
+      setDeleteConfirmElection(null);
     }
   };
 
@@ -154,17 +157,16 @@ export default function ElectionTab({
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.08 }
+      transition: { staggerChildren: 0.05 }
     }
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 15, scale: 0.98 },
+    hidden: { opacity: 0, y: 10 },
     visible: {
       opacity: 1,
       y: 0,
-      scale: 1,
-      transition: { type: "spring", stiffness: 100, damping: 15 }
+      transition: { type: "spring", stiffness: 120, damping: 18 }
     }
   };
 
@@ -173,27 +175,28 @@ export default function ElectionTab({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6"
+      className="space-y-6 font-mono text-white"
     >
       <motion.div
         variants={cardVariants}
-        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        className="border-b border-[rgba(255,255,255,0.1)] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <h2 className="font-display font-semibold text-2xl text-zinc-900 tracking-tight">
-            Election Management
+          <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">ELECTION_ADMIN_03</span>
+          <h2 className="font-display font-black text-2xl text-white uppercase tracking-wider">
+            ELECTION MANAGEMENT
           </h2>
-          <p className="text-sm text-zinc-500">Configure election names, dates, and settings</p>
+          <p className="text-xs text-[rgba(255,255,255,0.45)]">Configure and orchestrate secure polling events and active timelines.</p>
         </div>
         {!showForm && (
           <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-violet-500/25 cursor-pointer transition-all"
+            className="px-4 py-2.5 bg-[#E6FE52] text-black text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer rounded-none"
           >
-            <Plus size={16} />
-            Create Election
+            <Plus size={14} />
+            CREATE_ELECTION
           </motion.button>
         )}
       </motion.div>
@@ -201,109 +204,100 @@ export default function ElectionTab({
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20, height: 0 }}
-            animate={{ opacity: 1, scale: 1, y: 0, height: "auto" }}
-            exit={{ opacity: 0, scale: 0.95, y: -20, height: 0 }}
-            transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            initial={{ opacity: 0, scale: 0.98, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -10 }}
             className="overflow-hidden"
           >
             <form
               onSubmit={handleSubmit}
-              className="glass-panel rounded-2xl p-6 space-y-5 shadow-2xl border border-zinc-200"
+              className="glass-panel p-6 space-y-5"
             >
-              <div className="flex justify-between items-center border-b border-zinc-200 pb-3">
-                <h3 className="font-display font-semibold text-gradient text-base">
-                  {editingElection ? "Edit Election" : "New Election Details"}
+              <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.1)] pb-3">
+                <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider">
+                  {editingElection ? "EDIT ELECTION PARAMETERS" : "INITIALIZE NEW ELECTION"}
                 </h3>
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="p-1.5 hover:bg-zinc-50 rounded-lg text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
+                  className="p-1.5 hover:bg-[rgba(255,255,255,0.05)] rounded-none text-zinc-500 hover:text-white cursor-pointer"
                 >
-                  <X size={16} />
+                  <X size={15} />
                 </motion.button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase">
+                  <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
                     Election Title
                   </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.01, borderColor: "rgba(139,92,246,0.3)" }}
+                  <input
                     type="text"
                     required
                     placeholder="e.g. Student Council Elections 2026"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 glass-input rounded-xl text-sm transition-all outline-none"
+                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52]"
                   />
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase">
-                    Description
+                  <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                    Description / Polling Directives
                   </label>
-                  <motion.textarea
-                    whileFocus={{ scale: 1.01, borderColor: "rgba(139,92,246,0.3)" }}
+                  <textarea
                     rows={3}
                     placeholder="Provide a description of this election..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-4 py-3 glass-input rounded-xl text-sm resize-none transition-all outline-none"
+                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52] resize-none"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase flex items-center gap-1.5">
-                    <Calendar size={14} /> Starts At
+                  <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase flex items-center gap-1.5">
+                    <Calendar size={13} /> Starts At
                   </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.01, borderColor: "rgba(139,92,246,0.3)" }}
+                  <input
                     type="datetime-local"
                     required
                     value={startsAt}
                     onChange={(e) => setStartsAt(e.target.value)}
-                    className="w-full px-4 py-3 glass-input rounded-xl text-sm outline-none transition-all"
+                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-zinc-700 tracking-wider uppercase flex items-center gap-1.5">
-                    <Clock size={14} /> Ends At
+                  <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase flex items-center gap-1.5">
+                    <Clock size={13} /> Ends At
                   </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.01, borderColor: "rgba(139,92,246,0.3)" }}
+                  <input
                     type="datetime-local"
                     required
                     value={endsAt}
                     onChange={(e) => setEndsAt(e.target.value)}
-                    className="w-full px-4 py-3 glass-input rounded-xl text-sm outline-none transition-all"
+                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52]"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+              <div className="flex justify-end gap-3 pt-4 border-t border-[rgba(255,255,255,0.1)]">
+                <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-zinc-200 hover:bg-zinc-50 text-zinc-700 hover:text-zinc-900 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                  className="px-4 py-2 border border-[rgba(255,255,255,0.15)] hover:bg-[rgba(255,255,255,0.05)] text-white text-xs font-bold uppercase tracking-wider cursor-pointer rounded-none"
                 >
                   Cancel
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                </button>
+                <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-lg shadow-violet-600/20"
+                  className="px-4 py-2 bg-[#E6FE52] hover:bg-[#d6ec3d] text-black text-xs font-bold uppercase tracking-wider cursor-pointer rounded-none"
                 >
-                  {submitting ? "Saving..." : "Save Election"}
-                </motion.button>
+                  {submitting ? "SAVING..." : "SAVE_ELECTION"}
+                </button>
               </div>
             </form>
           </motion.div>
@@ -322,71 +316,61 @@ export default function ElectionTab({
             <motion.div
               key={el.id}
               variants={cardVariants}
-              whileHover={{
-                scale: 1.03,
-                y: -6,
-                borderColor: "rgba(139,92,246,0.35)",
-                boxShadow: "0 12px 24px -10px rgba(139, 92, 246, 0.45)",
-              }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 20,
-              }}
-              className="glass-panel rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl border border-zinc-200 transition-all"
+              whileHover={{ scale: 1.01 }}
+              className="glass-panel p-5 flex flex-col justify-between space-y-4"
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-start gap-3">
-                  <h3 className="font-display font-semibold text-zinc-900 text-base leading-snug">
+                  <h3 className="font-display font-bold text-white text-sm uppercase tracking-wide leading-snug">
                     {el.title}
                   </h3>
                   <motion.span
-                    animate={phase === "live" ? { scale: [1, 1.05, 1] } : {}}
+                    animate={phase === "live" ? { scale: [1, 1.03, 1] } : {}}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                    className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider border ${
                       phase === "live"
-                        ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                         : phase === "upcoming"
-                        ? "bg-amber-500/10 text-amber-600 border border-amber-500/30"
-                        : "bg-zinc-50 text-zinc-500 border border-zinc-200"
+                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                        : "bg-[rgba(255,255,255,0.05)] text-[rgba(255,255,255,0.4)] border-[rgba(255,255,255,0.1)]"
                     }`}
                   >
                     {phase}
                   </motion.span>
                 </div>
-                <p className="text-xs text-zinc-700 line-clamp-3 leading-relaxed">
+                <p className="text-xs text-[rgba(255,255,255,0.6)] line-clamp-3 leading-relaxed">
                   {el.description || "No description provided."}
                 </p>
               </div>
 
               <div className="space-y-3 pt-2">
-                <div className="border-t border-zinc-200 pt-3 space-y-1.5 text-xs text-zinc-500 font-medium">
+                <div className="border-t border-[rgba(255,255,255,0.1)] pt-3 space-y-1.5 text-[10px] text-[rgba(255,255,255,0.45)] uppercase">
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Starts:</span>
-                    <span>{new Date(el.startsAt).toLocaleString()}</span>
+                    <span>Starts:</span>
+                    <span className="text-white font-bold">{new Date(el.startsAt).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-zinc-500">Ends:</span>
-                    <span>{new Date(el.endsAt).toLocaleString()}</span>
+                    <span>Ends:</span>
+                    <span className="text-white font-bold">{new Date(el.endsAt).toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
                   <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => handleOpenEdit(el)}
-                    className="p-2 hover:bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-700 hover:text-zinc-900 transition-all cursor-pointer"
+                    className="p-2 hover:bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.15)] text-white cursor-pointer"
                   >
-                    <Edit2 size={14} />
+                    <Edit2 size={13} />
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => handleDelete(el.id)}
-                    className="p-2 hover:bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-600 transition-all cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDelete(el.id, el.title)}
+                    className="p-2 hover:bg-red-500/10 border border-red-500/20 text-red-400 cursor-pointer"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </motion.button>
                 </div>
               </div>
@@ -397,32 +381,36 @@ export default function ElectionTab({
         {elections.length === 0 && (
           <motion.div
             variants={cardVariants}
-            className="col-span-1 md:col-span-2 glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center space-y-4 border border-zinc-200"
+            className="col-span-1 md:col-span-2 glass-panel p-12 text-center flex flex-col items-center justify-center space-y-4"
           >
-            <motion.div
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="p-4 bg-white/3 border border-zinc-200 rounded-2xl text-zinc-500 shadow-md"
-            >
-              <Calendar size={32} className="text-zinc-500" />
-            </motion.div>
+            <AlertCircle size={32} className="text-[#E6FE52]" />
             <div className="space-y-1">
-              <p className="font-semibold text-zinc-900">No Elections Configured</p>
-              <p className="text-xs text-zinc-500 max-w-sm leading-relaxed">
-                Get started by creating your first school election. Add positions and candidates afterward.
+              <p className="font-bold text-white uppercase tracking-wider text-xs">NO ELECTIONS PROGRAMMED</p>
+              <p className="text-[10px] text-[rgba(255,255,255,0.45)] max-w-sm leading-relaxed">
+                Initialize a secure election module to begin registering polling options and recording votes.
               </p>
             </div>
             <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleOpenCreate}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-violet-600/20"
+              className="px-4 py-2 bg-[#E6FE52] text-black text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
-              Create First Election
+              CREATE FIRST ELECTION
             </motion.button>
           </motion.div>
         )}
       </motion.div>
+      <ConfirmModal
+        isOpen={deleteConfirmElection !== null}
+        onClose={() => setDeleteConfirmElection(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Election?"
+        message={`Are you sure you want to delete the election "${deleteConfirmElection?.title}"? This will cascade delete all associated positions, candidates, and cast votes!`}
+        confirmText="DELETE"
+        cancelText="CANCEL"
+        isDanger={true}
+      />
     </motion.div>
   );
 }

@@ -110,95 +110,92 @@ export default function LoginPage({
   };
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center relative overflow-hidden p-4 md:p-8 bg-[#F4F5F7]">
+    <div className="min-h-[100dvh] flex items-center justify-center relative overflow-hidden p-4 md:p-8 bg-[#0D0D0E] font-mono text-white">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="w-full max-w-5xl bg-white rounded-[24px] overflow-hidden grid md:grid-cols-12 relative z-10 min-h-[580px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-zinc-200"
+        className="w-full max-w-5xl bg-[#161618] rounded-none overflow-hidden grid md:grid-cols-12 relative z-10 min-h-[580px] border border-[rgba(255,255,255,0.12)] shadow-2xl"
       >
         {/* Left pane - Branded Info Panel */}
         <motion.div
           variants={leftPanelVariants}
-          className="md:col-span-6 bg-zinc-50 p-8 md:p-12 flex flex-col justify-between text-zinc-900 relative overflow-hidden border-r border-zinc-200"
+          className="md:col-span-6 bg-[#0D0D0E] p-8 md:p-12 flex flex-col justify-between text-white relative overflow-hidden border-r border-[rgba(255,255,255,0.12)]"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-transparent to-zinc-100/50 pointer-events-none" />
+          <div className="absolute inset-0 bg-radial-gradient from-transparent via-[#0D0D0E] to-[#0D0D0E] pointer-events-none opacity-20" />
           
           <div className="relative z-10 flex items-center gap-3">
             <motion.div
               whileHover={{ rotate: 15, scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2.5 bg-indigo-500/10 rounded-2xl border border-violet-400/20 text-indigo-500 shadow-[0_0_15px_rgba(139,92,246,0.25)] cursor-pointer"
+              className="p-2.5 bg-[#E6FE52]/10 rounded-sm border border-[#E6FE52]/30 text-[#E6FE52] shadow-[0_0_15px_rgba(230,254,82,0.15)] cursor-pointer"
             >
               <Vote size={24} />
             </motion.div>
-            <span className="font-display font-semibold text-xl tracking-tight text-gradient">
-              E-Voting
+            <span className="font-display font-black text-xl tracking-wider text-[#E6FE52] uppercase">
+              EV-BOARD
             </span>
           </div>
 
           <div className="my-10 relative z-10 space-y-6">
             <motion.h1
               variants={itemVariants}
-              className="font-display text-4xl md:text-5xl font-semibold tracking-tight leading-none text-zinc-900"
+              className="font-display text-4xl md:text-5xl font-black tracking-wider leading-none text-white uppercase"
             >
-              The Next Gen <br />
+              SECURE <br />
               <motion.span
-                animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-                style={{ backgroundSize: "200% auto" }}
-                className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent block mt-1"
+                className="text-[#E6FE52] block mt-1"
               >
-                E-Voting
+                E-VOTING
               </motion.span>
             </motion.h1>
 
             <motion.p
               variants={itemVariants}
-              className="text-zinc-700 text-sm md:text-base max-w-md leading-relaxed"
+              className="text-[rgba(255,255,255,0.6)] text-xs md:text-sm max-w-md leading-relaxed"
             >
-              A secure, auditable, and beautiful digital polling system for school leadership elections. Cast your vote with confidence.
+              A high-integrity, real-time, digital voting platform with Zero-Trust constraints and auditable verification logs.
             </motion.p>
 
             <div className="pt-4 space-y-3.5">
               {[
                 {
                   icon: Shield,
-                  color: "text-indigo-600",
+                  color: "text-[#E6FE52]",
                   title: "Double-Vote Protection",
-                  desc: "Rigorous election constraints prevent duplicates."
+                  desc: "Enforced via distributed multi-write atomic transactions."
                 },
                 {
                   icon: UserCheck,
-                  color: "text-emerald-500",
-                  title: "Role-Based Access Control",
-                  desc: "Dedicated portals for Admins, Teachers, and Students."
+                  color: "text-[#E6FE52]",
+                  title: "Role-Based Integrity",
+                  desc: "Strict sandbox isolations for Admin, Teacher, and Voter entries."
                 }
               ].map((feature, idx) => (
                 <motion.div
                   key={idx}
                   variants={itemVariants}
-                  whileHover={{ scale: 1.02, x: 5, backgroundColor: "rgba(255,255,255,0.04)" }}
-                  className="flex items-center gap-3 bg-zinc-50 p-3.5 rounded-2xl border border-zinc-200 shadow-sm transition-colors"
+                  whileHover={{ scale: 1.01, x: 4 }}
+                  className="flex items-center gap-3 bg-[#161618] p-3.5 rounded-none border border-[rgba(255,255,255,0.08)] shadow-sm transition-colors"
                 >
                   <feature.icon className={`${feature.color} shrink-0`} size={18} />
-                  <div className="text-xs">
-                    <p className="font-semibold text-zinc-900">{feature.title}</p>
-                    <p className="text-zinc-500">{feature.desc}</p>
+                  <div className="text-[10px]">
+                    <p className="font-bold uppercase tracking-wider text-white">{feature.title}</p>
+                    <p className="text-[rgba(255,255,255,0.45)] mt-0.5">{feature.desc}</p>
                   </div>
                 </motion.div>
               ))}
 
               <motion.button
                 variants={itemVariants}
-                whileHover={{ scale: 1.02, x: 5, backgroundColor: "rgba(139,92,246,0.15)" }}
+                whileHover={{ scale: 1.01, x: 4 }}
                 onClick={() => setShowHowToVote(true)}
-                className="w-full text-left flex items-center gap-3 bg-indigo-500/10 p-3.5 rounded-2xl border border-indigo-200 shadow-sm transition-colors cursor-pointer"
+                className="w-full text-left flex items-center gap-3 bg-[rgba(230,254,82,0.05)] p-3.5 rounded-none border border-[#E6FE52]/30 shadow-sm cursor-pointer transition-all"
               >
-                <Info className="text-indigo-600 shrink-0" size={18} />
-                <div className="text-xs">
-                  <p className="font-semibold text-indigo-900">How to Vote Guide</p>
-                  <p className="text-indigo-500/70">New? Learn how the digital voting process works.</p>
+                <Info className="text-[#E6FE52] shrink-0" size={18} />
+                <div className="text-[10px]">
+                  <p className="font-bold uppercase tracking-wider text-[#E6FE52]">How to Vote Guide</p>
+                  <p className="text-[rgba(255,255,255,0.5)] mt-0.5">Understand the cryptographic ballot and candidate selection.</p>
                 </div>
               </motion.button>
             </div>
@@ -206,12 +203,12 @@ export default function LoginPage({
 
           <motion.div
             variants={itemVariants}
-            className="relative z-10 text-xs text-zinc-500 flex justify-between items-center border-t border-zinc-200 pt-4"
+            className="relative z-10 text-[9px] uppercase tracking-wider text-[rgba(255,255,255,0.4)] flex justify-between items-center border-t border-[rgba(255,255,255,0.1)] pt-4"
           >
-            <span>© 2026 E-Voting Inc.</span>
-            <span className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-              All Data Encrypted
+            <span>SYS_VER_2.0.4</span>
+            <span className="flex items-center gap-1.5 font-mono">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#E6FE52] animate-ping" />
+              AES_256_ACTIVE
             </span>
           </motion.div>
         </motion.div>
@@ -219,48 +216,49 @@ export default function LoginPage({
         {/* Right pane - Interactive Sign In */}
         <motion.div
           variants={rightPanelVariants}
-          className="md:col-span-6 p-8 md:p-12 flex flex-col justify-between bg-white backdrop-blur-sm"
+          className="md:col-span-6 p-8 md:p-12 flex flex-col justify-between bg-[#161618]"
         >
           <div className="max-w-md w-full mx-auto space-y-6 my-auto">
             <motion.div variants={itemVariants} className="space-y-2">
-              <h2 className="font-display text-2xl font-semibold text-zinc-900 tracking-tight">
-                Sign in to vote
+              <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">AUTH_SERVICE_01</span>
+              <h2 className="font-display text-2xl font-black text-white uppercase tracking-wider">
+                SIGN IN TO BALLOT
               </h2>
-              <p className="text-zinc-500 text-sm">
-                Enter your credentials to access the secure ballot board.
+              <p className="text-[rgba(255,255,255,0.45)] text-xs">
+                Provide secure login key and registration username.
               </p>
             </motion.div>
-
+ 
             <motion.form
               variants={itemVariants}
               onSubmit={handleSubmit}
               className="space-y-4"
             >
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-500 tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
                   Username / Roll Number
                 </label>
                 <motion.input
-                  whileFocus={{ scale: 1.01, borderColor: "rgba(79, 70, 229, 0.4)" }}
+                  whileFocus={{ scale: 1.01 }}
                   type="text"
                   placeholder="e.g. admin or student1"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 glass-input rounded-xl text-sm text-zinc-900 transition-all outline-none"
+                  className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white transition-all outline-none focus:border-[#E6FE52]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-500 tracking-wider uppercase">
-                  Password
+                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                  Password Key
                 </label>
                 <motion.input
-                  whileFocus={{ scale: 1.01, borderColor: "rgba(79, 70, 229, 0.4)" }}
+                  whileFocus={{ scale: 1.01 }}
                   type="password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 glass-input rounded-xl text-sm text-zinc-900 transition-all outline-none"
+                  className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white transition-all outline-none focus:border-[#E6FE52]"
                 />
               </div>
 
@@ -269,59 +267,58 @@ export default function LoginPage({
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(79,70,229,0.25)] hover:shadow-[0_0_30px_rgba(79,70,229,0.4)] cursor-pointer"
+                className="w-full py-3 bg-[#E6FE52] hover:bg-[#d6ec3d] disabled:bg-[#a6b44c] text-black rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" size={16} />
-                    Verifying Credentials...
+                    <Loader2 className="animate-spin" size={14} />
+                    VERIFYING_KEY...
                   </>
                 ) : (
                   <>
-                    <Key size={16} />
-                    Sign In Securely
+                    <Key size={14} />
+                    AUTHORIZE_SESSION
                   </>
                 )}
               </motion.button>
             </motion.form>
 
             <motion.div variants={itemVariants} className="relative flex py-1 items-center">
-              <div className="flex-grow border-t border-zinc-200"></div>
-              <span className="flex-shrink mx-4 text-zinc-500 text-[10px] uppercase tracking-widest font-bold">
-                Quick Testing
+              <div className="flex-grow border-t border-[rgba(255,255,255,0.1)]"></div>
+              <span className="flex-shrink mx-4 text-[rgba(255,255,255,0.35)] text-[9px] uppercase tracking-widest font-black">
+                QUICK_SEED
               </span>
-              <div className="flex-grow border-t border-zinc-200"></div>
+              <div className="flex-grow border-t border-[rgba(255,255,255,0.1)]"></div>
             </motion.div>
 
             <motion.div
               variants={itemVariants}
-              whileHover={{ scale: 1.01, borderColor: "rgba(255,255,255,0.1)" }}
-              className="bg-zinc-50 rounded-2xl border border-zinc-200 p-4 space-y-3 shadow-md transition-all"
+              className="bg-[#0D0D0E] rounded-none border border-[rgba(255,255,255,0.1)] p-4 space-y-3"
             >
               <div className="flex gap-2">
-                <Sparkles size={16} className="text-indigo-600 shrink-0 mt-0.5 animate-pulse" />
-                <p className="text-xs text-zinc-700 leading-relaxed">
-                  Want to preview the full system immediately? Click below to seed sample student/teacher accounts and load an active demo election.
+                <Sparkles size={16} className="text-[#E6FE52] shrink-0 mt-0.5 animate-pulse" />
+                <p className="text-[10px] text-[rgba(255,255,255,0.6)] leading-relaxed">
+                  Want to preview the full system immediately? Click below to seed 100 sample student/teacher accounts and load an active demo election.
                 </p>
               </div>
 
               <motion.button
-                whileHover={{ scale: 1.02, backgroundColor: "rgba(139,92,246,0.15)" }}
+                whileHover={{ scale: 1.01, backgroundColor: "rgba(230,254,82,0.12)" }}
                 whileTap={{ scale: 0.98 }}
                 type="button"
                 onClick={handleSeedDemo}
                 disabled={seeding}
-                className="w-full py-2.5 bg-indigo-500/10 text-indigo-500 disabled:bg-zinc-50 rounded-xl font-medium text-xs transition-colors flex items-center justify-center gap-2 border border-indigo-200 cursor-pointer"
+                className="w-full py-2.5 bg-transparent text-[#E6FE52] disabled:text-[rgba(255,255,255,0.3)] rounded-none font-bold text-[10px] uppercase tracking-widest transition-colors flex items-center justify-center gap-2 border border-[#E6FE52]/40 cursor-pointer"
               >
                 {seeding ? (
                   <>
                     <Loader2 className="animate-spin" size={12} />
-                    Seeding system data...
+                    SEEDING_DATABASE...
                   </>
                 ) : (
                   <>
                     <Sparkles size={12} />
-                    Seed Demo Data & Autofill Admin
+                    SEED_DEMO_DATA
                   </>
                 )}
               </motion.button>

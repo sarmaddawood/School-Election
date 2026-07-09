@@ -1,0 +1,6 @@
+#!/bin/bash
+sed -i 's/{second.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}/{second.photoUrl ? <img src={second.photoUrl} alt={second.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" \/> : second.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}/g' src/components/ResultsPage.tsx
+sed -i 's/{first.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}/{first.photoUrl ? <img src={first.photoUrl} alt={first.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" \/> : first.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}/g' src/components/ResultsPage.tsx
+sed -i 's/{third.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}/{third.photoUrl ? <img src={third.photoUrl} alt={third.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" \/> : third.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}/g' src/components/ResultsPage.tsx
+sed -i 's/className="h-8 w-8 rounded-full/className="h-8 w-8 overflow-hidden rounded-full/g' src/components/ResultsPage.tsx
+sed -i 's/className="h-10 w-10 rounded-full/className="h-10 w-10 overflow-hidden rounded-full/g' src/components/ResultsPage.tsx

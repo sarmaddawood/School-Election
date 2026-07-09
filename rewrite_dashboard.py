@@ -1,18 +1,8 @@
-import React, { useState, useEffect } from "react";
+content = """import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { User } from "../types";
 
-export default function DashboardTab({ 
-  currentUser,
-  users,
-  votes,
-  elections,
-  positions,
-  candidates,
-  onSelectTab,
-  token,
-  onRefreshData
-}: any) {
+export default function DashboardTab({ currentUser }: { currentUser: User | null }) {
   // Using some mock data for now, but keeping it structurally aligned with the provided HTML
   return (
     <div className="w-full">
@@ -118,3 +108,7 @@ export default function DashboardTab({
     </div>
   );
 }
+"""
+
+with open('src/components/DashboardTab.tsx', 'w') as f:
+    f.write(content)

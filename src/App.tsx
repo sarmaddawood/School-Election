@@ -217,6 +217,7 @@ export default function App() {
             positions={positions}
             candidates={candidates}
             users={users}
+            votes={votes}
             onRefreshData={handleRefreshData}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
@@ -227,6 +228,10 @@ export default function App() {
         return (
           <UsersTab
             users={users}
+            candidates={candidates}
+            positions={positions}
+            elections={elections}
+            votes={votes}
             onRefreshData={handleRefreshData}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
@@ -272,6 +277,10 @@ export default function App() {
             token={token || ""}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
+            onSuccess={() => {
+              const defaultTab = user.role === "admin" ? "dashboard" : user.role === "teacher" ? "results" : "vote";
+              setActiveTab(defaultTab);
+            }}
           />
         );
       default:

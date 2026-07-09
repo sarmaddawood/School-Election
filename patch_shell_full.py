@@ -1,79 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import {
-  Vote,
-  LayoutDashboard,
-  Calendar,
-  CalendarDays,
-  Award,
-  Users,
-  BarChart3,
-  LogOut,
-  User,
-  Key,
-} from "lucide-react";
-import { User as UserType } from "../types";
-import ConfirmModal from "./ConfirmModal";
+import re
 
-// @ts-ignore
-import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
+with open('src/components/AppShell.tsx', 'r') as f:
+    content = f.read()
 
-interface AppShellProps {
-  user: UserType;
-  onLogout: () => void;
-  token: string;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-  children: React.ReactNode;
-  setErrorNotification: (msg: string) => void;
-  setSuccessNotification: (msg: string) => void;
-}
+# find everything before `return (`
+idx = content.find('  return (')
 
-export default function AppShell({
-  user,
-  onLogout,
-  token,
-  activeTab,
-  onTabChange,
-  children,
-  setErrorNotification,
-  setSuccessNotification,
-}: AppShellProps) {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 880);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+header = content[:idx]
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 880);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const navItems =
-    user.role === "admin"
-      ? [
-          { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-          { id: "elections", label: "Elections", icon: Calendar },
-          { id: "positions", label: "Positions", icon: Award },
-          { id: "candidates", label: "Candidates", icon: Users },
-          { id: "users", label: "Users Registry", icon: User },
-          { id: "results", label: "Results Board", icon: BarChart3 },
-          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
-        ]
-      : user.role === "teacher"
-      ? [
-          { id: "results", label: "Results Board", icon: BarChart3 },
-          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
-        ]
-      : [
-          { id: "vote", label: "Cast Ballot", icon: Vote },
-          { id: "results", label: "Results Board", icon: BarChart3 },
-          { id: "calendar", label: "Election Calendar", icon: CalendarDays },
-        ];
-
-  return (
+replacement = """  return (
     <div className="h-[100dvh] w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
@@ -165,7 +100,7 @@ export default function AppShell({
       </aside>
 
       <main className="p-4 md:p-10 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0">
-        <header className="hidden md:flex justify-between items-end mb-12 shrink-0">
+        <header className="hidden md:flex justify-between items-end mb-12">
             <div>
                 <span className="font-mono text-[0.65rem] text-[var(--accent)] opacity-80 mb-2 block">TELEMETRY_MAIN_00</span>
                 <h2 className="font-display text-4xl uppercase leading-none tracking-tight">ADMINISTRATION<br/>TELEMETRY</h2>
@@ -215,3 +150,9 @@ export default function AppShell({
     </div>
   );
 }
+"""
+
+with open('src/components/AppShell.tsx', 'w') as f:
+    f.write(header + replacement)
+
+print("Done")

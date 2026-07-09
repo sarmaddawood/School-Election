@@ -5,11 +5,178 @@
       "username": "admin",
       "password": "ChangeMe!2026Vote",
       "fullName": "System Administrator",
-      "role": "admin"
+      "role": "admin",
+      "yearLevel": null
+    },
+    {
+      "id": "user-1",
+      "username": "juan.delacruz",
+      "password": "password123",
+      "fullName": "Juan Dela Cruz",
+      "role": "voter",
+      "yearLevel": 11
+    },
+    {
+      "id": "user-2",
+      "username": "maria.clara",
+      "password": "password123",
+      "fullName": "Maria Clara Reyes",
+      "role": "voter",
+      "yearLevel": 12
+    },
+    {
+      "id": "user-3",
+      "username": "jose.rizal",
+      "password": "password123",
+      "fullName": "Jose Rizal",
+      "role": "voter",
+      "yearLevel": 10
+    },
+    {
+      "id": "user-4",
+      "username": "andres.bonifacio",
+      "password": "password123",
+      "fullName": "Andres Bonifacio",
+      "role": "voter",
+      "yearLevel": 11
+    },
+    {
+      "id": "user-5",
+      "username": "gabriela.silang",
+      "password": "password123",
+      "fullName": "Gabriela Silang",
+      "role": "voter",
+      "yearLevel": 12
+    },
+    {
+      "id": "user-6",
+      "username": "antonio.luna",
+      "password": "password123",
+      "fullName": "Antonio Luna",
+      "role": "voter",
+      "yearLevel": 9
+    },
+    {
+      "id": "user-7",
+      "username": "emilio.aguinaldo",
+      "password": "password123",
+      "fullName": "Emilio Aguinaldo",
+      "role": "voter",
+      "yearLevel": 10
+    },
+    {
+      "id": "user-8",
+      "username": "melchora.aquino",
+      "password": "password123",
+      "fullName": "Melchora Aquino",
+      "role": "voter",
+      "yearLevel": 12
     }
   ],
-  "elections": [],
-  "positions": [],
-  "candidates": [],
+  "elections": [
+    {
+      "id": "e-demo",
+      "title": "BSF Supreme Student Government Election 2026",
+      "description": "Annual election for the Bolinao School of Fisheries SSG Officers. Cast your vote wisely!",
+      "startsAt": "2026-07-08T15:48:03.843Z",
+      "endsAt": "2026-07-16T15:48:03.844Z"
+    }
+  ],
+  "positions": [
+    {
+      "id": "pos-pres",
+      "electionId": "e-demo",
+      "name": "President"
+    },
+    {
+      "id": "pos-vp",
+      "electionId": "e-demo",
+      "name": "Vice President"
+    },
+    {
+      "id": "pos-sec",
+      "electionId": "e-demo",
+      "name": "Secretary"
+    },
+    {
+      "id": "pos-treas",
+      "electionId": "e-demo",
+      "name": "Treasurer"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "cand-1",
+      "electionId": "e-demo",
+      "positionId": "pos-pres",
+      "userId": "user-2",
+      "fullName": "Maria Clara Reyes",
+      "yearLevel": 12,
+      "party": "Angat BSF Party",
+      "manifesto": "To serve and protect the rights of every student in Bolinao School of Fisheries.",
+      "voteCount": 15,
+      "photoUrl": "https://i.pravatar.cc/150?u=user-2"
+    },
+    {
+      "id": "cand-2",
+      "electionId": "e-demo",
+      "positionId": "pos-pres",
+      "userId": "user-3",
+      "fullName": "Jose Rizal",
+      "yearLevel": 10,
+      "party": "Makabayan Youth Coalition",
+      "manifesto": "Kabataan ang pag-asa ng bayan. Let us strive for excellence and innovation.",
+      "voteCount": 12,
+      "photoUrl": "https://i.pravatar.cc/150?u=user-3"
+    },
+    {
+      "id": "cand-3",
+      "electionId": "e-demo",
+      "positionId": "pos-vp",
+      "userId": "user-4",
+      "fullName": "Andres Bonifacio",
+      "yearLevel": 11,
+      "party": "Makabayan Youth Coalition",
+      "manifesto": "Equality and justice for all students. We will ensure every voice is heard.",
+      "voteCount": 20,
+      "photoUrl": "https://i.pravatar.cc/150?u=user-4"
+    },
+    {
+      "id": "cand-4",
+      "electionId": "e-demo",
+      "positionId": "pos-vp",
+      "userId": "user-5",
+      "fullName": "Gabriela Silang",
+      "yearLevel": 12,
+      "party": "Angat BSF Party",
+      "manifesto": "Empowering the student body through active participation and transparency.",
+      "voteCount": 18,
+      "photoUrl": "https://i.pravatar.cc/150?u=user-5"
+    },
+    {
+      "id": "cand-5",
+      "electionId": "e-demo",
+      "positionId": "pos-sec",
+      "userId": "user-8",
+      "fullName": "Melchora Aquino",
+      "yearLevel": 12,
+      "party": "Angat BSF Party",
+      "manifesto": "Organized and accessible records for every student organization activity.",
+      "voteCount": 25,
+      "photoUrl": "https://i.pravatar.cc/150?u=user-8"
+    },
+    {
+      "id": "cand-6",
+      "electionId": "e-demo",
+      "positionId": "pos-treas",
+      "userId": "user-6",
+      "fullName": "Antonio Luna",
+      "yearLevel": 9,
+      "party": "Makabayan Youth Coalition",
+      "manifesto": "Strict auditing and transparent financial reports for the student council.",
+      "voteCount": 22,
+      "photoUrl": "https://i.pravatar.cc/150?u=user-6"
+    }
+  ],
   "votes": []
 }

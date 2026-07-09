@@ -4,52 +4,137 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, query, where, limit, writeBatch, runTransaction } from "firebase/firestore";
+import { Client, Databases, Query, ID } from "node-appwrite";
+import { GoogleGenAI } from "@google/genai";
+
+let geminiClient: GoogleGenAI | null = null;
+
+function getGeminiClient(): GoogleGenAI {
+  if (!geminiClient) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY environment variable is missing. Please check your settings.");
+    }
+    geminiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return geminiClient;
+}
 
 
-// Load Firebase applet configuration
-const configPath = path.join(process.cwd(), "firebase-applet-config.json");
-let firebaseConfig = {};
-if (fs.existsSync(configPath)) {
+const APPWRITE_PROJECT = "6a49127700029d3bc9bf";
+const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
+const APPWRITE_API_KEY = "standard_824ce6b89704a6332dcc5c3ebb38cddb156181a1e077562c2e1513f9debadc83ee1889ba5e50464bc571ae1f3d11f0e89fa5004f765f7006753b6a6adf71a9e66d3c6b878c9a32e80bcc906b865bfb49324204e3ea04a39d6c44d9ff4c022eafaf2218bc82b62cf905d47a3b0c54d76fb62c018d26dccd329c4d4d4e2d583472";
+const APPWRITE_DB = "voting_db";
+
+const client = new Client()
+    .setEndpoint(APPWRITE_ENDPOINT)
+    .setProject(APPWRITE_PROJECT)
+    .setKey(APPWRITE_API_KEY);
+
+const databases = new Databases(client);
+
+async function ensureCollectionsExist() {
   try {
-    firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    try {
+      await databases.get(APPWRITE_DB);
+    } catch (e) {
+      console.log("Creating database...", e.message);
+      await databases.create(APPWRITE_DB, "Voting DB");
+    }
   } catch (err) {
-    console.error("Failed to parse firebase-applet-config.json:", err);
+    console.error("DB check failed", err.message);
   }
 }
+ensureCollectionsExist();
 
-let app;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
-
-const clientDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-
-// ADAPTER to make client DB look like Admin DB
+// APPWRITE ADAPTER
 class DocRef {
   constructor(col, id) { this.col = col; this.id = id; }
-  get ref() { return doc(clientDb, this.col, this.id); }
   async get() {
-    const s = await getDoc(this.ref);
-    return { id: s.id, exists: s.exists(), data: () => s.data() };
+    try {
+      const doc = await databases.getDocument(APPWRITE_DB, this.col, this.id);
+      return { id: doc.$id, exists: true, data: () => {
+        const d = { ...doc };
+        delete d.$id;
+        delete d.$createdAt;
+        delete d.$updatedAt;
+        delete d.$permissions;
+        delete d.$databaseId;
+        delete d.$collectionId;
+        return d;
+      }};
+    } catch (e) {
+      return { id: this.id, exists: false, data: () => null };
+    }
   }
-  async set(data) { await setDoc(this.ref, data); }
-  async update(data) { await updateDoc(this.ref, data); }
-  async delete() { await deleteDoc(this.ref); }
+  async set(data) { 
+    const cleanData = { ...data };
+    delete cleanData.id;
+    for (let key in cleanData) {
+      if (cleanData[key] === undefined) cleanData[key] = null;
+    }
+    try {
+      await databases.createDocument(APPWRITE_DB, this.col, this.id, cleanData);
+    } catch(e) {
+      if (e.code === 409) {
+        await databases.updateDocument(APPWRITE_DB, this.col, this.id, cleanData);
+      } else {
+        throw e;
+      }
+    }
+  }
+  async update(data) { 
+    const cleanData = { ...data };
+    delete cleanData.id;
+    for (let key in cleanData) {
+      if (cleanData[key] === undefined) cleanData[key] = null;
+    }
+    await databases.updateDocument(APPWRITE_DB, this.col, this.id, cleanData); 
+  }
+  async delete() { 
+    try {
+      await databases.deleteDocument(APPWRITE_DB, this.col, this.id); 
+    } catch(e) {}
+  }
 }
 
 class QueryAdapter {
-  constructor(col, q) { this.col = col; this.q = q || collection(clientDb, col); }
-  where(f, op, v) { return new QueryAdapter(this.col, query(this.q, where(f, op, v))); }
-  limit(n) { return new QueryAdapter(this.col, query(this.q, limit(n))); }
+  constructor(col, queries) { this.col = col; this.queries = queries || []; }
+  where(f, op, v) { 
+    let newQ = [];
+    if (op === "==") newQ.push(Query.equal(f, v));
+    else if (op === ">") newQ.push(Query.greaterThan(f, v));
+    else if (op === "<") newQ.push(Query.lessThan(f, v));
+    else if (op === ">=") newQ.push(Query.greaterThanEqual(f, v));
+    else if (op === "<=") newQ.push(Query.lessThanEqual(f, v));
+    return new QueryAdapter(this.col, [...this.queries, ...newQ]); 
+  }
+  limit(n) { return new QueryAdapter(this.col, [...this.queries, Query.limit(n)]); }
   async get() {
-    const s = await getDocs(this.q);
-    const docs = [];
-    s.forEach(d => docs.push({ id: d.id, exists: d.exists(), data: () => d.data() }));
-    return { size: docs.length, empty: docs.length === 0, forEach: (cb) => docs.forEach(cb) };
+    try {
+      const res = await databases.listDocuments(APPWRITE_DB, this.col, this.queries);
+      const docs = res.documents.map(doc => ({ id: doc.$id, exists: true, data: () => {
+        const d = { ...doc };
+        delete d.$id;
+        delete d.$createdAt;
+        delete d.$updatedAt;
+        delete d.$permissions;
+        delete d.$databaseId;
+        delete d.$collectionId;
+        return d;
+      }}));
+      return { size: docs.length, empty: docs.length === 0, forEach: (cb) => docs.forEach(cb) };
+    } catch (e) {
+      console.error("List error:", e.message);
+      return { size: 0, empty: true, forEach: (cb) => {} };
+    }
   }
 }
 
@@ -61,27 +146,31 @@ class ColRef extends QueryAdapter {
 const db = {
   collection: (col) => new ColRef(col),
   batch: () => {
-    const b = writeBatch(clientDb);
-    return {
-      set: (docRef, data) => { b.set(docRef.ref, data); return this; },
-      update: (docRef, data) => { b.update(docRef.ref, data); return this; },
-      delete: (docRef) => { b.delete(docRef.ref); return this; },
-      commit: async () => await b.commit()
+    // Appwrite doesn't have true batches, so we simulate it with promises
+    const operations = [];
+    const batchObj = {
+      set: (docRef, data) => { operations.push(() => docRef.set(data)); return batchObj; },
+      update: (docRef, data) => { operations.push(() => docRef.update(data)); return batchObj; },
+      delete: (docRef) => { operations.push(() => docRef.delete()); return batchObj; },
+      commit: async () => {
+        for (const op of operations) {
+          await op();
+        }
+      }
     };
+    return batchObj;
   },
   runTransaction: async (cb) => {
-    return await runTransaction(clientDb, async (t) => {
-      const transAdapter = {
-        get: async (docRef) => {
-          const s = await t.get(docRef.ref);
-          return { id: s.id, exists: s.exists(), data: () => s.data() };
-        },
-        set: (docRef, data) => { t.set(docRef.ref, data); return transAdapter; },
-        update: (docRef, data) => { t.update(docRef.ref, data); return transAdapter; },
-        delete: (docRef) => { t.delete(docRef.ref); return transAdapter; }
-      };
-      return await cb(transAdapter);
-    });
+    // Appwrite doesn't have true transactions, fallback to simple promises
+    const transAdapter = {
+      get: async (docRef) => {
+        return await docRef.get();
+      },
+      set: async (docRef, data) => { await docRef.set(data); return transAdapter; },
+      update: async (docRef, data) => { await docRef.update(data); return transAdapter; },
+      delete: async (docRef) => { await docRef.delete(); return transAdapter; }
+    };
+    return await cb(transAdapter);
   }
 };
 
@@ -89,58 +178,56 @@ const dbPath = path.join(process.cwd(), "db.json");
 
 // Helper database queries
 async function getAll(collectionName: string): Promise<any[]> {
-  const snapshot = await getDocs(collection(clientDb, collectionName));
+  const s = await db.collection(collectionName).limit(1000).get();
   const list: any[] = [];
-  snapshot.forEach((doc) => {
+  s.forEach((doc) => {
     list.push({ id: doc.id, ...doc.data() });
   });
   return list;
 }
 
 async function getOne(collectionName: string, id: string): Promise<any> {
-  const docSnap = await getDoc(doc(clientDb, collectionName, id));
-  if (!docSnap.exists()) return null;
+  const docSnap = await db.collection(collectionName).doc(id).get();
+  if (!docSnap.exists) return null;
   return { id: docSnap.id, ...docSnap.data() };
 }
 
 async function queryPositions(electionId?: string): Promise<any[]> {
-  let q = collection(clientDb, "positions") as any;
+  let q = db.collection("positions");
   if (electionId) {
-    q = query(q, where("electionId", "==", electionId));
+    q = q.where("electionId", "==", electionId);
   }
-  const snapshot = await getDocs(q);
+  const s = await q.get();
   const list: any[] = [];
-  snapshot.forEach((doc) => {
+  s.forEach((doc) => {
     list.push({ id: doc.id, ...doc.data() });
   });
   return list;
 }
 
 async function queryCandidates(electionId?: string, positionId?: string): Promise<any[]> {
-  let q = collection(clientDb, "candidates") as any;
+  let q = db.collection("candidates");
   if (electionId) {
-    q = query(q, where("electionId", "==", electionId));
+    q = q.where("electionId", "==", electionId);
   }
   if (positionId) {
-    q = query(q, where("positionId", "==", positionId));
+    q = q.where("positionId", "==", positionId);
   }
-  const snapshot = await getDocs(q);
+  const s = await q.get();
   const list: any[] = [];
-  snapshot.forEach((doc) => {
+  s.forEach((doc) => {
     list.push({ id: doc.id, ...doc.data() });
   });
   return list;
 }
 
 async function queryMyVotes(electionId: string, voterId: string): Promise<any[]> {
-  const q = query(
-    collection(clientDb, "votes"),
-    where("electionId", "==", electionId),
-    where("voterId", "==", voterId)
-  );
-  const snapshot = await getDocs(q);
+  const s = await db.collection("votes")
+    .where("electionId", "==", electionId)
+    .where("voterId", "==", voterId)
+    .get();
   const list: any[] = [];
-  snapshot.forEach((doc) => {
+  s.forEach((doc) => {
     list.push({ id: doc.id, ...doc.data() });
   });
   return list;
@@ -149,17 +236,17 @@ async function queryMyVotes(electionId: string, voterId: string): Promise<any[]>
 // Auto seeding from local db.json if database is unseeded
 async function ensureDatabaseSeeded() {
   try {
-    const usersCount = (await getDocs(query(collection(clientDb, "users"), limit(1)))).size;
+    const usersCount = (await db.collection("users").limit(1).get()).size;
     if (usersCount === 0 && fs.existsSync(dbPath)) {
       console.log("Firestore is empty. Seeding initial data from db.json...");
       const data = JSON.parse(fs.readFileSync(dbPath, "utf8"));
       
-      const batch = writeBatch(clientDb);
+      const batch = db.batch();
       const now = new Date();
       
       if (Array.isArray(data.users)) {
         data.users.forEach((u: any) => {
-          batch.set(doc(clientDb, "users", u.id), u);
+          batch.set(db.collection("users").doc(u.id), u);
         });
       }
       
@@ -170,25 +257,25 @@ async function ensureDatabaseSeeded() {
             e.startsAt = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
             e.endsAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
           }
-          batch.set(doc(clientDb, "elections", e.id), e);
+          batch.set(db.collection("elections").doc(e.id), e);
         });
       }
       
       if (Array.isArray(data.positions)) {
         data.positions.forEach((p: any) => {
-          batch.set(doc(clientDb, "positions", p.id), p);
+          batch.set(db.collection("positions").doc(p.id), p);
         });
       }
       
       if (Array.isArray(data.candidates)) {
         data.candidates.forEach((c: any) => {
-          batch.set(doc(clientDb, "candidates", c.id), c);
+          batch.set(db.collection("candidates").doc(c.id), c);
         });
       }
       
       if (Array.isArray(data.votes)) {
         data.votes.forEach((v: any) => {
-          batch.set(doc(clientDb, "votes", v.id), v);
+          batch.set(db.collection("votes").doc(v.id), v);
         });
       }
       
@@ -232,6 +319,7 @@ async function startServer() {
       fullName: user.fullName,
       role: user.role,
       yearLevel: user.yearLevel,
+      photoUrl: user.photoUrl,
     };
   }
 
@@ -289,7 +377,7 @@ async function startServer() {
 
       // Case-insensitive username fallback if direct exact query missed
       if (!user) {
-        const allSnapshot = await getDocs(collection(clientDb, "users"));
+        const allSnapshot = await db.collection("users").get();
         allSnapshot.forEach((doc) => {
           const d = doc.data();
           if (d.username.toLowerCase() === username.toLowerCase() && d.password === password) {
@@ -310,6 +398,7 @@ async function startServer() {
           fullName: user.fullName,
           role: user.role,
           yearLevel: user.yearLevel,
+          photoUrl: user.photoUrl,
         },
         token: `mock-token-${user.id}`,
       });
@@ -331,15 +420,15 @@ async function startServer() {
 
     try {
       const user = (req as any).user;
-      const userRef = doc(clientDb, "users", user.id);
+      const userRef = db.collection("users").doc(user.id);
       const userDoc = await getDoc(userRef);
 
-      if (!userDoc.exists || userDoc.data()?.password !== oldPassword) {
+      if (!userDoc.exists() || userDoc.data()?.password !== oldPassword) {
         res.status(400).json({ error: "Incorrect current password" });
         return;
       }
 
-      await userRef.update({ password: newPassword });
+      await updateDoc(userRef, { password: newPassword });
       res.json({ message: "Password updated successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update password" });
@@ -355,6 +444,8 @@ async function startServer() {
         username: u.username,
         fullName: u.fullName,
         role: u.role,
+        yearLevel: u.yearLevel !== undefined ? u.yearLevel : null,
+        photoUrl: u.photoUrl !== undefined ? u.photoUrl : null,
       }));
       res.json(list);
     } catch (err: any) {
@@ -390,14 +481,17 @@ async function startServer() {
         password,
         role,
         yearLevel: req.body.yearLevel || null,
+        photoUrl: req.body.photoUrl || null,
       };
 
-      await setDoc(doc(clientDb, "users", newUser.id), newUser);
+      await db.collection("users").doc(newUser.id).set(newUser);
       res.status(201).json({
         id: newUser.id,
         username: newUser.username,
         fullName: newUser.fullName,
         role: newUser.role,
+        yearLevel: newUser.yearLevel,
+        photoUrl: newUser.photoUrl,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to create user" });
@@ -412,29 +506,89 @@ async function startServer() {
     }
 
     try {
-      const userRef = doc(clientDb, "users", id);
+      const userRef = db.collection("users").doc(id);
       const userDoc = await getDoc(userRef);
-      if (!userDoc.exists) {
+      if (!userDoc.exists()) {
         res.status(404).json({ error: "User not found" });
         return;
       }
 
-      await userRef.delete();
+      await deleteDoc(userRef);
 
-      // Clean up cascading candidates associated with deleted user
-      const candidatesSnapshot = await db.collection("candidates")
-        .where("userId", "==", id)
-        .get();
+      // Clean up cascading candidates associated with deleted user using standard getDocs
+      const candidatesSnapshot = await db.collection("candidates").where("userId", "==", id).get();
 
-      const batch = writeBatch(clientDb);
-      candidatesSnapshot.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
+      const batch = db.batch();
+      candidatesSnapshot.forEach((d) => { batch.delete(db.collection("candidates").doc(d.id)); });
       await batch.commit();
 
       res.json({ message: "User deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete user" });
+    }
+  });
+
+  app.post("/api/users/seed", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const dummyUsers = [
+        // Teachers
+        { username: "T-01", fullName: "Sarah Jenkins", role: "teacher", yearLevel: null, password: "password123", photoUrl: null },
+        { username: "T-02", fullName: "Robert Martinez", role: "teacher", yearLevel: null, password: "password123", photoUrl: null },
+        { username: "T-03", fullName: "Emily Watson", role: "teacher", yearLevel: null, password: "password123", photoUrl: null },
+        
+        // Year 7
+        { username: "S-101", fullName: "Ethan Hunt", role: "student", yearLevel: 7, password: "password123", photoUrl: null },
+        { username: "S-102", fullName: "Mia Thomsen", role: "student", yearLevel: 7, password: "password123", photoUrl: null },
+        { username: "S-103", fullName: "Oliver Twist", role: "student", yearLevel: 7, password: "password123", photoUrl: null },
+        
+        // Year 8
+        { username: "S-201", fullName: "Amelia Earhart", role: "student", yearLevel: 8, password: "password123", photoUrl: null },
+        { username: "S-202", fullName: "Lucas Brown", role: "student", yearLevel: 8, password: "password123", photoUrl: null },
+        { username: "S-203", fullName: "Sophia Loren", role: "student", yearLevel: 8, password: "password123", photoUrl: null },
+        
+        // Year 9
+        { username: "S-301", fullName: "David Beckham", role: "student", yearLevel: 9, password: "password123", photoUrl: null },
+        { username: "S-302", fullName: "Emma Watson", role: "student", yearLevel: 9, password: "password123", photoUrl: null },
+        { username: "S-303", fullName: "James Bond", role: "student", yearLevel: 9, password: "password123", photoUrl: null },
+        
+        // Year 10
+        { username: "S-401", fullName: "Liam Neeson", role: "student", yearLevel: 10, password: "password123", photoUrl: null },
+        { username: "S-402", fullName: "Olivia Rodrigo", role: "student", yearLevel: 10, password: "password123", photoUrl: null },
+        { username: "S-403", fullName: "Noah Centineo", role: "student", yearLevel: 10, password: "password123", photoUrl: null },
+        
+        // Year 11
+        { username: "S-501", fullName: "Charlotte Bronte", role: "student", yearLevel: 11, password: "password123", photoUrl: null },
+        { username: "S-502", fullName: "William Shakespeare", role: "student", yearLevel: 11, password: "password123", photoUrl: null },
+        { username: "S-503", fullName: "Benjamin Franklin", role: "student", yearLevel: 11, password: "password123", photoUrl: null },
+        
+        // Year 12
+        { username: "S-601", fullName: "Thomas Edison", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
+        { username: "S-602", fullName: "Albert Einstein", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
+        { username: "S-603", fullName: "Marie Curie", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
+        { username: "S-604", fullName: "Leonardo da Vinci", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
+        { username: "S-605", fullName: "Ada Lovelace", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
+      ];
+
+      const batch = db.batch();
+      const addedUsers = [];
+
+      for (const u of dummyUsers) {
+        const existingQuery = await db.collection("users")
+          .where("username", "==", u.username)
+          .get();
+
+        if (existingQuery.empty) {
+          const id = "u-" + Math.random().toString(36).substring(2, 9);
+          const newUser = { id, ...u };
+          batch.set(db.collection("users").doc, id, newUser);
+          addedUsers.push(newUser);
+        }
+      }
+
+      await batch.commit();
+      res.json({ message: `Successfully seeded ${addedUsers.length} dummy users into the database`, seededCount: addedUsers.length });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to seed dummy users" });
     }
   });
 
@@ -464,7 +618,7 @@ async function startServer() {
         endsAt,
       };
 
-      await setDoc(doc(clientDb, "elections", newElection.id), newElection);
+      await db.collection("elections").doc(newElection.id).set(newElection);
       res.status(201).json(newElection);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to create election" });
@@ -480,9 +634,9 @@ async function startServer() {
     }
 
     try {
-      const electionRef = doc(clientDb, "elections", id);
+      const electionRef = db.collection("elections").doc(id);
       const electionDoc = await getDoc(electionRef);
-      if (!electionDoc.exists) {
+      if (!electionDoc.exists()) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
@@ -506,26 +660,26 @@ async function startServer() {
     const { id } = req.params;
 
     try {
-      const electionRef = doc(clientDb, "elections", id);
+      const electionRef = db.collection("elections").doc(id);
       const electionDoc = await getDoc(electionRef);
-      if (!electionDoc.exists) {
+      if (!electionDoc.exists()) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
 
-      await electionRef.delete();
+      await deleteDoc(electionRef);
 
       // Cascade delete positions, candidates, and votes inside a batch
-      const batch = writeBatch(clientDb);
+      const batch = db.batch();
       
-      const positions = await getDocs(query(collection(clientDb, "positions"), where("electionId", "==", id)));
-      positions.forEach((doc) => batch.delete(doc.ref));
+      const positions = await db.collection("positions").where("electionId", "==", id).get();
+      positions.forEach((doc) => batch.delete(db.collection("positions").doc(doc.id)));
 
-      const candidates = await getDocs(query(collection(clientDb, "candidates"), where("electionId", "==", id)));
-      candidates.forEach((doc) => batch.delete(doc.ref));
+      const candidates = await db.collection("candidates").where("electionId", "==", id).get();
+      candidates.forEach((doc) => batch.delete(db.collection("candidates").doc(doc.id)));
 
-      const votes = await getDocs(query(collection(clientDb, "votes"), where("electionId", "==", id)));
-      votes.forEach((doc) => batch.delete(doc.ref));
+      const votes = await db.collection("votes").where("electionId", "==", id).get();
+      votes.forEach((doc) => batch.delete(db.collection("votes").doc(doc.id)));
 
       await batch.commit();
       res.json({ message: "Election deleted successfully" });
@@ -553,7 +707,7 @@ async function startServer() {
     }
 
     try {
-      const electionDoc = await getDoc(doc(clientDb, "elections", electionId));
+      const electionDoc = await db.collection("elections").doc(electionId).get();
       if (!electionDoc.exists()) {
         res.status(400).json({ error: "Invalid election" });
         return;
@@ -565,7 +719,7 @@ async function startServer() {
         name,
       };
 
-      await setDoc(doc(clientDb, "positions", newPosition.id), newPosition);
+      await db.collection("positions").doc(newPosition.id).set(newPosition);
       res.status(201).json(newPosition);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to create position" });
@@ -576,23 +730,23 @@ async function startServer() {
     const { id } = req.params;
 
     try {
-      const positionRef = doc(clientDb, "positions", id);
+      const positionRef = db.collection("positions").doc(id);
       const positionDoc = await getDoc(positionRef);
-      if (!positionDoc.exists) {
+      if (!positionDoc.exists()) {
         res.status(404).json({ error: "Position not found" });
         return;
       }
 
-      await positionRef.delete();
+      await deleteDoc(positionRef);
 
       // Cascade delete candidates and votes of this position
-      const batch = writeBatch(clientDb);
+      const batch = db.batch();
       
-      const candidates = await getDocs(query(collection(clientDb, "candidates"), where("positionId", "==", id)));
-      candidates.forEach((doc) => batch.delete(doc.ref));
+      const candidates = await db.collection("candidates").where("positionId", "==", id).get();
+      candidates.forEach((doc) => batch.delete(db.collection("candidates").doc(doc.id)));
 
-      const votes = await getDocs(query(collection(clientDb, "votes"), where("positionId", "==", id)));
-      votes.forEach((doc) => batch.delete(doc.ref));
+      const votes = await db.collection("votes").where("positionId", "==", id).get();
+      votes.forEach((doc) => batch.delete(db.collection("votes").doc(doc.id)));
 
       await batch.commit();
       res.json({ message: "Position deleted successfully" });
@@ -629,19 +783,24 @@ async function startServer() {
   });
 
   app.post("/api/candidates", requireAdmin, async (req: Request, res: Response) => {
-    const { electionId, positionId, userId, manifesto, party, photoUrl } = req.body;
+    const { electionId, positionId, userId, manifesto, party, photoUrl, targetYearLevel } = req.body;
     if (!electionId || !positionId || !userId) {
       res.status(400).json({ error: "Election, position, and user are required" });
       return;
     }
 
     try {
-      const userDoc = await getDoc(doc(clientDb, "users", userId));
+      const userDoc = await db.collection("users").doc(userId).get();
       if (!userDoc.exists()) {
         res.status(400).json({ error: "Invalid student/teacher selected" });
         return;
       }
       const user = userDoc.data()!;
+
+      if (user.role !== "student") {
+        res.status(400).json({ error: "Only students can be nominated as candidates" });
+        return;
+      }
 
       // Check duplicate candidates
       const duplicateQuery = await db.collection("candidates")
@@ -662,12 +821,12 @@ async function startServer() {
         fullName: user.fullName,
         manifesto: manifesto || "",
         voteCount: 0,
-        yearLevel: user.yearLevel || null,
+        yearLevel: targetYearLevel !== undefined ? targetYearLevel : (user.yearLevel || null),
         party: party || null,
-        photoUrl: photoUrl || null,
+        photoUrl: user.photoUrl || photoUrl || null,
       };
 
-      await setDoc(doc(clientDb, "candidates", newCandidate.id), newCandidate);
+      await db.collection("candidates").doc(newCandidate.id).set(newCandidate);
       res.status(201).json(newCandidate);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to nominate candidate" });
@@ -678,23 +837,20 @@ async function startServer() {
     const { id } = req.params;
 
     try {
-      const candidateRef = doc(clientDb, "candidates", id);
+      const candidateRef = db.collection("candidates").doc(id);
       const candidateDoc = await getDoc(candidateRef);
-      if (!candidateDoc.exists) {
+      if (!candidateDoc.exists()) {
         res.status(404).json({ error: "Candidate not found" });
         return;
       }
       const candidate = candidateDoc.data()!;
-      await candidateRef.delete();
+      await deleteDoc(candidateRef);
 
-      // Cascade delete votes registered for this candidate
-      const votes = await db.collection("votes")
-        .where("positionId", "==", candidate.positionId)
-        .where("candidateId", "==", id)
-        .get();
+      // Cascade delete votes registered for this candidate using standard getDocs
+      const votesSnapshot = await db.collection("votes").where("positionId", "==", candidate.positionId).where("candidateId", "==", id).get();
 
-      const batch = writeBatch(clientDb);
-      votes.forEach((doc) => batch.delete(doc.ref));
+      const batch = db.batch();
+      votesSnapshot.forEach((d) => { batch.delete(db.collection("votes").doc(d.id)); });
       await batch.commit();
 
       res.json({ message: "Candidate removed successfully" });
@@ -744,7 +900,7 @@ async function startServer() {
         return;
       }
       
-      const electionDoc = await getDoc(doc(clientDb, "elections", electionId));
+      const electionDoc = await db.collection("elections").doc(electionId).get();
       if (!electionDoc.exists()) {
         res.status(404).json({ error: "Election not found" });
         return;
@@ -758,10 +914,17 @@ async function startServer() {
         return;
       }
 
-      const candidateRef = doc(clientDb, "candidates", candidateId);
+      const candidateRef = db.collection("candidates").doc(candidateId);
       const candidateDoc = await getDoc(candidateRef);
-      if (!candidateDoc.exists || candidateDoc.data()?.positionId !== positionId) {
+      if (!candidateDoc.exists() || candidateDoc.data()?.positionId !== positionId) {
         res.status(400).json({ error: "Invalid candidate selected" });
+        return;
+      }
+
+      const candData = candidateDoc.data()!;
+      // Enforce the constraint that the student's yearLevel must match candidate's target yearLevel if configured
+      if (candData.yearLevel && candData.yearLevel !== user.yearLevel) {
+        res.status(403).json({ error: `This candidate is only eligible for year level ${candData.yearLevel} voters.` });
         return;
       }
 
@@ -786,16 +949,49 @@ async function startServer() {
       };
 
       // Perform transaction to securely update vote count and write ballot
-      await runTransaction(clientDb, async (transaction) => {
-        const freshCandDoc = await transaction.get(candidateRef);
+      await db.runTransaction(async (transaction) => {
+        const freshCandDoc = await transaction.get(db.collection("candidates").doc(candidateId));
         const currentCount = freshCandDoc.data()?.voteCount || 0;
-        transaction.set(doc(clientDb, "votes", newVote.id), newVote);
-        transaction.update(candidateRef, { voteCount: currentCount + 1 });
+        transaction.set(db.collection("votes").doc(newVote.id), newVote);
+        transaction.update(db.collection("candidates").doc(candidateId), { voteCount: currentCount + 1 });
       });
 
       res.status(201).json(newVote);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to submit vote" });
+    }
+  });
+
+  // --- AI Polish API ---
+  app.post("/api/ai/suggest-manifesto", requireAuth, async (req: Request, res: Response) => {
+    const { positionName, draft } = req.body;
+    if (!positionName) {
+      res.status(400).json({ error: "Position name is required" });
+      return;
+    }
+
+    try {
+      const ai = getGeminiClient();
+      const prompt = `You are an expert student council campaign strategist.
+Polishing task: Enhance the following high-school candidate's campaign manifesto for the position of "${positionName}".
+
+Draft to polish: "${draft || ""}"
+
+Requirements:
+1. Make it highly engaging, visionary, yet realistic and natural for a school environment.
+2. Keep it clean and concise (around 1 to 3 sentences, maximum 60 words).
+3. Do NOT include any greetings, intros, outros, or surrounding quotation marks. Return ONLY the polished manifesto text.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+      });
+
+      const polishedText = response.text ? response.text.trim() : draft;
+      res.json({ manifesto: polishedText });
+    } catch (err: any) {
+      console.error("Gemini manifesto polish failed:", err);
+      res.status(500).json({ error: err.message || "Manifesto polish failed" });
     }
   });
 
@@ -808,34 +1004,34 @@ async function startServer() {
         { id: "admin-1", username: "admin", password: "ChangeMe!2026Vote", fullName: "System Administrator", role: "admin" },
         
         // Teachers
-        { id: "u-t1", username: "teacher1", password: "password123", fullName: "Prof. Sarah Jenkins", role: "teacher" },
-        { id: "u-t2", username: "teacher2", password: "password123", fullName: "Dr. David Miller", role: "teacher" },
-        { id: "u-t3", username: "teacher3", password: "password123", fullName: "Prof. Robert Chen", role: "teacher" },
-        { id: "u-t4", username: "teacher4", password: "password123", fullName: "Mrs. Maria Garcia", role: "teacher" },
-        { id: "u-t5", username: "teacher5", password: "password123", fullName: "Mr. James Wilson", role: "teacher" },
-        { id: "u-t6", username: "teacher6", password: "password123", fullName: "Dr. Helen Keller", role: "teacher" },
-        { id: "u-t7", username: "teacher7", password: "password123", fullName: "Prof. Emily Brown", role: "teacher" },
+        { id: "u-t1", username: "teacher1", password: "password123", fullName: "Prof. Sarah Jenkins", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t1" },
+        { id: "u-t2", username: "teacher2", password: "password123", fullName: "Dr. David Miller", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t2" },
+        { id: "u-t3", username: "teacher3", password: "password123", fullName: "Prof. Robert Chen", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t3" },
+        { id: "u-t4", username: "teacher4", password: "password123", fullName: "Mrs. Maria Garcia", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t4" },
+        { id: "u-t5", username: "teacher5", password: "password123", fullName: "Mr. James Wilson", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t5" },
+        { id: "u-t6", username: "teacher6", password: "password123", fullName: "Dr. Helen Keller", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t6" },
+        { id: "u-t7", username: "teacher7", password: "password123", fullName: "Prof. Emily Brown", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t7" },
       ];
 
-      // Generate 35 student records
-      const studentNames = [
-        "Alex Rivera", "Jordan Patel", "Emma Watson", "Liam Neeson", "Chloe Bennett",
-        "Daniel Kim", "Sophia Martinez", "Ryan Gallagher", "Ava Dubois", "Noah Jenkins",
-        "Olivia Wright", "Ethan Hunt", "Isabella Cruz", "Mason Mount", "Sophia Loren",
-        "Lucas Silva", "Charlotte Horn", "Oliver Twist", "Mia Wallace", "Henry Ford",
-        "Harper Lee", "Sebastian Bach", "Evelyn Waugh", "Jack Reacher", "Lily Potter",
-        "Henry Cavill", "Grace Kelly", "Wyatt Earp", "Zoe Saldana", "Carter Page",
-        "Penelope Cruz", "Gabriel Garcia", "Madison Beer", "Dylan O'Brien", "Stella McCartney"
-      ];
+      // Generate 100 student records
+      const firstNames = ["Alex", "Jordan", "Emma", "Liam", "Chloe", "Daniel", "Sophia", "Ryan", "Ava", "Noah", "Olivia", "Ethan", "Isabella", "Mason", "Lucas", "Charlotte", "Oliver", "Mia", "Henry", "Harper", "Sebastian", "Evelyn", "Jack", "Lily", "Grace", "Wyatt", "Zoe", "Carter", "Penelope", "Gabriel", "Madison", "Dylan", "Stella", "Leo", "Aria", "Julian", "Violet", "Mateo", "Hazel", "Elias"];
+      const lastNames = ["Rivera", "Patel", "Watson", "Neeson", "Bennett", "Kim", "Martinez", "Gallagher", "Dubois", "Jenkins", "Wright", "Hunt", "Cruz", "Mount", "Loren", "Silva", "Horn", "Twist", "Wallace", "Ford", "Lee", "Bach", "Waugh", "Reacher", "Potter", "Cavill", "Kelly", "Earp", "Saldana", "Page", "Garcia", "Beer", "O'Brien", "McCartney", "Gomez", "Russo", "Chang", "Abbott", "Baker", "Clarke"];
+      
+      const studentNames = [];
+      for(let i = 0; i < 100; i++) {
+        studentNames.push(`${firstNames[i % firstNames.length]} ${lastNames[(i + 13) % lastNames.length]}`);
+      }
 
       studentNames.forEach((name, i) => {
+        const id = `u-s${i + 1}`;
         mockUsers.push({
-          id: `u-s${i + 1}`,
+          id,
           username: `student${i + 1}`,
           password: "password123",
           fullName: name,
           role: "student",
-          yearLevel: (i % 4) + 9 // Randomly year 9 to 12
+          yearLevel: (i % 6) + 7, // Year 7 to 12
+          photoUrl: `https://i.pravatar.cc/150?u=${id}`
         });
       });
 
@@ -1022,9 +1218,9 @@ async function startServer() {
       // 6. Complete wipe of existing firestore collections
       const collectionsToWipe = ["users", "elections", "positions", "candidates", "votes"];
       for (const colName of collectionsToWipe) {
-        const snap = await getDocs(collection(clientDb, colName));
+        const snap = await db.collection(colName).get();
         if (!snap.empty) {
-          const deleteBatch = writeBatch(clientDb);
+          const deleteBatch = db.batch();
           snap.forEach((doc) => {
             deleteBatch.delete(doc.ref);
           });
@@ -1033,13 +1229,13 @@ async function startServer() {
       }
 
       // 7. Write new high-fidelity data in batches
-      const batch = writeBatch(clientDb);
+      const batch = db.batch();
       
-      mockUsers.forEach(u => batch.set(doc(clientDb, "users", u.id), u));
-      mockElections.forEach(e => batch.set(doc(clientDb, "elections", e.id), e));
-      mockPositions.forEach(p => batch.set(doc(clientDb, "positions", p.id), p));
-      mockCandidates.forEach(c => batch.set(doc(clientDb, "candidates", c.id), c));
-      mockVotes.forEach(v => batch.set(doc(clientDb, "votes", v.id), v));
+      mockUsers.forEach(u => batch.set(db.collection("users").doc(u.id), u));
+      mockElections.forEach(e => batch.set(db.collection("elections").doc(e.id), e));
+      mockPositions.forEach(p => batch.set(db.collection("positions").doc(p.id), p));
+      mockCandidates.forEach(c => batch.set(db.collection("candidates").doc(c.id), c));
+      mockVotes.forEach(v => batch.set(db.collection("votes").doc(v.id), v));
 
       await batch.commit();
 
@@ -1078,7 +1274,7 @@ async function startServer() {
   });
 
   // Serve static UI assets
-  if (process.env.DISABLE_HMR === "true" || process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production") {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (req: Request, res: Response) => {

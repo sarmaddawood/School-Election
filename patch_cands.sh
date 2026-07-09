@@ -1,0 +1,4 @@
+#!/bin/bash
+sed -i 's/<p className="text-sm font-semibold text-zinc-900 group-hover:text-indigo-500 transition-colors">/<div className="flex items-center gap-3">{cand.photoUrl ? <img src={cand.photoUrl} alt={cand.fullName} className="w-8 h-8 rounded-full object-cover border border-zinc-200" referrerPolicy="no-referrer" \/> : <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center font-bold text-xs text-zinc-600">{cand.fullName.split(" ").slice(0, 2).map(n => n\[0\]).join("")}<\/div>}<div><p className="text-sm font-semibold text-zinc-900 group-hover:text-indigo-500 transition-colors">/g' src/components/CandidatesTab.tsx
+sed -i 's/"{cand.manifesto}"/"{cand.manifesto}"/g' src/components/CandidatesTab.tsx
+sed -i 's/<\/p><\/div><motion.button/<\/p><\/div><\/div><motion.button/g' src/components/CandidatesTab.tsx

@@ -22,22 +22,21 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
   // Fallback if no votes are cast yet
   const chartData = useMemo(() => {
     if (totalVotes === 0) {
-      // Return a single grey placeholder slice
       return [{ id: "placeholder", name: "No Votes Cast", votes: 0, percentage: 100 }];
     }
     return data;
   }, [data, totalVotes]);
 
-  // Color Palette - Tailored modern premium colors matching the theme
+  // Brutalist High Contrast Neon Palette
   const colors = [
-    "#8b5cf6", // Violet
-    "#ec4899", // Pink/Fuchsia
-    "#10b981", // Emerald
-    "#f59e0b", // Amber/Gold
-    "#06b6d4", // Cyan
-    "#f97316", // Orange
-    "#3b82f6", // Blue
-    "#a855f7", // Purple
+    "#E6FE52", // Accent Neon Yellow
+    "#38bdf8", // Neon Blue
+    "#f472b6", // Neon Pink
+    "#34d399", // Neon Emerald
+    "#fb923c", // Neon Orange
+    "#a78bfa", // Neon Purple
+    "#fbbf24", // Neon Gold
+    "#f87171", // Neon Coral
   ];
 
   const getColor = (index: number, id: string) => {
@@ -50,7 +49,6 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
   const radius = Math.min(width, height) / 2;
   const thickness = 32;
 
-  // Set up D3 Pie generator
   const pieGenerator = useMemo(() => {
     return d3
       .pie<DonutData | { id: string; name: string; votes: number; percentage: number }>()
@@ -62,27 +60,24 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
     return pieGenerator(chartData);
   }, [chartData, pieGenerator]);
 
-  // Arc generators
   const arcGenerator = d3
     .arc<d3.PieArcDatum<any>>()
     .innerRadius(radius - thickness)
     .outerRadius(radius)
-    .cornerRadius(6)
+    .cornerRadius(0) // Sharp brutalist corners
     .padAngle(totalVotes > 0 ? 0.03 : 0);
 
   const hoveredArcGenerator = d3
     .arc<d3.PieArcDatum<any>>()
     .innerRadius(radius - thickness - 4)
     .outerRadius(radius + 4)
-    .cornerRadius(8)
+    .cornerRadius(0)
     .padAngle(totalVotes > 0 ? 0.03 : 0);
 
-  // Active detail info (either hovered slice or highest voted)
   const activeDetail = useMemo(() => {
     if (hoveredIndex !== null) {
       return chartData[hoveredIndex];
     }
-    // Default to the first one (highest vote) if votes exist
     if (totalVotes > 0 && data.length > 0) {
       return data[0];
     }
@@ -92,7 +87,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
   return (
     <div
       ref={containerRef}
-      className="flex flex-col sm:flex-row items-center justify-center gap-8 bg-zinc-50 border border-zinc-200 rounded-2xl p-6 shadow-inner"
+      className="flex flex-col sm:flex-row items-center justify-center gap-8 bg-[#0D0D0E] border border-[rgba(255,255,255,0.1)] p-6 font-mono text-white"
       id="candidate-donut-container"
     >
       {/* Chart Section */}
@@ -117,7 +112,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                     filter: isHovered
                       ? `drop-shadow(0 0 12px ${segmentColor}66)`
                       : "none",
-                    opacity: hoveredIndex !== null && !isHovered ? 0.5 : 1,
+                    opacity: hoveredIndex !== null && !isHovered ? 0.4 : 1,
                   }}
                 />
               );
@@ -131,39 +126,39 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
             {activeDetail && activeDetail.id !== "placeholder" ? (
               <motion.div
                 key={activeDetail.id}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className="space-y-0.5 max-w-[130px]"
               >
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">
-                  {hoveredIndex !== null ? "Selected" : "Leading"}
+                <span className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-wider block">
+                  {hoveredIndex !== null ? "SELECTED" : "LEADING"}
                 </span>
-                <p className="text-xs font-bold text-zinc-900 truncate">
+                <p className="text-xs font-bold text-white truncate uppercase">
                   {activeDetail.name.split(" ")[0]}
                 </p>
-                <p className="text-lg font-mono font-bold text-zinc-900 leading-none pt-0.5">
+                <p className="text-lg font-mono font-bold text-[#E6FE52] leading-none pt-0.5">
                   {activeDetail.percentage}%
                 </p>
-                <p className="text-[10px] text-zinc-500 font-medium">
-                  {activeDetail.votes} {activeDetail.votes === 1 ? "vote" : "votes"}
+                <p className="text-[10px] text-[rgba(255,255,255,0.45)] font-bold">
+                  {activeDetail.votes} {activeDetail.votes === 1 ? "VOTE" : "VOTES"}
                 </p>
               </motion.div>
             ) : (
               <motion.div
                 key="empty"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className="space-y-1"
               >
-                <div className="mx-auto text-zinc-600 flex justify-center">
+                <div className="mx-auto text-[rgba(255,255,255,0.4)] flex justify-center">
                   <Vote size={18} />
                 </div>
-                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                  Total Votes
-                </p>
-                <p className="text-lg font-mono font-bold text-zinc-700 leading-none">
+                <span className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-wider block">
+                  TOTAL VOTES
+                </span>
+                <p className="text-lg font-mono font-bold text-white leading-none">
                   {totalVotes}
                 </p>
               </motion.div>
@@ -174,16 +169,16 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
 
       {/* Legend Section */}
       <div className="flex-1 w-full space-y-3" id="donut-chart-legend">
-        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-200 pb-1.5">
-          Ballot Distribution
+        <h4 className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-widest border-b border-[rgba(255,255,255,0.1)] pb-1.5">
+          BALLOT DISTRIBUTION
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
           {chartData.map((item, idx) => {
             if (item.id === "placeholder") {
               return (
                 <div key={item.id} className="flex items-center gap-2 py-0.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-zinc-100" />
-                  <span className="text-xs text-zinc-500 font-medium italic">No recorded votes</span>
+                  <div className="h-2 w-2 bg-[rgba(255,255,255,0.1)] shrink-0" />
+                  <span className="text-[10px] text-[rgba(255,255,255,0.4)] italic font-bold">NO RECORDED VOTES</span>
                 </div>
               );
             }
@@ -194,7 +189,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
             return (
               <div
                 key={item.id}
-                className="flex items-center justify-between gap-3 text-xs py-0.5 transition-all duration-200 cursor-pointer"
+                className="flex items-center justify-between gap-3 text-[10px] py-0.5 transition-all duration-200 cursor-pointer"
                 onMouseEnter={() => setHoveredIndex(idx)}
                 onMouseLeave={() => setHoveredIndex(null)}
                 style={{
@@ -204,16 +199,16 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
               >
                 <div className="flex items-center gap-2 truncate flex-1 min-w-0">
                   <div
-                    className="h-2.5 w-2.5 rounded-full shrink-0 transition-transform duration-200"
+                    className="h-2 w-2 shrink-0 transition-transform duration-200"
                     style={{
                       backgroundColor: color,
                       boxShadow: isHovered ? `0 0 8px ${color}` : "none",
                       transform: isHovered ? "scale(1.2)" : "scale(1)",
                     }}
                   />
-                  <span className="text-zinc-700 font-medium truncate">{item.name}</span>
+                  <span className="text-[rgba(255,255,255,0.85)] font-bold truncate uppercase">{item.name}</span>
                 </div>
-                <span className="font-mono text-zinc-500 shrink-0 font-semibold pl-1">
+                <span className="font-mono text-white shrink-0 font-bold pl-1">
                   {item.percentage}%
                 </span>
               </div>

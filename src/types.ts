@@ -6,6 +6,7 @@ export interface User {
   fullName: string;
   role: UserRole;
   yearLevel?: number;
+  photoUrl?: string;
 }
 
 export interface Election {

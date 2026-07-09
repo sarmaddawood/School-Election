@@ -65,9 +65,15 @@ export default function CandidateModal({ candidate, positionName, isOpen, onClos
               {/* Photo Placeholder */}
               <div className="px-6 pb-6 pt-0 relative flex-1 overflow-y-auto">
                 <div className="flex justify-between items-end -mt-12 mb-4 relative z-10">
-                  <div className="w-24 h-24 rounded-2xl bg-black border-4 border-black flex items-center justify-center shadow-xl overflow-hidden relative">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
-                    <User size={40} className="text-zinc-600" />
+                  <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white flex items-center justify-center shadow-xl overflow-hidden relative">
+                    {candidate.photoUrl ? (
+                      <img src={candidate.photoUrl} alt={candidate.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-b from-black/5 to-transparent" />
+                        <User size={40} className="text-zinc-400" />
+                      </>
+                    )}
                   </div>
                   <div className={`px-3 py-1.5 rounded-lg border bg-black/40 backdrop-blur-md flex items-center gap-2 mb-2 ${colorClass.split(" ").slice(2).join(" ")}`}>
                     <Flag size={14} />

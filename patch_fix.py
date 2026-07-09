@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+content = """import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Vote,
@@ -15,7 +15,6 @@ import {
 import { User as UserType } from "../types";
 import ConfirmModal from "./ConfirmModal";
 
-// @ts-ignore
 import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
 
 interface AppShellProps {
@@ -73,7 +72,9 @@ export default function AppShell({
           { id: "calendar", label: "Election Calendar", icon: CalendarDays },
         ];
 
-  return (
+"""
+
+replacement = """  return (
     <div className="h-[100dvh] w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
@@ -215,3 +216,7 @@ export default function AppShell({
     </div>
   );
 }
+"""
+
+with open('src/components/AppShell.tsx', 'w') as f:
+    f.write(content + replacement)
