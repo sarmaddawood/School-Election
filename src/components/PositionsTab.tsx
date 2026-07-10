@@ -117,15 +117,15 @@ export default function PositionsTab({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6 font-mono text-white"
+      className="space-y-6 font-mono text-[var(--ink)]"
     >
-      <motion.div variants={itemVariants} className="border-b border-[rgba(255,255,255,0.1)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">ELECTION_MODULE_01</span>
-          <h2 className="font-display font-black text-2xl text-white uppercase tracking-wider">
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">ELECTION_MODULE_01</span>
+          <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             POLLING POSITIONS
           </h2>
-          <p className="text-xs text-[rgba(255,255,255,0.45)]">Configure ballot positions for active and upcoming elections.</p>
+          <p className="text-xs text-zinc-500">Configure ballot positions for active and upcoming elections.</p>
         </div>
       </motion.div>
 
@@ -134,9 +134,9 @@ export default function PositionsTab({
           variants={itemVariants}
           className="glass-panel p-8 text-center flex flex-col items-center justify-center space-y-3"
         >
-          <Award size={32} className="text-[#E6FE52]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-white">NO_ELECTIONS_FOUND</p>
-          <p className="text-[10px] text-[rgba(255,255,255,0.45)] max-w-xs leading-relaxed">
+          <Award size={32} className="text-[var(--accent)]" />
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO_ELECTIONS_FOUND</p>
+          <p className="text-[10px] text-zinc-500 max-w-xs leading-relaxed">
             You must configure an election registry before establishing active polling positions.
           </p>
         </motion.div>
@@ -146,36 +146,36 @@ export default function PositionsTab({
             variants={itemVariants}
             className="lg:col-span-5 glass-panel p-5 md:p-6 space-y-4"
           >
-            <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider border-b border-[rgba(255,255,255,0.1)] pb-3">
+            <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider border-b border-[var(--border)] pb-3">
               ADD NEW POSITION
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                   Select Election
                 </label>
                 <div className="relative">
                   <select
                     value={selectedElectionId}
                     onChange={(e) => setSelectedElectionId(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white appearance-none cursor-pointer pr-10 outline-none focus:border-[#E6FE52]"
+                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)]"
                   >
                     {elections.map((el) => (
-                      <option key={el.id} value={el.id} className="bg-[#161618] text-white">
+                      <option key={el.id} value={el.id} className="bg-[var(--surface)] text-[var(--ink)]">
                         {el.title}
                       </option>
                     ))}
                   </select>
                   <ChevronDown
                     size={14}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                   Position Title / Name
                 </label>
                 <motion.input
@@ -185,7 +185,7 @@ export default function PositionsTab({
                   placeholder="e.g. Sports Captain, Head Prefect"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52]"
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
                 />
               </div>
 
@@ -194,7 +194,7 @@ export default function PositionsTab({
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 bg-[#E6FE52] hover:bg-[#d6ec3d] disabled:bg-[#a6b44c] text-black rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
               >
                 <Plus size={14} />
                 {submitting ? "ADDING_POSITION..." : "ADD_POSITION"}
@@ -206,7 +206,7 @@ export default function PositionsTab({
             variants={itemVariants}
             className="lg:col-span-7 glass-panel p-5 md:p-6 space-y-6"
           >
-            <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider border-b border-[rgba(255,255,255,0.1)] pb-3">
+            <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider border-b border-[var(--border)] pb-3">
               ACTIVE POSITIONS DIRECTORY
             </h3>
 
@@ -219,13 +219,13 @@ export default function PositionsTab({
                     variants={itemVariants}
                     className="space-y-3"
                   >
-                    <div className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.1)] pb-1.5">
+                    <div className="flex items-center gap-2 border-b border-[var(--border)] pb-1.5">
                       <motion.span
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
-                        className="h-1.5 w-1.5 rounded-none bg-[#E6FE52] shadow-[0_0_8px_#E6FE52]"
+                        className="h-1.5 w-1.5 rounded-none bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
                       />
-                      <h4 className="font-display font-bold text-[10px] text-[rgba(255,255,255,0.45)] uppercase tracking-widest">
+                      <h4 className="font-display font-bold text-[10px] text-zinc-500 uppercase tracking-widest">
                         {el.title}
                       </h4>
                     </div>
@@ -239,16 +239,16 @@ export default function PositionsTab({
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 10 }}
                             whileHover={{ scale: 1.01 }}
-                            className="flex justify-between items-center bg-[#0D0D0E] border border-[rgba(255,255,255,0.1)] px-4 py-3 rounded-none transition-all"
+                            className="flex justify-between items-center bg-[var(--surface)] border border-[var(--border)] px-4 py-3 rounded-none transition-all"
                           >
-                            <span className="text-xs font-bold text-white uppercase tracking-wider">
+                            <span className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
                               {pos.name}
                             </span>
                             <motion.button
-                              whileHover={{ scale: 1.1, color: "#f87171" }}
+                              whileHover={{ scale: 1.1, color: "#e11d48" }}
                               whileTap={{ scale: 0.9 }}
                               onClick={() => handleDelete(pos.id, pos.name)}
-                              className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-all cursor-pointer"
+                              className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer"
                             >
                               <Trash2 size={13} />
                             </motion.button>
@@ -257,7 +257,7 @@ export default function PositionsTab({
                       </AnimatePresence>
 
                       {electionPositions.length === 0 && (
-                        <p className="text-[10px] text-[rgba(255,255,255,0.4)] italic py-1 pl-1">
+                        <p className="text-[10px] text-zinc-500 italic py-1 pl-1">
                           No configured polling positions found.
                         </p>
                       )}

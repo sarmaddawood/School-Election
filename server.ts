@@ -4,7 +4,8 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { Client, Databases, Query, ID, Storage, InputFile } from "node-appwrite";
+import { Client, Databases, Query, ID, Storage } from "node-appwrite";
+import { InputFile } from "node-appwrite/file";
 import { GoogleGenAI } from "@google/genai";
 import multer from "multer";
 

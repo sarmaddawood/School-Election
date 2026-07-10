@@ -44,7 +44,7 @@ export default function ConfirmModal({
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-sm p-6 rounded-3xl shadow-2xl glass-panel border border-zinc-200 flex flex-col items-center gap-5"
           >
-            <div className={`h-16 w-16 ${isDanger ? 'bg-rose-500/10 text-rose-600 border-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.15)]' : 'bg-[#E6FE52]/10 text-black border-[#E6FE52]/20 shadow-[0_0_20px_rgba(230,254,82,0.15)]'} rounded-2xl flex items-center justify-center border animate-pulse`}>
+            <div className={`h-16 w-16 ${isDanger ? 'bg-rose-50 text-rose-600 border-rose-200' : 'bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/20'} rounded-2xl flex items-center justify-center border animate-pulse`}>
               {displayIcon}
             </div>
 
@@ -68,7 +68,7 @@ export default function ConfirmModal({
                 className={`flex-1 py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] cursor-pointer ${
                   isDanger
                     ? "bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-500/25"
-                    : "bg-[#E6FE52] hover:bg-[#d6ec3d] text-black shadow-lg shadow-[#E6FE52]/25"
+                    : "bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] shadow-lg"
                 }`}
               >
                 {confirmText}

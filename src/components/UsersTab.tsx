@@ -210,15 +210,15 @@ export default function UsersTab({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6 font-mono text-white"
+      className="space-y-6 font-mono text-[var(--ink)]"
     >
-      <motion.div variants={itemVariants} className="border-b border-[rgba(255,255,255,0.1)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">REGISTRY_MODULE_02</span>
-          <h2 className="font-display font-black text-2xl text-white uppercase tracking-wider">
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">REGISTRY_MODULE_02</span>
+          <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             USER ACCOUNT REGISTRY
           </h2>
-          <p className="text-xs text-[rgba(255,255,255,0.45)]">Manage credentials, roles, and cohort permissions for school students and faculty.</p>
+          <p className="text-xs text-zinc-500">Manage credentials, roles, and cohort permissions for school students and faculty.</p>
         </div>
       </motion.div>
 
@@ -226,15 +226,15 @@ export default function UsersTab({
         {/* Register panel */}
         <motion.div
           variants={itemVariants}
-          className="lg:col-span-5 glass-panel p-5 md:p-6 space-y-4"
+          className="lg:col-span-5 glass-panel p-5 md:p-6 space-y-4 bg-[var(--surface)] border-[var(--border)]"
         >
-          <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider border-b border-[rgba(255,255,255,0.1)] pb-3">
+          <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider border-b border-[var(--border)] pb-3">
             REGISTER NEW ACCOUNT
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+              <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                 Full Name
               </label>
               <motion.input
@@ -244,12 +244,12 @@ export default function UsersTab({
                 placeholder="e.g. Liam Henderson"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52]"
+                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+              <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                 Username / Roll Number
               </label>
               <motion.input
@@ -259,12 +259,12 @@ export default function UsersTab({
                 placeholder={role === "teacher" ? "e.g. Teacher ID" : "e.g. Student ID"}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52]"
+                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+              <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                 Assign Password
               </label>
               <motion.input
@@ -274,12 +274,12 @@ export default function UsersTab({
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52]"
+                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+              <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                 Account Role
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -288,8 +288,8 @@ export default function UsersTab({
                   onClick={() => setRole("student")}
                   className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-none transition-all border cursor-pointer ${
                     role === "student"
-                      ? "bg-[#E6FE52] border-[#E6FE52] text-black"
-                      : "bg-[#0D0D0E] border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.6)] hover:border-[#E6FE52]"
+                      ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)]"
+                      : "bg-[var(--surface)] border-[var(--border)] text-zinc-500 hover:border-[var(--accent)]"
                   }`}
                 >
                   Student
@@ -299,8 +299,8 @@ export default function UsersTab({
                   onClick={() => setRole("teacher")}
                   className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-none transition-all border cursor-pointer ${
                     role === "teacher"
-                      ? "bg-[#E6FE52] border-[#E6FE52] text-black"
-                      : "bg-[#0D0D0E] border-[rgba(255,255,255,0.15)] text-[rgba(255,255,255,0.6)] hover:border-[#E6FE52]"
+                      ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)]"
+                      : "bg-[var(--surface)] border-[var(--border)] text-zinc-500 hover:border-[var(--accent)]"
                   }`}
                 >
                   Teacher
@@ -316,7 +316,7 @@ export default function UsersTab({
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-1.5 overflow-hidden"
                 >
-                  <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                     Year Level (Optional)
                   </label>
                   <motion.input
@@ -327,14 +327,14 @@ export default function UsersTab({
                     placeholder="e.g. 10"
                     value={yearLevel || ""}
                     onChange={(e) => setYearLevel(e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52]"
+                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
                   />
                 </motion.div>
               )}
             </AnimatePresence>
 
             <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+              <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                 Profile Photo (Optional)
               </label>
               
@@ -351,19 +351,19 @@ export default function UsersTab({
               />
 
               {photoPreview ? (
-                <div className="relative border border-[rgba(255,255,255,0.15)] bg-[#0D0D0E] p-3 flex items-center justify-between gap-3">
+                <div className="relative border border-[var(--border)] bg-[var(--surface)] p-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <img 
                       src={photoPreview} 
                       alt="Preview" 
-                      className="w-12 h-12 object-cover border border-[rgba(255,255,255,0.2)]"
+                      className="w-12 h-12 object-cover border border-[var(--border)]"
                       referrerPolicy="no-referrer"
                     />
                     <div className="min-w-0">
-                      <p className="text-[10px] text-white font-mono truncate max-w-[150px]">
+                      <p className="text-[10px] text-[var(--ink)] font-mono truncate max-w-[150px]">
                         {photoFile?.name}
                       </p>
-                      <p className="text-[9px] text-[rgba(255,255,255,0.4)] font-mono">
+                      <p className="text-[9px] text-zinc-500 font-mono">
                         {photoFile ? (photoFile.size / 1024).toFixed(1) : 0} KB
                       </p>
                     </div>
@@ -371,7 +371,7 @@ export default function UsersTab({
                   <button
                     type="button"
                     onClick={() => handleFileChange(null)}
-                    className="p-1 hover:bg-[rgba(255,255,255,0.1)] text-red-400 border border-transparent hover:border-red-500 transition-all cursor-pointer"
+                    className="p-1 hover:bg-rose-50 text-rose-500 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
                   >
                     <X size={14} />
                   </button>
@@ -384,16 +384,16 @@ export default function UsersTab({
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center min-h-[100px] ${
                     isDragging
-                      ? "border-[#E6FE52] bg-[rgba(230,254,82,0.05)]"
-                      : "border-[rgba(255,255,255,0.15)] bg-[#0D0D0E] hover:border-[#E6FE52] hover:bg-[rgba(255,255,255,0.02)]"
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                      : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:bg-neutral-50"
                   }`}
                 >
-                  <Upload size={20} className={isDragging ? "text-[#E6FE52] animate-bounce" : "text-[rgba(255,255,255,0.4)]"} />
+                  <Upload size={20} className={isDragging ? "text-[var(--accent)] animate-bounce" : "text-zinc-400"} />
                   <div>
-                    <p className="text-[10px] text-white font-bold uppercase tracking-wider">
+                    <p className="text-[10px] text-[var(--ink)] font-bold uppercase tracking-wider">
                       Drag & Drop Photo
                     </p>
-                    <p className="text-[8px] text-[rgba(255,255,255,0.4)] uppercase tracking-widest font-mono mt-0.5">
+                    <p className="text-[8px] text-zinc-500 uppercase tracking-widest font-mono mt-0.5">
                       or click to browse
                     </p>
                   </div>
@@ -406,7 +406,7 @@ export default function UsersTab({
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-[#E6FE52] hover:bg-[#d6ec3d] text-black rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              className="w-full py-3 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
             >
               <Plus size={14} />
               {submitting ? "REGISTER_ACCOUNTING..." : "REGISTER_ACCOUNT"}
@@ -419,8 +419,8 @@ export default function UsersTab({
           variants={itemVariants}
           className="lg:col-span-7 glass-panel p-5 md:p-6 space-y-4"
         >
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-[rgba(255,255,255,0.1)] pb-3">
-            <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-[var(--border)] pb-3">
+            <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider">
               VOTER DIRECTORY
             </h3>
 
@@ -430,11 +430,11 @@ export default function UsersTab({
                 placeholder="SEARCH_REGISTRY_LOGS..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none focus:border-[#E6FE52]"
+                className="w-full pl-9 pr-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
               />
               <Search
                 size={12}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(255,255,255,0.4)] pointer-events-none"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
               />
             </div>
           </div>
@@ -442,14 +442,14 @@ export default function UsersTab({
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs">
               <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.1)] text-[rgba(255,255,255,0.45)] uppercase font-bold tracking-widest text-[9px]">
+                <tr className="border-b border-[var(--border)] text-zinc-500 uppercase font-bold tracking-widest text-[9px]">
                   <th className="py-3 px-2">VOTER_PROFILE</th>
                   <th className="py-3 px-2">USERNAME</th>
                   <th className="py-3 px-2">ROLE</th>
                   <th className="py-3 px-2 text-right">ACTIONS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.06)]">
+              <tbody className="divide-y divide-[var(--border)]">
                 <AnimatePresence mode="popLayout">
                   {filteredUsers.map((u) => (
                     <motion.tr
@@ -459,25 +459,25 @@ export default function UsersTab({
                       exit={{ opacity: 0, y: -5 }}
                       transition={{ duration: 0.12 }}
                       onClick={() => setSelectedDetailUser(u)}
-                      className="hover:bg-[rgba(255,255,255,0.04)] transition-colors cursor-pointer"
+                      className="hover:bg-neutral-50 transition-colors cursor-pointer"
                     >
-                      <td className="py-3 px-2 font-bold text-white uppercase tracking-wider flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-none bg-[#0D0D0E] text-[#E6FE52] flex items-center justify-center font-bold text-xs border border-[rgba(255,255,255,0.1)] shrink-0">
+                      <td className="py-3 px-2 font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-none bg-[var(--surface)] text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
                           {u.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                         </div>
                         <span className="truncate max-w-[120px] sm:max-w-none">{u.fullName}</span>
                       </td>
-                      <td className="py-3 px-2 text-[rgba(255,255,255,0.5)] font-mono text-xs uppercase">
+                      <td className="py-3 px-2 text-zinc-500 font-mono text-xs uppercase">
                         {u.username}
                       </td>
                       <td className="py-3 px-2">
                         <span
                           className={`px-2 py-0.5 rounded-none font-bold uppercase text-[8px] border tracking-wider ${
                             u.role === "admin"
-                              ? "bg-white text-black border-white"
+                              ? "bg-zinc-800 text-zinc-100 border-zinc-700"
                               : u.role === "teacher"
-                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                              : "bg-[#E6FE52]/10 text-[#E6FE52] border-[#E6FE52]/30"
+                              ? "bg-amber-50 text-amber-600 border-amber-200"
+                              : "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/30"
                           }`}
                         >
                           {u.role}
@@ -486,18 +486,18 @@ export default function UsersTab({
                       <td className="py-3 px-2 text-right">
                         {u.id !== "admin-1" ? (
                           <motion.button
-                            whileHover={{ scale: 1.1, color: "#f87171" }}
+                            whileHover={{ scale: 1.1, color: "#e11d48" }}
                             whileTap={{ scale: 0.9 }}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(u.id, u.fullName);
                             }}
-                            className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-all cursor-pointer"
+                            className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer"
                           >
                             <Trash2 size={13} />
                           </motion.button>
                         ) : (
-                          <span className="text-[9px] text-[rgba(255,255,255,0.4)] italic font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>SYSTEM_LOCK</span>
+                          <span className="text-[9px] text-zinc-400 italic font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>SYSTEM_LOCK</span>
                         )}
                       </td>
                     </motion.tr>
@@ -506,8 +506,8 @@ export default function UsersTab({
 
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="text-center py-8 text-[rgba(255,255,255,0.4)]">
-                      <Users size={24} className="mx-auto mb-2 text-[#E6FE52]" />
+                    <td colSpan={4} className="text-center py-8 text-zinc-500">
+                      <Users size={24} className="mx-auto mb-2 text-[var(--accent)]" />
                       <p className="text-[10px] uppercase tracking-wider">No registry files found matching request query.</p>
                     </td>
                   </tr>

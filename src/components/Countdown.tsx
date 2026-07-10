@@ -74,19 +74,19 @@ export default function Countdown({ startsAt, endsAt, onFinished }: CountdownPro
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0D0D0E] p-4 sm:p-5 border border-[rgba(255,255,255,0.1)] font-mono text-white"
+      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[var(--bg)] p-4 sm:p-5 border border-[var(--border)] font-mono text-[var(--ink)]"
     >
       <div className="flex items-center gap-3">
         <motion.div
           animate={{ rotate: timeLeft.status === "live" ? 360 : 0 }}
           transition={timeLeft.status === "live" ? { duration: 15, repeat: Infinity, ease: "linear" } : {}}
-          className="p-2.5 bg-[#E6FE52]/10 border border-[#E6FE52]/30 text-[#E6FE52]"
+          className="p-2.5 bg-[var(--accent-soft)] border border-[var(--accent)]/30 text-[var(--accent)]"
         >
           <Clock size={16} />
         </motion.div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-white">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink)]">
               {timeLeft.status === "upcoming"
                 ? "Starts In"
                 : timeLeft.status === "live"
@@ -114,7 +114,7 @@ export default function Countdown({ startsAt, endsAt, onFinished }: CountdownPro
               />
             </span>
           </div>
-          <p className="text-[10px] text-[rgba(255,255,255,0.45)] uppercase tracking-wider mt-0.5">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-0.5">
             {timeLeft.status === "upcoming"
               ? `Starts: ${new Date(startsAt).toLocaleString()}`
               : timeLeft.status === "live"
@@ -129,7 +129,7 @@ export default function Countdown({ startsAt, endsAt, onFinished }: CountdownPro
           {segments.map((seg, i) => (
             <React.Fragment key={seg.label}>
               <div className="flex flex-col items-center">
-                <div className="bg-[#161618] border border-[rgba(255,255,255,0.12)] px-3 py-1 text-center min-w-[50px]">
+                <div className="bg-[var(--surface)] border border-[var(--border)] px-3 py-1 text-center min-w-[50px]">
                   <AnimatePresence mode="popLayout">
                     <motion.span
                       key={seg.value}
@@ -137,13 +137,13 @@ export default function Countdown({ startsAt, endsAt, onFinished }: CountdownPro
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: -3, opacity: 0 }}
                       transition={{ duration: 0.1 }}
-                      className="font-mono text-base font-bold text-white leading-none block"
+                      className="font-mono text-base font-bold text-[var(--ink)] leading-none block"
                     >
                       {padZero(seg.value)}
                     </motion.span>
                   </AnimatePresence>
                 </div>
-                <span className="text-[8px] text-[rgba(255,255,255,0.45)] font-bold uppercase mt-1 tracking-wider">
+                <span className="text-[8px] text-zinc-500 font-bold uppercase mt-1 tracking-wider">
                   {seg.label}
                 </span>
               </div>

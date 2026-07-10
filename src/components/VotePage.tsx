@@ -167,20 +167,20 @@ export default function VotePage({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6 max-w-4xl mx-auto font-mono text-white"
+      className="space-y-6 max-w-4xl mx-auto font-mono text-[var(--ink)]"
     >
-      <motion.div variants={itemVariants} className="border-b border-[rgba(255,255,255,0.1)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">BALLOT_STATION_04</span>
-          <h2 className="font-display font-black text-2xl text-white uppercase tracking-wider flex items-center gap-2">
-            <VoteIcon className="text-[#E6FE52]" size={24} />
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT_STATION_04</span>
+          <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
+            <VoteIcon className="text-[var(--accent)]" size={24} />
             CAST YOUR VOTE
           </h2>
-          <p className="text-xs text-[rgba(255,255,255,0.45)]">Secure cryptographic polling station. Double-ballot protections active.</p>
+          <p className="text-xs text-zinc-500">Secure cryptographic polling station. Double-ballot protections active.</p>
         </div>
         <button
           onClick={() => setShowHowToVote(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[rgba(255,255,255,0.05)] hover:bg-[#E6FE52] hover:text-black text-white rounded-none border border-[rgba(255,255,255,0.15)] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] hover:bg-[var(--accent)] hover:text-[var(--surface)] text-[var(--ink)] rounded-none border border-[var(--border)] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0"
         >
           <Info size={14} />
           HOW_TO_VOTE
@@ -194,19 +194,19 @@ export default function VotePage({
               variants={itemVariants}
               className="glass-panel p-6 space-y-4"
             >
-              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-[rgba(255,255,255,0.1)] pb-4">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-[var(--border)] pb-4">
                 <div>
                   <motion.span
                     animate={{ scale: [1, 1.03, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="px-2 py-0.5 bg-[#E6FE52]/10 text-[#E6FE52] border border-[#E6FE52]/30 text-[9px] font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(230,254,82,0.1)]"
+                    className="px-2 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 text-[9px] font-bold uppercase tracking-wider shadow-[0_0_8px_var(--accent-soft)]"
                   >
                     LIVE_POLLING_STATION
                   </motion.span>
-                  <h3 className="font-display font-extrabold text-white text-base uppercase tracking-wider mt-2.5">
+                  <h3 className="font-display font-extrabold text-[var(--ink)] text-base uppercase tracking-wider mt-2.5">
                     {activeElection.title}
                   </h3>
-                  <p className="text-[11px] text-[rgba(255,255,255,0.5)] mt-1 leading-relaxed">
+                  <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
                     {activeElection.description || "No description provided."}
                   </p>
                 </div>
@@ -235,8 +235,8 @@ export default function VotePage({
 
                   return (
                     <motion.div key={pos.id} variants={itemVariants} className="space-y-4">
-                      <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.1)] pb-2">
-                        <h4 className="font-display font-extrabold text-white text-xs uppercase tracking-widest flex items-center gap-1.5 pl-1.5 border-l-2 border-[#E6FE52]">
+                      <div className="flex justify-between items-center border-b border-[var(--border)] pb-2">
+                        <h4 className="font-display font-extrabold text-[var(--ink)] text-xs uppercase tracking-widest flex items-center gap-1.5 pl-1.5 border-l-2 border-[var(--accent)]">
                           {pos.name}
                         </h4>
 
@@ -262,32 +262,32 @@ export default function VotePage({
                               key={cand.id}
                               className={`glass-panel p-5 transition-all relative overflow-hidden flex flex-col justify-between space-y-4 min-h-[220px] ${
                                 isCandidateVoted
-                                  ? "border-emerald-500/40 bg-emerald-500/5 shadow-[0_0_20px_rgba(16,185,129,0.05)]"
+                                  ? "border-emerald-500/40 bg-emerald-50/50 shadow-[0_0_20px_rgba(16,185,129,0.05)]"
                                   : voteForThisPos
-                                  ? "opacity-30 border-[rgba(255,255,255,0.05)]"
+                                  ? "opacity-40 border-[var(--border)]"
                                   : "glass-panel-hover"
                               }`}
                             >
                               <div className="space-y-3">
                                 <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setModalCandidate(cand); setModalPosition(pos.name); }}>
                                   {cand.photoUrl ? (
-                                    <img src={cand.photoUrl} alt={cand.fullName} className="h-10 w-10 rounded-sm object-cover border border-[rgba(255,255,255,0.1)] shrink-0" referrerPolicy="no-referrer" />
+                                    <img src={cand.photoUrl} alt={cand.fullName} className="h-10 w-10 rounded-sm object-cover border border-[var(--border)] shrink-0" referrerPolicy="no-referrer" />
                                   ) : (
-                                    <div className="h-10 w-10 rounded-sm bg-[#0D0D0E] group-hover:bg-[#161618] text-[#E6FE52] flex items-center justify-center font-bold text-xs border border-[rgba(255,255,255,0.1)] shrink-0">
+                                    <div className="h-10 w-10 rounded-sm bg-neutral-100 group-hover:bg-neutral-200 text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
                                       {cand.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                                     </div>
                                   )}
                                   <div>
-                                    <p className="font-bold text-white text-xs group-hover:text-[#E6FE52] transition-colors uppercase tracking-wider">
+                                    <p className="font-bold text-[var(--ink)] text-xs group-hover:text-[var(--accent)] transition-colors uppercase tracking-wider">
                                       {cand.fullName}
                                     </p>
-                                    <p className="text-[9px] font-bold text-[rgba(255,255,255,0.4)] mt-0.5">
+                                    <p className="text-[9px] font-bold text-zinc-500 mt-0.5">
                                       {cand.party ? cand.party.toUpperCase() : "INDEPENDENT"} {cand.yearLevel ? `• YEAR ${cand.yearLevel} LOCK` : ""}
                                     </p>
                                   </div>
                                 </div>
 
-                                <p className="text-[11px] text-[rgba(255,255,255,0.6)] leading-relaxed italic">
+                                <p className="text-[11px] text-zinc-600 leading-relaxed italic">
                                   "{cand.manifesto}"
                                 </p>
                               </div>
@@ -299,7 +299,7 @@ export default function VotePage({
                                       initial={{ opacity: 0 }}
                                       animate={{ opacity: 1 }}
                                       exit={{ opacity: 0 }}
-                                      className="w-full py-2 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 border border-emerald-500/20"
+                                      className="w-full py-2 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 border border-emerald-200"
                                     >
                                       <ShieldCheck size={12} />
                                       SESSION_BALLOT_CAST
@@ -309,7 +309,7 @@ export default function VotePage({
                                       initial={{ opacity: 0 }}
                                       animate={{ opacity: 1 }}
                                       exit={{ opacity: 0 }}
-                                      className="w-full py-2 bg-transparent text-[rgba(255,255,255,0.35)] text-[10px] font-bold uppercase tracking-widest text-center border border-[rgba(255,255,255,0.08)]"
+                                      className="w-full py-2 bg-transparent text-zinc-400 text-[10px] font-bold uppercase tracking-widest text-center border border-[var(--border)]"
                                     >
                                       BALLOT_LOCKED
                                     </motion.div>
@@ -325,7 +325,7 @@ export default function VotePage({
                                         candidateName: cand.fullName,
                                         positionName: pos.name,
                                       })}
-                                      className="w-full py-2 bg-transparent hover:bg-[#E6FE52] hover:text-black text-[#E6FE52] border border-[#E6FE52]/40 rounded-none font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                                      className="w-full py-2 bg-transparent hover:bg-[var(--accent)] hover:text-[var(--surface)] text-[var(--accent)] border border-[var(--accent)]/40 rounded-none font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer"
                                     >
                                       CAST_VOTE
                                     </motion.button>
@@ -337,7 +337,7 @@ export default function VotePage({
                         })}
 
                         {positionCandidates.length === 0 && (
-                          <div className="col-span-1 md:col-span-2 bg-[#0D0D0E] border border-[rgba(255,255,255,0.08)] rounded-none p-6 text-center text-[rgba(255,255,255,0.4)]">
+                          <div className="col-span-1 md:col-span-2 bg-[var(--surface)] border border-[var(--border)] rounded-none p-6 text-center text-zinc-500">
                             <p className="text-[10px] uppercase tracking-wider">No active nominees for this position.</p>
                           </div>
                         )}
@@ -349,10 +349,10 @@ export default function VotePage({
                 {electionPositions.length === 0 && (
                   <motion.div
                     variants={itemVariants}
-                    className="glass-panel p-12 text-center text-[rgba(255,255,255,0.4)] space-y-2"
+                    className="glass-panel p-12 text-center text-zinc-500 space-y-2"
                   >
-                    <AlertCircle size={32} className="mx-auto text-[#E6FE52]" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-white">NO_POSITIONS_CONFIGURED</p>
+                    <AlertCircle size={32} className="mx-auto text-[var(--accent)]" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO_POSITIONS_CONFIGURED</p>
                     <p className="text-[10px]">This active election currently has no active polling positions defined.</p>
                   </motion.div>
                 )}
@@ -365,25 +365,25 @@ export default function VotePage({
               variants={itemVariants}
               className="glass-panel p-5 sticky top-6 space-y-4"
             >
-              <h4 className="font-display font-extrabold text-white text-xs uppercase tracking-widest flex items-center gap-1.5 border-b border-[rgba(255,255,255,0.1)] pb-3">
-                <Info size={14} className="text-[#E6FE52]" />
+              <h4 className="font-display font-extrabold text-[var(--ink)] text-xs uppercase tracking-widest flex items-center gap-1.5 border-b border-[var(--border)] pb-3">
+                <Info size={14} className="text-[var(--accent)]" />
                 VOTING_PROTOCOL
               </h4>
-              <ul className="space-y-3 text-[10px] text-[rgba(255,255,255,0.55)] leading-relaxed uppercase font-mono">
+              <ul className="space-y-3 text-[10px] text-zinc-500 leading-relaxed uppercase font-mono">
                 <li className="flex gap-1.5">
-                  <span className="text-[#E6FE52] font-bold">•</span>
+                  <span className="text-[var(--accent)] font-bold">•</span>
                   Strict limit: 1 vote cast per polling position.
                 </li>
                 <li className="flex gap-1.5">
-                  <span className="text-[#E6FE52] font-bold">•</span>
+                  <span className="text-[var(--accent)] font-bold">•</span>
                   Confirmed ballots are final and immutable.
                 </li>
                 <li className="flex gap-1.5">
-                  <span className="text-[#E6FE52] font-bold">•</span>
+                  <span className="text-[var(--accent)] font-bold">•</span>
                   Nominees filtered by student cohort lock.
                 </li>
                 <li className="flex gap-1.5">
-                  <span className="text-[#E6FE52] font-bold">•</span>
+                  <span className="text-[var(--accent)] font-bold">•</span>
                   Zero-Knowledge tracking QR active upon submittal.
                 </li>
               </ul>
@@ -398,13 +398,13 @@ export default function VotePage({
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="p-4 bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.1)] rounded-none"
+            className="p-4 bg-[var(--surface)] border border-[var(--border)] rounded-none"
           >
-            <AlertCircle size={36} className="text-[rgba(255,255,255,0.3)]" />
+            <AlertCircle size={36} className="text-zinc-500" />
           </motion.div>
           <div className="space-y-1">
-            <p className="font-display font-extrabold text-white text-sm uppercase tracking-wider">NO ACTIVE ELECTIONS</p>
-            <p className="text-[10px] text-[rgba(255,255,255,0.45)] max-w-sm mx-auto leading-relaxed">
+            <p className="font-display font-extrabold text-[var(--ink)] text-sm uppercase tracking-wider">NO ACTIVE ELECTIONS</p>
+            <p className="text-[10px] text-zinc-500 max-w-sm mx-auto leading-relaxed">
               Secure polling services are offline. We will notify you when a school-wide election window is scheduled.
             </p>
           </div>

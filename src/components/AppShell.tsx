@@ -84,7 +84,7 @@ export default function AppShell({
           <img src={bolinaoLogo} alt="Logo" className="w-8 h-8 rounded bg-white object-contain" />
           <div className="font-display text-sm font-bold uppercase">BSF E-Voting</div>
         </div>
-        <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[rgba(255,255,255,0.05)] text-xs border border-[var(--border)]">
+        <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center font-bold text-xs border border-[var(--border)]">
           {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
         </button>
       </div>

@@ -203,15 +203,15 @@ export default function CandidatesTab({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6 font-mono text-white"
+      className="space-y-6 font-mono text-[var(--ink)]"
     >
-      <motion.div variants={itemVariants} className="border-b border-[rgba(255,255,255,0.1)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-bold text-[#E6FE52] tracking-widest uppercase">REGISTRY_MODULE_02</span>
-          <h2 className="font-display font-black text-2xl text-white uppercase tracking-wider">
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">REGISTRY_MODULE_02</span>
+          <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             NOMINATE CANDIDATES
           </h2>
-          <p className="text-xs text-[rgba(255,255,255,0.45)]">Nominate eligible students to positions with voter cohort locks.</p>
+          <p className="text-xs text-zinc-500">Nominate eligible students to positions with voter cohort locks.</p>
         </div>
       </motion.div>
 
@@ -220,9 +220,9 @@ export default function CandidatesTab({
           variants={itemVariants}
           className="glass-panel p-8 text-center flex flex-col items-center justify-center space-y-3"
         >
-          <Award size={32} className="text-[#E6FE52]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-white">SETUP_PREREQUISITE_REQUIRED</p>
-          <p className="text-[10px] text-[rgba(255,255,255,0.45)] max-w-xs leading-relaxed">
+          <Award size={32} className="text-[var(--accent)]" />
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">SETUP_PREREQUISITE_REQUIRED</p>
+          <p className="text-[10px] text-zinc-500 max-w-xs leading-relaxed">
             You must have at least one active election and one position configured before you can nominate candidates.
           </p>
         </motion.div>
@@ -232,23 +232,23 @@ export default function CandidatesTab({
             variants={itemVariants}
             className="lg:col-span-5 glass-panel p-5 md:p-6 space-y-4"
           >
-            <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider border-b border-[rgba(255,255,255,0.1)] pb-3">
+            <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider border-b border-[var(--border)] pb-3">
               NOMINATION BALLOT PANEL
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                   Select Election
                 </label>
                 <div className="relative">
                   <select
                     value={selectedElectionId}
                     onChange={(e) => setSelectedElectionId(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white appearance-none cursor-pointer pr-10 outline-none focus:border-[#E6FE52]"
+                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)]"
                   >
                     {elections.map((el) => (
-                      <option key={el.id} value={el.id} className="bg-[#161618] text-white">
+                      <option key={el.id} value={el.id}>
                         {el.title}
                       </option>
                     ))}
@@ -261,7 +261,7 @@ export default function CandidatesTab({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                   Select Position
                 </label>
                 <div className="relative">
@@ -269,15 +269,15 @@ export default function CandidatesTab({
                     value={selectedPositionId}
                     onChange={(e) => setSelectedPositionId(e.target.value)}
                     disabled={filteredPositions.length === 0}
-                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white appearance-none cursor-pointer pr-10 outline-none focus:border-[#E6FE52] disabled:opacity-50"
+                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)] disabled:opacity-50"
                   >
                     {filteredPositions.map((pos) => (
-                      <option key={pos.id} value={pos.id} className="bg-[#161618] text-white">
+                      <option key={pos.id} value={pos.id}>
                         {pos.name}
                       </option>
                     ))}
                     {filteredPositions.length === 0 && (
-                      <option value="" className="bg-[#161618] text-white">No positions configured</option>
+                      <option value="">No positions configured</option>
                     )}
                   </select>
                   <ChevronDown
@@ -288,18 +288,18 @@ export default function CandidatesTab({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                   Voter Cohort Lock (Target Year Level)
                 </label>
                 <div className="relative">
                   <select
                     value={selectedYearLevel}
                     onChange={(e) => setSelectedYearLevel(e.target.value)}
-                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white appearance-none cursor-pointer pr-10 outline-none focus:border-[#E6FE52]"
+                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)]"
                   >
-                    <option value="" className="bg-[#161618] text-white">All Years (Any student can vote)</option>
+                    <option value="">All Years (Any student can vote)</option>
                     {[7, 8, 9, 10, 11, 12].map((yr) => (
-                      <option key={yr} value={yr} className="bg-[#161618] text-white">
+                      <option key={yr} value={yr}>
                         Year {yr} Students Only
                       </option>
                     ))}
@@ -309,13 +309,13 @@ export default function CandidatesTab({
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
                   />
                 </div>
-                <p className="text-[9px] text-[rgba(255,255,255,0.4)] leading-relaxed">
+                <p className="text-[9px] text-zinc-500 leading-relaxed">
                   Only students matching the selected year level are allowed to vote for this nominee. Leave unselected for an open ballot.
                 </p>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                   Nominee Student
                 </label>
                 <div className="relative">
@@ -323,15 +323,15 @@ export default function CandidatesTab({
                     value={selectedUserId}
                     onChange={(e) => setSelectedUserId(e.target.value)}
                     disabled={availableStudents.length === 0}
-                    className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white appearance-none cursor-pointer pr-10 outline-none focus:border-[#E6FE52] disabled:opacity-50"
+                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)] disabled:opacity-50"
                   >
                     {availableStudents.map((u) => (
-                      <option key={u.id} value={u.id} className="bg-[#161618] text-white">
+                      <option key={u.id} value={u.id}>
                         {u.fullName} {u.yearLevel ? `(Year ${u.yearLevel})` : ""}
                       </option>
                     ))}
                     {availableStudents.length === 0 && (
-                      <option value="" className="bg-[#161618] text-white">No eligible students found</option>
+                      <option value="">No eligible students found</option>
                     )}
                   </select>
                   <ChevronDown
@@ -343,7 +343,7 @@ export default function CandidatesTab({
 
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
+                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
                     Campaign Manifesto
                   </label>
                 </div>
@@ -353,7 +353,7 @@ export default function CandidatesTab({
                   placeholder="Manifesto details, pledge statements, and policy goals..."
                   value={manifesto}
                   onChange={(e) => setManifesto(e.target.value)}
-                  className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52] resize-none"
+                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)] resize-none"
                 />
               </div>
 
@@ -362,7 +362,7 @@ export default function CandidatesTab({
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={submitting || filteredPositions.length === 0 || availableStudents.length === 0}
-                className="w-full py-3 bg-[#E6FE52] hover:bg-[#d6ec3d] disabled:bg-[#a6b44c] text-black rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
               >
                 <UserPlus size={14} />
                 {submitting ? "NOMINATING..." : "NOMINATE CANDIDATE"}
@@ -374,8 +374,8 @@ export default function CandidatesTab({
             variants={itemVariants}
             className="lg:col-span-7 glass-panel p-5 md:p-6 space-y-6"
           >
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[rgba(255,255,255,0.1)] pb-3 gap-3">
-              <h3 className="font-display font-extrabold text-sm text-white uppercase tracking-wider">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border)] pb-3 gap-3">
+              <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider">
                 ACTIVE BALLOT REGISTRATION
               </h3>
               <div className="relative w-full sm:w-auto">
@@ -385,7 +385,7 @@ export default function CandidatesTab({
                   placeholder="Search nominees..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full sm:w-64 pl-8 pr-4 py-1.5 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white placeholder-zinc-500 outline-none focus:border-[#E6FE52] transition-colors"
+                  className="w-full sm:w-64 pl-8 pr-4 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] placeholder-zinc-500 outline-none focus:border-[var(--accent)] transition-colors"
                 />
               </div>
             </div>
@@ -412,8 +412,8 @@ export default function CandidatesTab({
 
                 return (
                   <motion.div key={el.id} variants={itemVariants} className="space-y-4">
-                    <div className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.1)] pb-2">
-                      <h4 className="font-display font-bold text-xs text-[#E6FE52] uppercase tracking-wider">
+                    <div className="flex items-center gap-2 border-b border-[var(--border)] pb-2">
+                      <h4 className="font-display font-bold text-xs text-[var(--accent)] uppercase tracking-wider">
                         {el.title}
                       </h4>
                     </div>
@@ -428,7 +428,7 @@ export default function CandidatesTab({
 
                         return (
                           <div key={pos.id} className="space-y-2">
-                            <h5 className="text-[10px] font-bold text-white uppercase tracking-wider pl-1.5 border-l-2 border-[#E6FE52]/50">
+                            <h5 className="text-[10px] font-bold text-[var(--ink)] uppercase tracking-wider pl-1.5 border-l-2 border-[var(--accent)]/50">
                               {pos.name}
                             </h5>
 
@@ -441,7 +441,7 @@ export default function CandidatesTab({
                                     animate={{ opacity: 1, scale: 1, x: 0 }}
                                     exit={{ opacity: 0, scale: 0.98, x: 10 }}
                                     whileHover={{ scale: 1.01 }}
-                                    className="flex items-center justify-between bg-[#0D0D0E] border border-[rgba(255,255,255,0.1)] p-4 rounded-none transition-all"
+                                    className="flex items-center justify-between bg-[var(--surface)] border border-[var(--border)] p-4 rounded-none transition-all hover:border-[var(--accent)] group"
                                   >
                                     <div
                                       className="cursor-pointer group flex-1"
@@ -457,34 +457,34 @@ export default function CandidatesTab({
                                     >
                                       <div className="flex items-center gap-3">
                                         {cand.photoUrl ? (
-                                          <img src={cand.photoUrl} alt={cand.fullName} className="w-10 h-10 rounded-sm object-cover border border-[rgba(255,255,255,0.1)]" referrerPolicy="no-referrer" />
+                                          <img src={cand.photoUrl} alt={cand.fullName} className="w-10 h-10 rounded-sm object-cover border border-[var(--border)]" referrerPolicy="no-referrer" />
                                         ) : (
-                                          <div className="w-10 h-10 rounded-sm bg-[#161618] border border-[rgba(255,255,255,0.1)] flex items-center justify-center font-bold text-xs text-[#E6FE52]">
+                                          <div className="w-10 h-10 rounded-sm bg-neutral-100 border border-[var(--border)] flex items-center justify-center font-bold text-xs text-[var(--accent)]">
                                             {cand.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
                                           </div>
                                         )}
                                         <div>
                                           <div className="flex items-center gap-2">
-                                            <p className="text-xs font-bold text-white group-hover:text-[#E6FE52] transition-colors">
+                                            <p className="text-xs font-bold text-[var(--ink)] group-hover:text-[var(--accent)] transition-colors">
                                               {cand.fullName}
                                             </p>
                                             {cand.yearLevel && (
-                                              <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[#E6FE52]/10 text-[#E6FE52] border border-[#E6FE52]/20">
+                                              <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/20">
                                                 YEAR {cand.yearLevel} LOCK
                                               </span>
                                             )}
                                           </div>
-                                          <p className="text-[10px] text-[rgba(255,255,255,0.45)] mt-1 line-clamp-2 italic leading-relaxed max-w-md group-hover:text-white transition-colors">
+                                          <p className="text-[10px] text-zinc-500 mt-1 line-clamp-2 italic leading-relaxed max-w-md group-hover:text-zinc-700 transition-colors">
                                             "{cand.manifesto}"
                                           </p>
                                         </div>
                                       </div>
                                     </div>
                                     <motion.button
-                                      whileHover={{ scale: 1.1, color: "#f87171" }}
+                                      whileHover={{ scale: 1.1, color: "#e11d48" }}
                                       whileTap={{ scale: 0.9 }}
                                       onClick={() => handleDelete(cand.id, cand.fullName)}
-                                      className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-sm transition-all cursor-pointer shrink-0 ml-4"
+                                      className="p-2 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer shrink-0 ml-4"
                                     >
                                       <Trash2 size={13} />
                                     </motion.button>
@@ -501,7 +501,7 @@ export default function CandidatesTab({
               })}
 
               {candidates.length === 0 ? (
-                <div className="text-center py-12 text-[rgba(255,255,255,0.4)] space-y-2">
+                <div className="text-center py-12 text-zinc-400 space-y-2">
                   <Award size={28} className="mx-auto" />
                   <p className="text-[10px]">No nominees are currently on the ballot board.</p>
                 </div>
@@ -523,7 +523,7 @@ export default function CandidatesTab({
                   });
                   return electionCandidates.length === 0;
                 }) && searchQuery.trim() !== "" && (
-                  <div className="text-center py-12 text-[rgba(255,255,255,0.4)] space-y-2">
+                  <div className="text-center py-12 text-zinc-400 space-y-2">
                     <Search size={28} className="mx-auto" />
                     <p className="text-[10px]">No nominees match your search.</p>
                   </div>

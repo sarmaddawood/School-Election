@@ -356,23 +356,23 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 max-h-[calc(100dvh-70px)] overflow-y-auto w-full max-w-7xl mx-auto font-mono text-white bg-[#0D0D0E]">
+    <div className="p-4 md:p-8 space-y-8 max-h-[calc(100dvh-70px)] overflow-y-auto w-full max-w-7xl mx-auto font-mono text-[var(--ink)] bg-[var(--bg)]">
       
       {/* Header Panel */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#161618] border border-[rgba(255,255,255,0.1)] p-6 rounded-none">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--surface)] border border-[var(--border)] p-6 rounded-none">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Activity className="text-[#E6FE52] animate-pulse" size={18} />
-            <h1 className="text-xl font-bold tracking-wider uppercase">System Diagnostics</h1>
+            <Activity className="text-[var(--accent)] animate-pulse" size={18} />
+            <h1 className="text-xl font-bold tracking-wider uppercase text-[var(--ink)]">System Diagnostics</h1>
           </div>
-          <p className="text-[10px] text-[rgba(255,255,255,0.5)] uppercase tracking-widest">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
             High-Integrity end-to-end regression & security verification logs
           </p>
         </div>
         <button
           onClick={handleRunAll}
           disabled={isRunningAll}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#E6FE52] text-black font-bold uppercase tracking-wider text-xs hover:bg-[#d6ec3d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 rounded-none cursor-pointer"
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] font-bold uppercase tracking-wider text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 rounded-none cursor-pointer"
         >
           {isRunningAll ? (
             <>
@@ -391,9 +391,9 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
       <div className="grid lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: List of Tests */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-2 mb-2">
-            <span className="text-xs uppercase tracking-widest text-[rgba(255,255,255,0.5)]">Verification Tests</span>
-            <span className="text-xs font-bold text-[#E6FE52]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] pb-2 mb-2">
+            <span className="text-xs uppercase tracking-widest text-zinc-500">Verification Tests</span>
+            <span className="text-xs font-bold text-[var(--accent)]">
               {tests.filter((t) => t.status === "pass").length} / {tests.length} PASSED
             </span>
           </div>
@@ -408,19 +408,19 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
                   whileHover={{ x: 4 }}
                   className={`p-4 border text-left cursor-pointer transition-all flex items-center justify-between gap-4 rounded-none ${
                     isSelected
-                      ? "bg-[#1E1E22] border-[#E6FE52]/60 shadow-[0_0_15px_rgba(230,254,82,0.05)]"
-                      : "bg-[#161618] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)]"
+                      ? "bg-[var(--accent-soft)] border-[var(--accent)]/60 shadow-[0_0_15px_var(--accent-soft)]"
+                      : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]/40"
                   }`}
                 >
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="mt-1 shrink-0 p-1 bg-white/5 border border-white/10 rounded-sm">
+                    <div className="mt-1 shrink-0 p-1 bg-[var(--surface)] border border-[var(--border)] rounded-sm">
                       {getGroupIcon(test.group)}
                     </div>
                     <div className="space-y-1 min-w-0">
-                      <h4 className="text-[11px] font-bold tracking-wider truncate uppercase">
+                      <h4 className="text-[11px] font-bold tracking-wider text-[var(--ink)] truncate uppercase">
                         {test.name}
                       </h4>
-                      <p className="text-[10px] text-[rgba(255,255,255,0.4)] leading-relaxed truncate">
+                      <p className="text-[10px] text-zinc-500 leading-relaxed truncate">
                         {test.description}
                       </p>
                     </div>
@@ -461,16 +461,16 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
         {/* Right Column: Console / Selected Test Inspector */}
         <div className="lg:col-span-5 space-y-6">
           {/* Active Test Inspector */}
-          <div className="bg-[#161618] border border-[rgba(255,255,255,0.1)] p-5 rounded-none flex flex-col min-h-[220px]">
-            <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] pb-3 mb-4">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#E6FE52]">
+          <div className="bg-[var(--surface)] border border-[var(--border)] p-5 rounded-none flex flex-col min-h-[220px]">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-4">
+              <span className="text-xs font-bold uppercase tracking-widest text-[var(--accent)]">
                 Test Inspector
               </span>
               {selectedTest && (
                 <button
                   onClick={() => runTest(selectedTest.id)}
                   disabled={selectedTest.status === "running"}
-                  className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase border border-white/10 rounded-none cursor-pointer"
+                  className="px-2.5 py-1 bg-[var(--surface)] hover:bg-[var(--accent-soft)] text-[var(--ink)] text-[10px] font-bold uppercase border border-[var(--border)] hover:border-[var(--accent)]/30 rounded-none cursor-pointer transition-colors"
                 >
                   Re-Run
                 </button>
@@ -480,11 +480,11 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
             {selectedTest ? (
               <div className="space-y-4 flex-1">
                 <div className="space-y-1">
-                  <h3 className="text-xs font-bold tracking-wider text-white uppercase flex items-center gap-1.5">
+                  <h3 className="text-xs font-bold tracking-wider text-[var(--ink)] uppercase flex items-center gap-1.5">
                     {getGroupIcon(selectedTest.group)}
                     {selectedTest.name}
                   </h3>
-                  <p className="text-[10px] text-[rgba(255,255,255,0.5)] font-sans">
+                  <p className="text-[10px] text-zinc-500 font-sans">
                     {selectedTest.description}
                   </p>
                 </div>
@@ -531,10 +531,10 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
           </div>
 
           {/* Interactive Console logs */}
-          <div className="bg-black border border-[rgba(255,255,255,0.08)] p-4 rounded-none h-[280px] flex flex-col">
-            <div className="flex items-center gap-2 pb-2 mb-3 border-b border-[rgba(255,255,255,0.05)] shrink-0">
+          <div className="bg-[var(--bg)] border border-[var(--border)] p-4 rounded-none h-[280px] flex flex-col">
+            <div className="flex items-center gap-2 pb-2 mb-3 border-b border-[var(--border)] shrink-0">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[rgba(255,255,255,0.6)]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                 Live Console Terminal
               </span>
             </div>

@@ -402,7 +402,7 @@ export default function BallotDropCelebration({
               </div>
 
               <div className="text-center space-y-1 z-10">
-                <p className="text-xs font-semibold text-[#E6FE52]">
+                <p className="text-xs font-semibold text-[var(--accent)]">
                   {step === "floating" && "Cryptographic Sealing..."}
                   {step === "dropping" && "Transferring Ballot Securely..."}
                   {step === "burst" && "Ballot Accepted!"}
