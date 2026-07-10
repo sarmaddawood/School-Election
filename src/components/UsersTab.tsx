@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Search, Users } from "lucide-react";
+import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon } from "lucide-react";
 import { User as UserType, UserRole, Candidate, Position, Election, Vote } from "../types";
 import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
@@ -33,33 +33,51 @@ export default function UsersTab({
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   const [yearLevel, setYearLevel] = useState<number | undefined>(undefined);
-  const [photoUrl, setPhotoUrl] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [seeding, setSeeding] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<{ id: string; name: string } | null>(null);
   const [selectedDetailUser, setSelectedDetailUser] = useState<UserType | null>(null);
 
-  const handleSeedUsers = async () => {
-    setSeeding(true);
-    try {
-      const response = await fetch("/api/users/seed", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to seed dummy users");
-      }
-      setSuccessNotification(data.message || "Database seeded with dummy users!");
-      await onRefreshData();
-    } catch (err: any) {
-      setErrorNotification(err.message || "An error occurred during seeding");
-    } finally {
-      setSeeding(false);
+  const handleFileChange = (file: File | null) => {
+    if (!file) {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setErrorNotification("Please upload an image file (PNG, JPG, JPEG, WEBP)");
+      return;
+    }
+
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileChange(e.dataTransfer.files[0]);
     }
   };
 
@@ -72,13 +90,42 @@ export default function UsersTab({
 
     setSubmitting(true);
     try {
+      let uploadedUrl = "";
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append("file", photoFile);
+        
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          throw new Error(uploadData.error || "Failed to upload file to Appwrite storage");
+        }
+
+        const uploadData = await uploadRes.json();
+        uploadedUrl = uploadData.url;
+      }
+
       const response = await fetch("/api/users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ username, fullName, password, role, yearLevel, photoUrl }),
+        body: JSON.stringify({ 
+          username, 
+          fullName, 
+          password, 
+          role, 
+          yearLevel, 
+          photoUrl: uploadedUrl || null 
+        }),
       });
 
       const data = await response.json();
@@ -92,7 +139,8 @@ export default function UsersTab({
       setPassword("");
       setRole("student");
       setYearLevel(undefined);
-      setPhotoUrl("");
+      setPhotoFile(null);
+      setPhotoPreview(null);
       await onRefreshData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
@@ -172,15 +220,6 @@ export default function UsersTab({
           </h2>
           <p className="text-xs text-[rgba(255,255,255,0.45)]">Manage credentials, roles, and cohort permissions for school students and faculty.</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleSeedUsers}
-          disabled={seeding}
-          className="px-4 py-2.5 bg-[#E6FE52] hover:bg-[#d6ec3d] disabled:bg-[#a6b44c] text-black text-xs font-bold uppercase tracking-wider cursor-pointer rounded-none"
-        >
-          {seeding ? "SEEDING_DATABASE..." : "SEED_DUMMY_USERS"}
-        </motion.button>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -296,16 +335,70 @@ export default function UsersTab({
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] tracking-wider uppercase">
-                Photo URL (Optional)
+                Profile Photo (Optional)
               </label>
-              <motion.input
-                whileFocus={{ scale: 1.01 }}
-                type="url"
-                placeholder="https://example.com/photo.jpg"
-                value={photoUrl}
-                onChange={(e) => setPhotoUrl(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0D0D0E] border border-[rgba(255,255,255,0.15)] rounded-none text-xs text-white outline-none transition-all focus:border-[#E6FE52]"
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleFileChange(e.target.files[0]);
+                  }
+                }}
+                className="hidden"
               />
+
+              {photoPreview ? (
+                <div className="relative border border-[rgba(255,255,255,0.15)] bg-[#0D0D0E] p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={photoPreview} 
+                      alt="Preview" 
+                      className="w-12 h-12 object-cover border border-[rgba(255,255,255,0.2)]"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-white font-mono truncate max-w-[150px]">
+                        {photoFile?.name}
+                      </p>
+                      <p className="text-[9px] text-[rgba(255,255,255,0.4)] font-mono">
+                        {photoFile ? (photoFile.size / 1024).toFixed(1) : 0} KB
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleFileChange(null)}
+                    className="p-1 hover:bg-[rgba(255,255,255,0.1)] text-red-400 border border-transparent hover:border-red-500 transition-all cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center min-h-[100px] ${
+                    isDragging
+                      ? "border-[#E6FE52] bg-[rgba(230,254,82,0.05)]"
+                      : "border-[rgba(255,255,255,0.15)] bg-[#0D0D0E] hover:border-[#E6FE52] hover:bg-[rgba(255,255,255,0.02)]"
+                  }`}
+                >
+                  <Upload size={20} className={isDragging ? "text-[#E6FE52] animate-bounce" : "text-[rgba(255,255,255,0.4)]"} />
+                  <div>
+                    <p className="text-[10px] text-white font-bold uppercase tracking-wider">
+                      Drag & Drop Photo
+                    </p>
+                    <p className="text-[8px] text-[rgba(255,255,255,0.4)] uppercase tracking-widest font-mono mt-0.5">
+                      or click to browse
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <motion.button

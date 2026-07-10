@@ -102,7 +102,7 @@ export default function AppShell({
             </span>
         </div>
         
-        <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0 pr-1 py-4 scrollbar-none">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -110,7 +110,7 @@ export default function AppShell({
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`flex items-center gap-3 px-4 py-3 text-[0.7rem] font-mono uppercase tracking-wider rounded transition-all cursor-pointer border-none text-left ${
-                  isActive ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[rgba(255,255,255,0.5)] hover:bg-[rgba(255,255,255,0.03)] hover:text-white"
+                  isActive ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[rgba(26,26,24,0.6)] hover:bg-[rgba(26,26,24,0.03)] hover:text-[var(--ink)]"
                 }`}
               >
                 <item.icon size={16} className={isActive ? "opacity-100" : "opacity-60"} />
@@ -120,7 +120,7 @@ export default function AppShell({
           })}
         </nav>
 
-        <div className="mt-auto p-4 bg-black/20 rounded relative">
+        <div className="mt-auto p-4 bg-[rgba(26,26,24,0.03)] rounded relative">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                 <div className="w-8 h-8 bg-[var(--accent)] text-[var(--bg)] flex items-center justify-center font-bold text-[0.7rem] shrink-0">
                     {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
@@ -145,7 +145,7 @@ export default function AppShell({
                       onTabChange("password");
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-[rgba(255,255,255,0.6)] hover:text-white hover:bg-[rgba(255,255,255,0.05)] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-[rgba(26,26,24,0.7)] hover:text-[var(--ink)] hover:bg-[rgba(26,26,24,0.05)] rounded flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Key size={13} />
                     Change Password
@@ -169,12 +169,8 @@ export default function AppShell({
       <main className="p-4 md:p-10 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0">
         <header className="hidden md:flex justify-between items-end mb-12 shrink-0">
             <div>
-                <span className="font-mono text-[0.65rem] text-[var(--accent)] opacity-80 mb-2 block">TELEMETRY_MAIN_00</span>
                 <h2 className="font-display text-4xl uppercase leading-none tracking-tight">ADMINISTRATION<br/>TELEMETRY</h2>
                 <p className="text-sm opacity-50 max-w-[400px] mt-4">Real-time status updates, polling metrics, and registry logs across the centralized BSF system.</p>
-            </div>
-            <div className="font-mono text-[0.7rem] text-[var(--accent)]">
-                SYSTEM_STABLE // 2.4 MS
             </div>
         </header>
 
@@ -197,7 +193,7 @@ export default function AppShell({
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
                   className={`flex flex-col items-center gap-1 px-3 py-2 text-[8px] font-mono uppercase tracking-widest cursor-pointer transition-all ${
-                    isActive ? "text-[var(--accent)] bg-[var(--accent-soft)] rounded" : "text-[rgba(255,255,255,0.45)] hover:text-white"
+                    isActive ? "text-[var(--accent)] bg-[var(--accent-soft)] rounded" : "text-[rgba(26,26,24,0.6)] hover:text-[var(--ink)]"
                   }`}
                 >
                   <item.icon size={14} />

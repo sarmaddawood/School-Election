@@ -4,8 +4,9 @@ import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { Client, Databases, Query, ID } from "node-appwrite";
+import { Client, Databases, Query, ID, Storage, InputFile } from "node-appwrite";
 import { GoogleGenAI } from "@google/genai";
+import multer from "multer";
 
 let geminiClient: GoogleGenAI | null = null;
 
@@ -28,10 +29,10 @@ function getGeminiClient(): GoogleGenAI {
 }
 
 
-const APPWRITE_PROJECT = "6a49127700029d3bc9bf";
-const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1";
-const APPWRITE_API_KEY = "standard_824ce6b89704a6332dcc5c3ebb38cddb156181a1e077562c2e1513f9debadc83ee1889ba5e50464bc571ae1f3d11f0e89fa5004f765f7006753b6a6adf71a9e66d3c6b878c9a32e80bcc906b865bfb49324204e3ea04a39d6c44d9ff4c022eafaf2218bc82b62cf905d47a3b0c54d76fb62c018d26dccd329c4d4d4e2d583472";
-const APPWRITE_DB = "voting_db";
+const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT || "https://sgp.cloud.appwrite.io/v1";
+const APPWRITE_PROJECT = process.env.APPWRITE_PROJECT || "6a49127700029d3bc9bf";
+const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY || "standard_824ce6b89704a6332dcc5c3ebb38cddb156181a1e077562c2e1513f9debadc83ee1889ba5e50464bc571ae1f3d11f0e89fa5004f765f7006753b6a6adf71a9e66d3c6b878c9a32e80bcc906b865bfb49324204e3ea04a39d6c44d9ff4c022eafaf2218bc82b62cf905d47a3b0c54d76fb62c018d26dccd329c4d4d4e2d583472";
+const APPWRITE_DB = process.env.APPWRITE_DB || "voting_db";
 
 const client = new Client()
     .setEndpoint(APPWRITE_ENDPOINT)
@@ -39,16 +40,122 @@ const client = new Client()
     .setKey(APPWRITE_API_KEY);
 
 const databases = new Databases(client);
+const storage = new Storage(client);
+const upload = multer({ storage: multer.memoryStorage() });
 
 async function ensureCollectionsExist() {
   try {
+    // 1. Ensure DB exists
     try {
       await databases.get(APPWRITE_DB);
-    } catch (e) {
-      console.log("Creating database...", e.message);
+      console.log(`Appwrite database '${APPWRITE_DB}' verified.`);
+    } catch (e: any) {
+      console.log(`Database '${APPWRITE_DB}' not found. Creating...`);
       await databases.create(APPWRITE_DB, "Voting DB");
     }
-  } catch (err) {
+
+    // List of collections we need and their attributes
+    const requiredCollections = [
+      {
+        id: "users",
+        name: "Users",
+        attributes: [
+          { key: "username", type: "string", size: 255, required: true },
+          { key: "password", type: "string", size: 255, required: true },
+          { key: "fullName", type: "string", size: 255, required: true },
+          { key: "role", type: "string", size: 50, required: true },
+          { key: "yearLevel", type: "integer", required: false },
+          { key: "photoUrl", type: "string", size: 1000, required: false }
+        ]
+      },
+      {
+        id: "elections",
+        name: "Elections",
+        attributes: [
+          { key: "title", type: "string", size: 255, required: true },
+          { key: "description", type: "string", size: 5000, required: false },
+          { key: "startsAt", type: "string", size: 255, required: true },
+          { key: "endsAt", type: "string", size: 255, required: true }
+        ]
+      },
+      {
+        id: "positions",
+        name: "Positions",
+        attributes: [
+          { key: "electionId", type: "string", size: 255, required: true },
+          { key: "title", type: "string", size: 255, required: true }
+        ]
+      },
+      {
+        id: "candidates",
+        name: "Candidates",
+        attributes: [
+          { key: "fullName", type: "string", size: 255, required: true },
+          { key: "positionId", type: "string", size: 255, required: true },
+          { key: "electionId", type: "string", size: 255, required: true },
+          { key: "party", type: "string", size: 255, required: false },
+          { key: "manifesto", type: "string", size: 10000, required: false },
+          { key: "photoUrl", type: "string", size: 1000, required: false },
+          { key: "voteCount", type: "integer", required: false, defaultValue: 0 }
+        ]
+      },
+      {
+        id: "votes",
+        name: "Votes",
+        attributes: [
+          { key: "userId", type: "string", size: 255, required: true },
+          { key: "electionId", type: "string", size: 255, required: true },
+          { key: "positionId", type: "string", size: 255, required: true },
+          { key: "candidateId", type: "string", size: 255, required: true },
+          { key: "timestamp", type: "string", size: 255, required: true }
+        ]
+      }
+    ];
+
+    for (const col of requiredCollections) {
+      try {
+        await databases.getCollection(APPWRITE_DB, col.id);
+        console.log(`Collection '${col.id}' verified.`);
+      } catch (e: any) {
+        console.log(`Collection '${col.id}' not found. Creating...`);
+        await databases.createCollection(APPWRITE_DB, col.id, col.name);
+        
+        // Wait a brief moment for collection creation to settle
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Create attributes
+        for (const attr of col.attributes) {
+          try {
+            if (attr.type === "string") {
+              await databases.createStringAttribute(
+                APPWRITE_DB,
+                col.id,
+                attr.key,
+                attr.size || 255,
+                attr.required,
+                undefined,
+                false
+              );
+            } else if (attr.type === "integer") {
+              await databases.createIntegerAttribute(
+                APPWRITE_DB,
+                col.id,
+                attr.key,
+                attr.required,
+                undefined,
+                undefined,
+                attr.defaultValue !== undefined ? attr.defaultValue : undefined,
+                false
+              );
+            }
+            console.log(`Created attribute '${attr.key}' in collection '${col.id}'`);
+          } catch (attrErr: any) {
+            console.error(`Failed to create attribute '${attr.key}' in '${col.id}':`, attrErr.message);
+          }
+        }
+      }
+    }
+  } catch (err: any) {
     console.error("DB check failed", err.message);
   }
 }
@@ -174,7 +281,6 @@ const db = {
   }
 };
 
-const dbPath = path.join(process.cwd(), "db.json");
 
 // Helper database queries
 async function getAll(collectionName: string): Promise<any[]> {
@@ -233,70 +339,11 @@ async function queryMyVotes(electionId: string, voterId: string): Promise<any[]>
   return list;
 }
 
-// Auto seeding from local db.json if database is unseeded
-async function ensureDatabaseSeeded() {
-  try {
-    const usersCount = (await db.collection("users").limit(1).get()).size;
-    if (usersCount === 0 && fs.existsSync(dbPath)) {
-      console.log("Firestore is empty. Seeding initial data from db.json...");
-      const data = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-      
-      const batch = db.batch();
-      const now = new Date();
-      
-      if (Array.isArray(data.users)) {
-        data.users.forEach((u: any) => {
-          batch.set(db.collection("users").doc(u.id), u);
-        });
-      }
-      
-      if (Array.isArray(data.elections)) {
-        data.elections.forEach((e: any) => {
-          if (e.id === "e-demo") {
-            // Guarantee e-demo is always actively live
-            e.startsAt = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-            e.endsAt = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString();
-          }
-          batch.set(db.collection("elections").doc(e.id), e);
-        });
-      }
-      
-      if (Array.isArray(data.positions)) {
-        data.positions.forEach((p: any) => {
-          batch.set(db.collection("positions").doc(p.id), p);
-        });
-      }
-      
-      if (Array.isArray(data.candidates)) {
-        data.candidates.forEach((c: any) => {
-          batch.set(db.collection("candidates").doc(c.id), c);
-        });
-      }
-      
-      if (Array.isArray(data.votes)) {
-        data.votes.forEach((v: any) => {
-          batch.set(db.collection("votes").doc(v.id), v);
-        });
-      }
-      
-      await batch.commit();
-      console.log("Firestore seeding completed successfully.");
-    } else {
-      console.log("Firestore holds existing users. Skipping auto-seed.");
-    }
-  } catch (err) {
-    console.error("Auto seeding failed:", err);
-  }
-}
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
   app.use(express.json());
-
-  // Run initial auto-seed validation in the background without blocking port binding
-  ensureDatabaseSeeded().catch(err => console.error("Background seeding failed:", err));
 
   // Authentication validation middleware
   async function getAuthenticatedUser(req: Request) {
@@ -425,17 +472,43 @@ async function startServer() {
     try {
       const user = (req as any).user;
       const userRef = db.collection("users").doc(user.id);
-      const userDoc = await getDoc(userRef);
+      const userDoc = await userRef.get();
 
-      if (!userDoc.exists() || userDoc.data()?.password !== oldPassword) {
+      if (!userDoc.exists || userDoc.data()?.password !== oldPassword) {
         res.status(400).json({ error: "Incorrect current password" });
         return;
       }
 
-      await updateDoc(userRef, { password: newPassword });
+      await userRef.update({ password: newPassword });
       res.json({ message: "Password updated successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update password" });
+    }
+  });
+
+  // --- Upload API ---
+  app.post("/api/upload", upload.single("file"), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: "No file provided" });
+        return;
+      }
+
+      const bucketId = "6a4fc63b003db7179644";
+      const fileId = "f-" + Math.random().toString(36).substring(2, 9);
+      
+      const appwriteFile = await storage.createFile(
+        bucketId,
+        fileId,
+        InputFile.fromBuffer(req.file.buffer, req.file.originalname)
+      );
+
+      const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/view?project=${APPWRITE_PROJECT}`;
+
+      res.json({ url: fileUrl, fileId: appwriteFile.$id });
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      res.status(500).json({ error: err.message || "Failed to upload file to Appwrite storage" });
     }
   });
 
@@ -511,13 +584,13 @@ async function startServer() {
 
     try {
       const userRef = db.collection("users").doc(id);
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) {
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
         res.status(404).json({ error: "User not found" });
         return;
       }
 
-      await deleteDoc(userRef);
+      await userRef.delete();
 
       // Clean up cascading candidates associated with deleted user using standard getDocs
       const candidatesSnapshot = await db.collection("candidates").where("userId", "==", id).get();
@@ -533,67 +606,10 @@ async function startServer() {
   });
 
   app.post("/api/users/seed", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const dummyUsers = [
-        // Teachers
-        { username: "T-01", fullName: "Sarah Jenkins", role: "teacher", yearLevel: null, password: "password123", photoUrl: null },
-        { username: "T-02", fullName: "Robert Martinez", role: "teacher", yearLevel: null, password: "password123", photoUrl: null },
-        { username: "T-03", fullName: "Emily Watson", role: "teacher", yearLevel: null, password: "password123", photoUrl: null },
-        
-        // Year 7
-        { username: "S-101", fullName: "Ethan Hunt", role: "student", yearLevel: 7, password: "password123", photoUrl: null },
-        { username: "S-102", fullName: "Mia Thomsen", role: "student", yearLevel: 7, password: "password123", photoUrl: null },
-        { username: "S-103", fullName: "Oliver Twist", role: "student", yearLevel: 7, password: "password123", photoUrl: null },
-        
-        // Year 8
-        { username: "S-201", fullName: "Amelia Earhart", role: "student", yearLevel: 8, password: "password123", photoUrl: null },
-        { username: "S-202", fullName: "Lucas Brown", role: "student", yearLevel: 8, password: "password123", photoUrl: null },
-        { username: "S-203", fullName: "Sophia Loren", role: "student", yearLevel: 8, password: "password123", photoUrl: null },
-        
-        // Year 9
-        { username: "S-301", fullName: "David Beckham", role: "student", yearLevel: 9, password: "password123", photoUrl: null },
-        { username: "S-302", fullName: "Emma Watson", role: "student", yearLevel: 9, password: "password123", photoUrl: null },
-        { username: "S-303", fullName: "James Bond", role: "student", yearLevel: 9, password: "password123", photoUrl: null },
-        
-        // Year 10
-        { username: "S-401", fullName: "Liam Neeson", role: "student", yearLevel: 10, password: "password123", photoUrl: null },
-        { username: "S-402", fullName: "Olivia Rodrigo", role: "student", yearLevel: 10, password: "password123", photoUrl: null },
-        { username: "S-403", fullName: "Noah Centineo", role: "student", yearLevel: 10, password: "password123", photoUrl: null },
-        
-        // Year 11
-        { username: "S-501", fullName: "Charlotte Bronte", role: "student", yearLevel: 11, password: "password123", photoUrl: null },
-        { username: "S-502", fullName: "William Shakespeare", role: "student", yearLevel: 11, password: "password123", photoUrl: null },
-        { username: "S-503", fullName: "Benjamin Franklin", role: "student", yearLevel: 11, password: "password123", photoUrl: null },
-        
-        // Year 12
-        { username: "S-601", fullName: "Thomas Edison", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
-        { username: "S-602", fullName: "Albert Einstein", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
-        { username: "S-603", fullName: "Marie Curie", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
-        { username: "S-604", fullName: "Leonardo da Vinci", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
-        { username: "S-605", fullName: "Ada Lovelace", role: "student", yearLevel: 12, password: "password123", photoUrl: null },
-      ];
-
-      const batch = db.batch();
-      const addedUsers = [];
-
-      for (const u of dummyUsers) {
-        const existingQuery = await db.collection("users")
-          .where("username", "==", u.username)
-          .get();
-
-        if (existingQuery.empty) {
-          const id = "u-" + Math.random().toString(36).substring(2, 9);
-          const newUser = { id, ...u };
-          batch.set(db.collection("users").doc, id, newUser);
-          addedUsers.push(newUser);
-        }
-      }
-
-      await batch.commit();
-      res.json({ message: `Successfully seeded ${addedUsers.length} dummy users into the database`, seededCount: addedUsers.length });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to seed dummy users" });
-    }
+    res.json({
+      message: "User seeding is disabled. Appwrite database is running in pure production mode.",
+      seededCount: 0
+    });
   });
 
   // --- Elections API ---
@@ -639,8 +655,8 @@ async function startServer() {
 
     try {
       const electionRef = db.collection("elections").doc(id);
-      const electionDoc = await getDoc(electionRef);
-      if (!electionDoc.exists()) {
+      const electionDoc = await electionRef.get();
+      if (!electionDoc.exists) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
@@ -653,7 +669,7 @@ async function startServer() {
         endsAt,
       };
 
-      await setDoc(electionRef, updatedElection);
+      await electionRef.set(updatedElection);
       res.json(updatedElection);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update election" });
@@ -665,13 +681,13 @@ async function startServer() {
 
     try {
       const electionRef = db.collection("elections").doc(id);
-      const electionDoc = await getDoc(electionRef);
-      if (!electionDoc.exists()) {
+      const electionDoc = await electionRef.get();
+      if (!electionDoc.exists) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
 
-      await deleteDoc(electionRef);
+      await electionRef.delete();
 
       // Cascade delete positions, candidates, and votes inside a batch
       const batch = db.batch();
@@ -735,13 +751,13 @@ async function startServer() {
 
     try {
       const positionRef = db.collection("positions").doc(id);
-      const positionDoc = await getDoc(positionRef);
+      const positionDoc = await positionRef.get();
       if (!positionDoc.exists) {
         res.status(404).json({ error: "Position not found" });
         return;
       }
 
-      await deleteDoc(positionRef);
+      await positionRef.delete();
 
       // Cascade delete candidates and votes of this position
       const batch = db.batch();
@@ -842,13 +858,13 @@ async function startServer() {
 
     try {
       const candidateRef = db.collection("candidates").doc(id);
-      const candidateDoc = await getDoc(candidateRef);
+      const candidateDoc = await candidateRef.get();
       if (!candidateDoc.exists) {
         res.status(404).json({ error: "Candidate not found" });
         return;
       }
       const candidate = candidateDoc.data()!;
-      await deleteDoc(candidateRef);
+      await candidateRef.delete();
 
       // Cascade delete votes registered for this candidate using standard getDocs
       const votesSnapshot = await db.collection("votes").where("positionId", "==", candidate.positionId).where("candidateId", "==", id).get();
@@ -919,8 +935,8 @@ async function startServer() {
       }
 
       const candidateRef = db.collection("candidates").doc(candidateId);
-      const candidateDoc = await getDoc(candidateRef);
-      if (!candidateDoc.exists() || candidateDoc.data()?.positionId !== positionId) {
+      const candidateDoc = await candidateRef.get();
+      if (!candidateDoc.exists || candidateDoc.data()?.positionId !== positionId) {
         res.status(400).json({ error: "Invalid candidate selected" });
         return;
       }
@@ -1025,274 +1041,17 @@ Requirements:
   });
 
   app.post("/api/seed", requireAdmin, async (req: Request, res: Response) => {
-    try {
-      const now = new Date();
-
-      // 1. Define high-fidelity mock users
-      const mockUsers: any[] = [
-        { id: "admin-1", username: "admin", password: "ChangeMe!2026Vote", fullName: "System Administrator", role: "admin" },
-        
-        // Teachers
-        { id: "u-t1", username: "teacher1", password: "password123", fullName: "Prof. Sarah Jenkins", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t1" },
-        { id: "u-t2", username: "teacher2", password: "password123", fullName: "Dr. David Miller", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t2" },
-        { id: "u-t3", username: "teacher3", password: "password123", fullName: "Prof. Robert Chen", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t3" },
-        { id: "u-t4", username: "teacher4", password: "password123", fullName: "Mrs. Maria Garcia", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t4" },
-        { id: "u-t5", username: "teacher5", password: "password123", fullName: "Mr. James Wilson", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t5" },
-        { id: "u-t6", username: "teacher6", password: "password123", fullName: "Dr. Helen Keller", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t6" },
-        { id: "u-t7", username: "teacher7", password: "password123", fullName: "Prof. Emily Brown", role: "teacher", photoUrl: "https://i.pravatar.cc/150?u=u-t7" },
-      ];
-
-      // Generate 100 student records
-      const firstNames = ["Alex", "Jordan", "Emma", "Liam", "Chloe", "Daniel", "Sophia", "Ryan", "Ava", "Noah", "Olivia", "Ethan", "Isabella", "Mason", "Lucas", "Charlotte", "Oliver", "Mia", "Henry", "Harper", "Sebastian", "Evelyn", "Jack", "Lily", "Grace", "Wyatt", "Zoe", "Carter", "Penelope", "Gabriel", "Madison", "Dylan", "Stella", "Leo", "Aria", "Julian", "Violet", "Mateo", "Hazel", "Elias"];
-      const lastNames = ["Rivera", "Patel", "Watson", "Neeson", "Bennett", "Kim", "Martinez", "Gallagher", "Dubois", "Jenkins", "Wright", "Hunt", "Cruz", "Mount", "Loren", "Silva", "Horn", "Twist", "Wallace", "Ford", "Lee", "Bach", "Waugh", "Reacher", "Potter", "Cavill", "Kelly", "Earp", "Saldana", "Page", "Garcia", "Beer", "O'Brien", "McCartney", "Gomez", "Russo", "Chang", "Abbott", "Baker", "Clarke"];
-      
-      const studentNames = [];
-      for(let i = 0; i < 100; i++) {
-        studentNames.push(`${firstNames[i % firstNames.length]} ${lastNames[(i + 13) % lastNames.length]}`);
+    res.json({
+      message: "Professional database seeding is disabled. Appwrite database is running in pure production mode.",
+      recordsCount: {
+        users: 0,
+        elections: 0,
+        positions: 0,
+        candidates: 0,
+        votes: 0,
+        total: 0
       }
-
-      studentNames.forEach((name, i) => {
-        const id = `u-s${i + 1}`;
-        mockUsers.push({
-          id,
-          username: `student${i + 1}`,
-          password: "password123",
-          fullName: name,
-          role: "student",
-          yearLevel: (i % 6) + 7, // Year 7 to 12
-          photoUrl: `https://i.pravatar.cc/150?u=${id}`
-        });
-      });
-
-      // 2. Define high-fidelity elections
-      const activeElection = {
-        id: "e-demo",
-        title: "School General Election 2026",
-        description: "Annual school-wide elections for Student Council President, Sports Captain, and Creative Arts Prefect. All students and faculty are eligible to vote. Ballots are fully anonymous, encrypted, and audit-verifiable.",
-        startsAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), // Live starting yesterday
-        endsAt: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(), // Ending in 5 days
-      };
-
-      const endedElection = {
-        id: "e-ended",
-        title: "Student Council Autumn Elections",
-        description: "Completed elections for the Valedictorian Representative position. Voting window is closed, and results are fully sealed and published.",
-        startsAt: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
-        endsAt: new Date(now.getTime() - 85 * 24 * 60 * 60 * 1000).toISOString(), // 85 days ago
-      };
-
-      const mockElections = [activeElection, endedElection];
-
-      // 3. Define positions
-      const mockPositions = [
-        { id: "p-demo-1", electionId: "e-demo", name: "Student Council President" },
-        { id: "p-demo-2", electionId: "e-demo", name: "Sports Captain" },
-        { id: "p-demo-3", electionId: "e-demo", name: "Creative Arts Prefect" },
-        { id: "p-ended-1", electionId: "e-ended", name: "Valedictorian Representative" },
-      ];
-
-      // 4. Define candidates
-      const mockCandidates = [
-        {
-          id: "c-demo-1",
-          electionId: "e-demo",
-          positionId: "p-demo-1",
-          userId: "u-s1",
-          fullName: "Alex Rivera",
-          manifesto: "Empowering student voice through regular assemblies, expanding library study hours, and launching a student peer-to-peer tutoring network.",
-          voteCount: 14,
-          party: "Progressive Student Alliance",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s1",
-          yearLevel: 9,
-        },
-        {
-          id: "c-demo-2",
-          electionId: "e-demo",
-          positionId: "p-demo-1",
-          userId: "u-s2",
-          fullName: "Jordan Patel",
-          manifesto: "Pioneering green energy projects on campus, enriching cafeteria food quality, and securing extra funding for independent student clubs.",
-          voteCount: 11,
-          party: "Green Campus Coalition",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s2",
-          yearLevel: 10,
-        },
-        {
-          id: "c-demo-3",
-          electionId: "e-demo",
-          positionId: "p-demo-1",
-          userId: "u-s7",
-          fullName: "Sophia Martinez",
-          manifesto: "Implementing monthly student wellness breaks, introducing local community service drives, and launching a direct digital suggestion box.",
-          voteCount: 8,
-          party: "Wellness First",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s7",
-          yearLevel: 11,
-        },
-        {
-          id: "c-demo-4",
-          electionId: "e-demo",
-          positionId: "p-demo-2",
-          userId: "u-s4",
-          fullName: "Liam Neeson",
-          manifesto: "Unlocking physical potential! Organizing competitive inter-house athletic cups, renewing gym equipment, and modernizing field training.",
-          voteCount: 18,
-          party: "Athletic Vanguard",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s4",
-          yearLevel: 12,
-        },
-        {
-          id: "c-demo-5",
-          electionId: "e-demo",
-          positionId: "p-demo-2",
-          userId: "u-s5",
-          fullName: "Chloe Bennett",
-          manifesto: "Fostering athletic inclusion. Organizing non-competitive weekend fun-runs, updating recreational equipment, and celebrating our team spirit.",
-          voteCount: 12,
-          party: "Inclusive Sports",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s5",
-          yearLevel: 9,
-        },
-        {
-          id: "c-demo-6",
-          electionId: "e-demo",
-          positionId: "p-demo-3",
-          userId: "u-s6",
-          fullName: "Daniel Kim",
-          manifesto: "Unleashing student creativity through school-wide murals, interactive darkroom workshops, and a permanent student art exhibition gallery.",
-          voteCount: 13,
-          party: "Creative Minds",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s6",
-          yearLevel: 10,
-        },
-        {
-          id: "c-demo-7",
-          electionId: "e-demo",
-          positionId: "p-demo-3",
-          userId: "u-s9",
-          fullName: "Ava Dubois",
-          manifesto: "Championing student expressions! Supporting digital film festivals, audio synthesis labs, and funding classic drama plays.",
-          voteCount: 17,
-          party: "Arts Revival",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s9",
-          yearLevel: 9,
-        },
-        {
-          id: "c-ended-1",
-          electionId: "e-ended",
-          positionId: "p-ended-1",
-          userId: "u-s8",
-          fullName: "Ryan Gallagher",
-          manifesto: "Academic resilience, shared excellence, and celebrating the unforgettable milestones of our graduating cohort.",
-          voteCount: 22,
-          party: "Senior Unity",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s8",
-          yearLevel: 12,
-        },
-        {
-          id: "c-ended-2",
-          electionId: "e-ended",
-          positionId: "p-ended-1",
-          userId: "u-s3",
-          fullName: "Emma Watson",
-          manifesto: "Fostering analytical mindset, critical research opportunities, and empowering the next generation of scientific explorers.",
-          voteCount: 18,
-          party: "Future Scientists",
-          photoUrl: "https://i.pravatar.cc/150?u=u-s3",
-          yearLevel: 11,
-        },
-      ];
-
-      // 5. Generate votes beautifully
-      const mockVotes: any[] = [];
-      let voteIndex = 1;
-
-      // Helper to register votes
-      const recordVotes = (candId: string, posId: string, electId: string, count: number, voterIds: string[]) => {
-        for (let idx = 0; idx < count; idx++) {
-          if (idx < voterIds.length) {
-            mockVotes.push({
-              id: `v-seed-${voteIndex++}`,
-              electionId: electId,
-              positionId: posId,
-              voterId: voterIds[idx],
-              candidateId: candId
-            });
-          }
-        }
-      };
-
-      // Define lists of voter IDs to partition cleanly
-      const studentsPool = mockUsers.filter(u => u.role === "student").map(u => u.id);
-      const teachersPool = mockUsers.filter(u => u.role === "teacher").map(u => u.id);
-      const allVoters = [...studentsPool, ...teachersPool];
-
-      // President (p-demo-1): c-demo-1 (14), c-demo-2 (11), c-demo-3 (8). Total 33 votes.
-      recordVotes("c-demo-1", "p-demo-1", "e-demo", 14, allVoters.slice(0, 14));
-      recordVotes("c-demo-2", "p-demo-1", "e-demo", 11, allVoters.slice(14, 25));
-      recordVotes("c-demo-3", "p-demo-1", "e-demo", 8, allVoters.slice(25, 33));
-
-      // Sports Captain (p-demo-2): c-demo-4 (18), c-demo-5 (12). Total 30 votes.
-      recordVotes("c-demo-4", "p-demo-2", "e-demo", 18, allVoters.slice(2, 20));
-      recordVotes("c-demo-5", "p-demo-2", "e-demo", 12, allVoters.slice(20, 32));
-
-      // Creative Arts Prefect (p-demo-3): c-demo-6 (13), c-demo-7 (17). Total 30 votes.
-      recordVotes("c-demo-6", "p-demo-3", "e-demo", 13, allVoters.slice(5, 18));
-      recordVotes("c-demo-7", "p-demo-3", "e-demo", 17, allVoters.slice(18, 35));
-
-      // Ended Election Valedictorian (p-ended-1): c-ended-1 (22), c-ended-2 (18). Total 40 votes.
-      recordVotes("c-ended-1", "p-ended-1", "e-ended", 22, allVoters.slice(0, 22));
-      recordVotes("c-ended-2", "p-ended-1", "e-ended", 18, allVoters.slice(22, 40));
-
-      // 6. Complete wipe of existing firestore collections
-      const collectionsToWipe = ["users", "elections", "positions", "candidates", "votes"];
-      for (const colName of collectionsToWipe) {
-        const snap = await db.collection(colName).get();
-        if (!snap.empty) {
-          const deleteBatch = db.batch();
-          snap.forEach((doc) => {
-            deleteBatch.delete(db.collection(colName).doc(doc.id));
-          });
-          await deleteBatch.commit();
-        }
-      }
-
-      // 7. Write new high-fidelity data in batches
-      const batch = db.batch();
-      
-      mockUsers.forEach(u => batch.set(db.collection("users").doc(u.id), u));
-      mockElections.forEach(e => batch.set(db.collection("elections").doc(e.id), e));
-      mockPositions.forEach(p => batch.set(db.collection("positions").doc(p.id), p));
-      mockCandidates.forEach(c => batch.set(db.collection("candidates").doc(c.id), c));
-      mockVotes.forEach(v => batch.set(db.collection("votes").doc(v.id), v));
-
-      await batch.commit();
-
-      // 8. Also write back to db.json to persist as local source of truth
-      const dataToSave = {
-        users: mockUsers,
-        elections: mockElections,
-        positions: mockPositions,
-        candidates: mockCandidates,
-        votes: mockVotes
-      };
-      fs.writeFileSync(dbPath, JSON.stringify(dataToSave, null, 2), "utf8");
-
-      res.json({
-        message: "Professional, production-ready dataset successfully generated!",
-        recordsCount: {
-          users: mockUsers.length,
-          elections: mockElections.length,
-          positions: mockPositions.length,
-          candidates: mockCandidates.length,
-          votes: mockVotes.length,
-          total: mockUsers.length + mockElections.length + mockPositions.length + mockCandidates.length + mockVotes.length
-        }
-      });
-    } catch (err: any) {
-      console.error("Critical seeding error:", err);
-      res.status(500).json({ error: err.message || "Failed to seed professional database" });
-    }
+    });
   });
 
 

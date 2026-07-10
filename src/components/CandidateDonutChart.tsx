@@ -27,20 +27,20 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
     return data;
   }, [data, totalVotes]);
 
-  // Brutalist High Contrast Neon Palette
+  // Academic / Classic Editorial Palette
   const colors = [
-    "#E6FE52", // Accent Neon Yellow
-    "#38bdf8", // Neon Blue
-    "#f472b6", // Neon Pink
-    "#34d399", // Neon Emerald
-    "#fb923c", // Neon Orange
-    "#a78bfa", // Neon Purple
-    "#fbbf24", // Neon Gold
-    "#f87171", // Neon Coral
+    "#7c6c4c", // Brand Gold/Bronze
+    "#2e5b82", // Classic Deep Blue
+    "#a38d72", // Muted Brass
+    "#4e6852", // Vintage Sage
+    "#94524a", // Terracotta Rust
+    "#554e68", // Deep Violet Slate
+    "#78909c", // Muted Steel Blue
+    "#8c6f5e", // Soft Walnut
   ];
 
   const getColor = (index: number, id: string) => {
-    if (id === "placeholder") return "rgba(255, 255, 255, 0.08)";
+    if (id === "placeholder") return "var(--border)";
     return colors[index % colors.length];
   };
 
@@ -87,7 +87,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
   return (
     <div
       ref={containerRef}
-      className="flex flex-col sm:flex-row items-center justify-center gap-8 bg-[#0D0D0E] border border-[rgba(255,255,255,0.1)] p-6 font-mono text-white"
+      className="flex flex-col sm:flex-row items-center justify-center gap-8 bg-[var(--surface)] border border-[var(--border)] p-6 font-mono text-[var(--ink)]"
       id="candidate-donut-container"
     >
       {/* Chart Section */}
@@ -110,7 +110,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                   onMouseLeave={() => setHoveredIndex(null)}
                   style={{
                     filter: isHovered
-                      ? `drop-shadow(0 0 12px ${segmentColor}66)`
+                      ? `drop-shadow(0 0 12px ${segmentColor}44)`
                       : "none",
                     opacity: hoveredIndex !== null && !isHovered ? 0.4 : 1,
                   }}
@@ -131,16 +131,16 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="space-y-0.5 max-w-[130px]"
               >
-                <span className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-wider block">
+                <span className="text-[9px] font-bold text-[rgba(26,26,24,0.45)] uppercase tracking-wider block">
                   {hoveredIndex !== null ? "SELECTED" : "LEADING"}
                 </span>
-                <p className="text-xs font-bold text-white truncate uppercase">
+                <p className="text-xs font-bold text-[var(--ink)] truncate uppercase">
                   {activeDetail.name.split(" ")[0]}
                 </p>
-                <p className="text-lg font-mono font-bold text-[#E6FE52] leading-none pt-0.5">
+                <p className="text-lg font-mono font-bold text-[var(--accent)] leading-none pt-0.5">
                   {activeDetail.percentage}%
                 </p>
-                <p className="text-[10px] text-[rgba(255,255,255,0.45)] font-bold">
+                <p className="text-[10px] text-[rgba(26,26,24,0.45)] font-bold">
                   {activeDetail.votes} {activeDetail.votes === 1 ? "VOTE" : "VOTES"}
                 </p>
               </motion.div>
@@ -152,13 +152,13 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="space-y-1"
               >
-                <div className="mx-auto text-[rgba(255,255,255,0.4)] flex justify-center">
+                <div className="mx-auto text-[rgba(26,26,24,0.4)] flex justify-center">
                   <Vote size={18} />
                 </div>
-                <span className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-wider block">
+                <span className="text-[9px] font-bold text-[rgba(26,26,24,0.45)] uppercase tracking-wider block">
                   TOTAL VOTES
                 </span>
-                <p className="text-lg font-mono font-bold text-white leading-none">
+                <p className="text-lg font-mono font-bold text-[var(--ink)] leading-none">
                   {totalVotes}
                 </p>
               </motion.div>
@@ -169,7 +169,7 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
 
       {/* Legend Section */}
       <div className="flex-1 w-full space-y-3" id="donut-chart-legend">
-        <h4 className="text-[9px] font-bold text-[rgba(255,255,255,0.45)] uppercase tracking-widest border-b border-[rgba(255,255,255,0.1)] pb-1.5">
+        <h4 className="text-[9px] font-bold text-[rgba(26,26,24,0.45)] uppercase tracking-widest border-b border-[var(--border)] pb-1.5">
           BALLOT DISTRIBUTION
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
@@ -177,8 +177,8 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
             if (item.id === "placeholder") {
               return (
                 <div key={item.id} className="flex items-center gap-2 py-0.5">
-                  <div className="h-2 w-2 bg-[rgba(255,255,255,0.1)] shrink-0" />
-                  <span className="text-[10px] text-[rgba(255,255,255,0.4)] italic font-bold">NO RECORDED VOTES</span>
+                  <div className="h-2 w-2 bg-[var(--border)] shrink-0" />
+                  <span className="text-[10px] text-[rgba(26,26,24,0.4)] italic font-bold">NO RECORDED VOTES</span>
                 </div>
               );
             }
@@ -206,9 +206,9 @@ export default function CandidateDonutChart({ data, totalVotes }: CandidateDonut
                       transform: isHovered ? "scale(1.2)" : "scale(1)",
                     }}
                   />
-                  <span className="text-[rgba(255,255,255,0.85)] font-bold truncate uppercase">{item.name}</span>
+                  <span className="text-[rgba(26,26,24,0.85)] font-bold truncate uppercase">{item.name}</span>
                 </div>
-                <span className="font-mono text-white shrink-0 font-bold pl-1">
+                <span className="font-mono text-[var(--ink)] shrink-0 font-bold pl-1">
                   {item.percentage}%
                 </span>
               </div>
