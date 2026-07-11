@@ -416,7 +416,6 @@ export default function VotePage({
         onClose={() => setShowCelebration(false)}
         candidateName={celebrationCandidate}
         positionName={celebrationPosition}
-        onLogout={onLogout}
       />
       <CandidateModal
         candidate={modalCandidate}
