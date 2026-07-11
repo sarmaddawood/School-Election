@@ -776,6 +776,27 @@ async function startServer() {
     }
   });
 
+    app.put("/api/positions/:id", requireAdmin, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name } = req.body;
+    if (!name) {
+      res.status(400).json({ error: "Name is required" });
+      return;
+    }
+    try {
+      const positionRef = db.collection("positions").doc(id);
+      const positionDoc = await positionRef.get();
+      if (!positionDoc.exists) {
+        res.status(404).json({ error: "Position not found" });
+        return;
+      }
+      await positionRef.update({ name });
+      res.json({ message: "Position updated successfully" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to update position" });
+    }
+  });
+
   // --- Candidates API ---
   app.get("/api/candidates", requireAuth, async (req: Request, res: Response) => {
     const { electionId, positionId } = req.query;

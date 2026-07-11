@@ -1,8 +1,24 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Award, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Award, ChevronDown, Check, X, Edit2, Save } from "lucide-react";
 import { Election, Position } from "../types";
 import ConfirmModal from "./ConfirmModal";
+
+const STANDARD_POSITIONS = [
+  "President",
+  "Vice President",
+  "Secretary",
+  "Treasurer",
+  "Auditor",
+  "Public Information Officer",
+  "Peace Officer",
+  "Grade 7 Representative",
+  "Grade 8 Representative",
+  "Grade 9 Representative",
+  "Grade 10 Representative",
+  "Grade 11 Representative",
+  "Grade 12 Representative",
+];
 
 interface PositionsTabProps {
   elections: Election[];
@@ -22,9 +38,27 @@ export default function PositionsTab({
   token,
 }: PositionsTabProps) {
   const [selectedElectionId, setSelectedElectionId] = useState("");
-  const [name, setName] = useState("");
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
+  const [customPosition, setCustomPosition] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmPosition, setDeleteConfirmPosition] = useState<{ id: string; name: string } | null>(null);
+  
+  const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
+  const [editingPositionName, setEditingPositionName] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   React.useEffect(() => {
     if (elections.length > 0 && !selectedElectionId) {
@@ -32,31 +66,66 @@ export default function PositionsTab({
     }
   }, [elections]);
 
+  const togglePosition = (pos: string) => {
+    if (selectedPositions.includes(pos)) {
+      setSelectedPositions(selectedPositions.filter((p) => p !== pos));
+    } else {
+      setSelectedPositions([...selectedPositions, pos]);
+    }
+  };
+
+  const removePosition = (pos: string) => {
+    setSelectedPositions(selectedPositions.filter((p) => p !== pos));
+  };
+
+  const handleCustomPositionKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const val = customPosition.trim();
+      if (val && !selectedPositions.includes(val)) {
+        setSelectedPositions([...selectedPositions, val]);
+        setCustomPosition("");
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedElectionId || !name) {
-      setErrorNotification("Please select an election and enter a position name");
+    
+    const finalPositions = [...selectedPositions];
+    const val = customPosition.trim();
+    if (val && !finalPositions.includes(val)) {
+      finalPositions.push(val);
+    }
+
+    if (!selectedElectionId || finalPositions.length === 0) {
+      setErrorNotification("Please select an election and select/enter at least one position name");
       return;
     }
 
     setSubmitting(true);
     try {
-      const response = await fetch("/api/positions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ electionId: selectedElectionId, name }),
-      });
+      await Promise.all(
+        finalPositions.map(async (name) => {
+          const response = await fetch("/api/positions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ electionId: selectedElectionId, name }),
+          });
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to add position");
-      }
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || `Failed to add position "${name}"`);
+          }
+        })
+      );
 
-      setSuccessNotification(`Added position "${name}"`);
-      setName("");
+      setSuccessNotification(`Added ${finalPositions.length} position(s) successfully`);
+      setSelectedPositions([]);
+      setCustomPosition("");
       await onRefreshData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
@@ -92,6 +161,48 @@ export default function PositionsTab({
       setErrorNotification(err.message || "An error occurred");
     } finally {
       setDeleteConfirmPosition(null);
+    }
+  };
+
+  const startEditing = (id: string, name: string) => {
+    setEditingPositionId(id);
+    setEditingPositionName(name);
+  };
+
+  const cancelEditing = () => {
+    setEditingPositionId(null);
+    setEditingPositionName("");
+  };
+
+  const handleEditSubmit = async (id: string) => {
+    if (!editingPositionName.trim()) {
+      setErrorNotification("Position name cannot be empty");
+      return;
+    }
+    
+    setSavingEdit(true);
+    try {
+      const response = await fetch(`/api/positions/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: editingPositionName.trim() }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update position");
+      }
+
+      setSuccessNotification("Position updated successfully");
+      await onRefreshData();
+      cancelEditing();
+    } catch (err: any) {
+      setErrorNotification(err.message || "An error occurred");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -174,19 +285,120 @@ export default function PositionsTab({
                 </div>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="space-y-1.5" ref={dropdownRef}>
                 <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                  Position Title / Name
+                  Select or Enter Positions
                 </label>
-                <motion.input
-                  whileFocus={{ scale: 1.01 }}
-                  type="text"
-                  required
-                  placeholder="e.g. Sports Captain, Head Prefect"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
-                />
+                
+                <div className="relative">
+                  <div 
+                    className="w-full min-h-[44px] bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] flex flex-wrap gap-2 p-2 cursor-text transition-all focus-within:border-[var(--accent)]"
+                    onClick={() => setIsDropdownOpen(true)}
+                  >
+                    <AnimatePresence>
+                      {selectedPositions.map((pos) => (
+                        <motion.div
+                          key={pos}
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.8, opacity: 0 }}
+                          className="flex items-center gap-1 bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-1 rounded-sm text-[10px] font-bold uppercase"
+                        >
+                          {pos}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removePosition(pos);
+                            }}
+                            className="hover:bg-[var(--accent)] hover:text-[var(--surface)] rounded-full p-0.5 transition-colors"
+                          >
+                            <X size={10} />
+                          </button>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    
+                    <input
+                      id="custom-position-input"
+                      type="text"
+                      placeholder={selectedPositions.length === 0 ? "Select or type (press Enter)" : ""}
+                      value={customPosition}
+                      onChange={(e) => setCustomPosition(e.target.value)}
+                      onKeyDown={handleCustomPositionKeyDown}
+                      onFocus={() => setIsDropdownOpen(true)}
+                      className="flex-1 min-w-[120px] bg-transparent outline-none text-[var(--ink)] placeholder:text-zinc-400"
+                    />
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                    >
+                      <ChevronDown size={14} className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
+                    </button>
+                  </div>
+                  
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="absolute z-10 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-none shadow-xl max-h-60 overflow-y-auto"
+                      >
+                        <div className="p-1">
+                          {!customPosition.trim() && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                document.getElementById("custom-position-input")?.focus();
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors text-[var(--accent)] hover:bg-[var(--accent-soft)] font-bold border-b border-[var(--border)] mb-1"
+                            >
+                              <Plus size={14} />
+                              <span>Create New Position</span>
+                            </button>
+                          )}
+                          {customPosition.trim() && !STANDARD_POSITIONS.find(p => p.toLowerCase() === customPosition.trim().toLowerCase()) && !selectedPositions.includes(customPosition.trim()) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = customPosition.trim();
+                                if (val && !selectedPositions.includes(val)) {
+                                  setSelectedPositions([...selectedPositions, val]);
+                                  setCustomPosition("");
+                                }
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 transition-colors text-[var(--accent)] hover:bg-[var(--accent-soft)] font-bold border-b border-[var(--border)] mb-1"
+                            >
+                              <Plus size={14} />
+                              <span>Create "{customPosition.trim()}"</span>
+                            </button>
+                          )}
+                          {STANDARD_POSITIONS.filter(pos => pos.toLowerCase().includes(customPosition.toLowerCase())).map((pos) => {
+                            const isSelected = selectedPositions.includes(pos);
+                            return (
+                              <button
+                                type="button"
+                                key={pos}
+                                onClick={() => togglePosition(pos)}
+                                className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${
+                                  isSelected 
+                                    ? "bg-[var(--accent-soft)] text-[var(--accent)] font-bold" 
+                                    : "text-[var(--ink)] hover:bg-neutral-100"
+                                }`}
+                              >
+                                <span>{pos}</span>
+                                {isSelected && <Check size={14} />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
 
               <motion.button
@@ -238,20 +450,66 @@ export default function PositionsTab({
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 10 }}
-                            whileHover={{ scale: 1.01 }}
+                            whileHover={editingPositionId === pos.id ? {} : { scale: 1.01 }}
                             className="flex justify-between items-center bg-[var(--surface)] border border-[var(--border)] px-4 py-3 rounded-none transition-all"
                           >
-                            <span className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
-                              {pos.name}
-                            </span>
-                            <motion.button
-                              whileHover={{ scale: 1.1, color: "#e11d48" }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => handleDelete(pos.id, pos.name)}
-                              className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                            </motion.button>
+                            {editingPositionId === pos.id ? (
+                              <div className="flex-1 flex items-center gap-2 mr-4">
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={editingPositionName}
+                                  onChange={(e) => setEditingPositionName(e.target.value)}
+                                  className="flex-1 px-3 py-1.5 bg-[var(--bg)] border border-[var(--accent)] rounded-none text-xs text-[var(--ink)] outline-none"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleEditSubmit(pos.id);
+                                    if (e.key === "Escape") cancelEditing();
+                                  }}
+                                />
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => handleEditSubmit(pos.id)}
+                                  disabled={savingEdit}
+                                  className="p-1.5 bg-[var(--accent)] text-[var(--surface)] hover:opacity-90 rounded-sm transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  <Save size={13} />
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={cancelEditing}
+                                  disabled={savingEdit}
+                                  className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                  <X size={13} />
+                                </motion.button>
+                              </div>
+                            ) : (
+                              <>
+                                <span className="text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
+                                  {pos.name}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <motion.button
+                                    whileHover={{ scale: 1.1, color: "var(--accent)" }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => startEditing(pos.id, pos.name)}
+                                    className="p-1.5 text-zinc-400 hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-sm transition-all cursor-pointer"
+                                  >
+                                    <Edit2 size={13} />
+                                  </motion.button>
+                                  <motion.button
+                                    whileHover={{ scale: 1.1, color: "#e11d48" }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => handleDelete(pos.id, pos.name)}
+                                    className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer"
+                                  >
+                                    <Trash2 size={13} />
+                                  </motion.button>
+                                </div>
+                              </>
+                            )}
                           </motion.div>
                         ))}
                       </AnimatePresence>
