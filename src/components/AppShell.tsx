@@ -12,6 +12,8 @@ import {
   User,
   Key,
   Activity,
+  Menu,
+  X,
 } from "lucide-react";
 import { User as UserType } from "../types";
 import ConfirmModal from "./ConfirmModal";
@@ -43,6 +45,7 @@ export default function AppShell({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 880);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -79,17 +82,37 @@ export default function AppShell({
     <div className="h-[100dvh] w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-[var(--surface)] border-b border-[var(--border)] shrink-0">
+      <div className="md:hidden flex justify-between items-center p-4 bg-[var(--surface)] border-b border-[var(--border)] shrink-0 relative z-30">
         <div className="flex items-center gap-3">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1 -ml-1 text-[var(--ink)]">
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
           <img src={bolinaoLogo} alt="Logo" className="w-8 h-8 rounded bg-white object-contain" />
           <div className="font-display text-sm font-bold uppercase">BSF E-Voting</div>
         </div>
-        <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center font-bold text-xs border border-[var(--border)]">
-          {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
+        <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center font-bold text-xs border border-[var(--border)] overflow-hidden">
+          {user.photoUrl ? (
+            <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
+          ) : (
+            user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
+          )}
         </button>
       </div>
 
-      <aside className="hidden md:flex row-span-2 bg-[var(--surface)] border-r border-[var(--border)] flex-col p-8">
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isMobile && isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[var(--surface)] border-r border-[var(--border)] flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2`}>
         <div className="mb-12">
             <div className="w-[50px] h-[50px] bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                 <img src={bolinaoLogo} alt="Logo" className="w-full h-full object-contain" />
@@ -108,7 +131,10 @@ export default function AppShell({
             return (
               <button
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                onClick={() => {
+                  onTabChange(item.id);
+                  if (isMobile) setIsMobileMenuOpen(false);
+                }}
                 className={`flex items-center gap-3 px-4 py-3 text-[0.7rem] font-mono uppercase tracking-wider rounded transition-all cursor-pointer border-none text-left ${
                   isActive ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[rgba(26,26,24,0.6)] hover:bg-[rgba(26,26,24,0.03)] hover:text-[var(--ink)]"
                 }`}
@@ -120,14 +146,18 @@ export default function AppShell({
           })}
         </nav>
 
-        <div className="mt-auto p-4 bg-[rgba(26,26,24,0.03)] rounded relative">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                <div className="w-8 h-8 bg-[var(--accent)] text-[var(--bg)] flex items-center justify-center font-bold text-[0.7rem] shrink-0">
-                    {user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
+        <div className="mt-auto pt-6 border-t border-[var(--border)] relative">
+            <div className="flex items-center gap-3 p-2 hover:bg-[var(--accent-soft)] rounded-lg cursor-pointer transition-colors" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                <div className="w-9 h-9 rounded-full bg-[var(--accent)] text-[var(--surface)] flex items-center justify-center font-bold text-[0.7rem] shrink-0 overflow-hidden">
+                    {user.photoUrl ? (
+                        <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
+                    ) : (
+                        user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
+                    )}
                 </div>
-                <div className="text-[0.7rem] overflow-hidden">
-                    <p className="font-semibold uppercase truncate">{user.fullName}</p>
-                    <p className="opacity-40 uppercase truncate">{user.role}</p>
+                <div className="text-[0.65rem] overflow-hidden flex-1">
+                    <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)]">{user.fullName}</p>
+                    <p className="text-zinc-500 uppercase truncate tracking-wider mt-0.5">{user.role}</p>
                 </div>
             </div>
 
@@ -145,7 +175,7 @@ export default function AppShell({
                       onTabChange("password");
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-[rgba(26,26,24,0.7)] hover:text-[var(--ink)] hover:bg-[rgba(26,26,24,0.05)] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Key size={13} />
                     Change Password
@@ -155,7 +185,7 @@ export default function AppShell({
                       setShowConfirmLogout(true);
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <LogOut size={13} />
                     Sign Out
@@ -181,29 +211,6 @@ export default function AppShell({
         <span>© 2026 BOLINAO SCHOOL OF FISHERIES</span>
         <span>SECURITY PROTOCOL: v4.1.2_SECURE</span>
       </footer>
-
-      {/* Mobile Bottom Nav */}
-      <AnimatePresence>
-        {isMobile && (
-          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)]/95 backdrop-blur-lg border-t border-[var(--border)] flex flex-wrap justify-center gap-1 p-2 z-40 shrink-0">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onTabChange(item.id)}
-                  className={`flex flex-col items-center gap-1 px-3 py-2 text-[8px] font-mono uppercase tracking-widest cursor-pointer transition-all ${
-                    isActive ? "text-[var(--accent)] bg-[var(--accent-soft)] rounded" : "text-[rgba(26,26,24,0.6)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  <item.icon size={14} />
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </AnimatePresence>
 
       <ConfirmModal
         isOpen={showConfirmLogout}

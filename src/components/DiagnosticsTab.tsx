@@ -356,7 +356,7 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 max-h-[calc(100dvh-70px)] overflow-y-auto w-full max-w-7xl mx-auto font-mono text-[var(--ink)] bg-[var(--bg)]">
+    <div className="p-4 md:p-8 space-y-8 w-full max-w-7xl mx-auto font-mono text-[var(--ink)] bg-[var(--bg)]">
       
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--surface)] border border-[var(--border)] p-6 rounded-none">

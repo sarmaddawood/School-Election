@@ -214,7 +214,7 @@ export default function DashboardTab({
                 
                 {activeElection ? (
                   <>
-                    <div className="bg-[var(--surface)] p-4 border border-[var(--border)] border-l-4 border-l-[var(--accent)] flex justify-between items-center mb-6">
+                    <div className="bg-[var(--surface)] p-4 border border-[var(--border)] border-l-4 border-l-[var(--accent)] flex flex-col sm:flex-row sm:justify-between items-center gap-4 sm:gap-2 mb-6">
                         <span className="font-mono text-[0.65rem] uppercase text-zinc-500">{timeLeft.labelText}</span>
                         <div className="flex gap-2 font-mono items-center">
                             <div className="text-center"><span className="text-lg font-bold text-[var(--ink)]">{timeLeft.days}</span><span className="text-[0.5rem] opacity-40 uppercase block">Days</span></div>

@@ -30,6 +30,10 @@
   100% { transform: translateY(0px); }
 }
 
+html {
+  font-size: 112.5%; /* Increases base font size from 16px to 18px */
+}
+
 body {
   font-family: "Inter", sans-serif;
   background-color: var(--bg);
@@ -201,7 +205,10 @@ main .text-\[\#E6FE52\], main [class*="text-[#E6FE52]"] {
 main .hover\:text-\[\#E6FE52\]:hover, main [class*="hover:text-[#E6FE52]"]:hover {
   color: var(--accent) !important;
 }
-main .group-hover\:text-\[\#E6FE52\]:group-hover, main [class*="group-hover:text-[#E6FE52]"] {
+main .group-hover\:text-\[\#E6FE52\] {
+  /* Requires parent to have .group class to work via tailwind, but we'll override */
+}
+.group:hover main .group-hover\:text-\[\#E6FE52\], .group:hover main [class*="group-hover:text-[#E6FE52]"] {
   color: var(--accent) !important;
 }
 main .border-\[\#E6FE52\], main [class*="border-[#E6FE52]"] {

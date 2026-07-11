@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Key, Info, Loader2 } from "lucide-react";
 import { User } from "../types";
 import HowToVoteModal from "./HowToVoteModal";
+import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
 
 interface LoginPageProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -76,8 +77,9 @@ export default function LoginPage({
         {/* Left Side: Brand Hero */}
         <motion.div variants={itemVariants} className="flex flex-col justify-center">
           
-          <h1 className="font-display text-7xl md:text-8xl lg:text-[8.5rem] font-light leading-[0.85] tracking-tight text-[var(--ink)] mb-8">
-            Campus<br />Ballot
+          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.85] tracking-tight text-[var(--ink)] mb-8 flex flex-col gap-6">
+            <img src={bolinaoLogo} alt="BSF Logo" className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 object-contain mix-blend-multiply" />
+            <span>BSF<br />E-Voting</span>
           </h1>
           
           <p className="max-w-[440px] text-sm text-[var(--ink)]/80 leading-relaxed font-sans">
