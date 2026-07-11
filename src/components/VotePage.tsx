@@ -270,11 +270,11 @@ export default function VotePage({
                             >
                               <div className="space-y-3">
                                 <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setModalCandidate(cand); setModalPosition(pos.name); }}>
-                                  {cand.photoUrl ? (
+                                  {cand.photoUrl && cand.photoUrl !== "null" && cand.photoUrl !== "" && cand.photoUrl !== "undefined" ? (
                                     <img src={cand.photoUrl} alt={cand.fullName} className="h-10 w-10 rounded-sm object-cover border border-[var(--border)] shrink-0" referrerPolicy="no-referrer" />
                                   ) : (
                                     <div className="h-10 w-10 rounded-sm bg-neutral-100 group-hover:bg-neutral-200 text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
-                                      {cand.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
+                                      {cand.fullName[0]}
                                     </div>
                                   )}
                                   <div>

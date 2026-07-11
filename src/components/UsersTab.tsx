@@ -463,7 +463,7 @@ export default function UsersTab({
                     >
                       <td className="py-3 px-2 font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-none bg-[var(--surface)] text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
-                          {u.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
+                          {u.fullName[0]}
                         </div>
                         <span className="truncate max-w-[120px] sm:max-w-none">{u.fullName}</span>
                       </td>

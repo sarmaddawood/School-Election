@@ -456,11 +456,11 @@ export default function CandidatesTab({
                                       }}
                                     >
                                       <div className="flex items-center gap-3">
-                                        {cand.photoUrl ? (
+                                        {cand.photoUrl && cand.photoUrl !== "null" && cand.photoUrl !== "" && cand.photoUrl !== "undefined" ? (
                                           <img src={cand.photoUrl} alt={cand.fullName} className="w-10 h-10 rounded-sm object-cover border border-[var(--border)]" referrerPolicy="no-referrer" />
                                         ) : (
                                           <div className="w-10 h-10 rounded-sm bg-neutral-100 border border-[var(--border)] flex items-center justify-center font-bold text-xs text-[var(--accent)]">
-                                            {cand.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")}
+                                            {cand.fullName[0]}
                                           </div>
                                         )}
                                         <div>

@@ -110,7 +110,7 @@ export default function VoteConfirmationModal({
                   <div className="bg-[var(--bg)] border border-[var(--border)] p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                     {/* Proper profile picture / avatar */}
                     <div className="shrink-0">
-                      {candidate.photoUrl ? (
+                      {candidate.photoUrl && candidate.photoUrl !== "null" && candidate.photoUrl !== "" && candidate.photoUrl !== "undefined" ? (
                         <img
                           src={candidate.photoUrl}
                           alt={candidate.fullName}
@@ -119,7 +119,7 @@ export default function VoteConfirmationModal({
                         />
                       ) : (
                         <div className="w-20 h-20 border border-[var(--border)] bg-neutral-100 text-[var(--accent)] flex items-center justify-center font-display font-black text-2xl rounded-none">
-                          {candidate.fullName.split(" ").slice(0, 2).map((n) => n[0]).join("")}
+                          {candidate.fullName[0]}
                         </div>
                       )}
                     </div>

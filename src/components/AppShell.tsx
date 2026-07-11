@@ -90,13 +90,51 @@ export default function AppShell({
           <img src={bolinaoLogo} alt="Logo" className="w-8 h-8 rounded bg-white object-contain" />
           <div className="font-display text-sm font-bold uppercase">BSF E-Voting</div>
         </div>
-        <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center font-bold text-xs border border-[var(--border)] overflow-hidden">
-          {user.photoUrl ? (
-            <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
-          ) : (
-            user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
-          )}
-        </button>
+        <div className="relative">
+          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center font-bold text-xs border border-[var(--border)] overflow-hidden">
+            {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
+              <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
+            ) : (
+              user.fullName[0]
+            )}
+          </button>
+          <AnimatePresence>
+            {isMobile && showProfileMenu && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                transition={{ duration: 0.15 }}
+                className="absolute top-full right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded p-2 z-50 shadow-2xl"
+              >
+                <div className="px-3 py-2 border-b border-[var(--border)] mb-2">
+                    <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)] text-[10px]">{user.fullName}</p>
+                    <p className="text-zinc-500 uppercase truncate tracking-wider text-[9px] mt-0.5">{user.role}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    onTabChange("password");
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <Key size={13} />
+                  Change Password
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmLogout(true);
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <LogOut size={13} />
+                  Sign Out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Mobile Backdrop */}
@@ -146,13 +184,13 @@ export default function AppShell({
           })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-[var(--border)] relative">
+        <div className="mt-auto pt-6 border-t border-[var(--border)] relative hidden md:block">
             <div className="flex items-center gap-3 p-2 hover:bg-[var(--accent-soft)] rounded-lg cursor-pointer transition-colors" onClick={() => setShowProfileMenu(!showProfileMenu)}>
                 <div className="w-9 h-9 rounded-full bg-[var(--accent)] text-[var(--surface)] flex items-center justify-center font-bold text-[0.7rem] shrink-0 overflow-hidden">
-                    {user.photoUrl ? (
+                    {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
                         <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
                     ) : (
-                        user.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
+                        user.fullName[0]
                     )}
                 </div>
                 <div className="text-[0.65rem] overflow-hidden flex-1">
@@ -162,7 +200,7 @@ export default function AppShell({
             </div>
 
             <AnimatePresence>
-              {showProfileMenu && (
+              {!isMobile && showProfileMenu && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95, y: 5 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}

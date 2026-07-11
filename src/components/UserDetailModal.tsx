@@ -62,7 +62,7 @@ export default function UserDetailModal({
 
             {/* Header / Profile section */}
             <div className="flex flex-col md:flex-row items-start md:items-center gap-5 pb-6 border-b border-[var(--border)]">
-              {user.photoUrl ? (
+              {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
                 <img
                   src={user.photoUrl}
                   alt={user.fullName}
@@ -71,11 +71,7 @@ export default function UserDetailModal({
                 />
               ) : (
                 <div className="w-16 h-16 rounded-none bg-[var(--accent-soft)] border-2 border-[var(--accent)] flex items-center justify-center font-black text-2xl text-[var(--accent)] shrink-0 shadow-lg">
-                  {user.fullName
-                    .split(" ")
-                    .slice(0, 2)
-                    .map((n) => n[0])
-                    .join("")}
+                  {user.fullName[0]}
                 </div>
               )}
 

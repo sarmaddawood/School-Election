@@ -251,10 +251,10 @@ export default function ResultsPage({
                                 transition={{ type: "spring", delay: posIdx * 0.05 + 0.1 }}
                                 className="h-8 w-8 bg-[var(--surface)] text-[var(--ink)] border border-[var(--border)] font-bold text-[10px] flex items-center justify-center mb-2"
                               >
-                                {second.photoUrl ? (
+                                {second.photoUrl && second.photoUrl !== "null" && second.photoUrl !== "" && second.photoUrl !== "undefined" ? (
                                   <img src={second.photoUrl} alt={second.fullName} className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
                                 ) : (
-                                  second.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
+                                  second.fullName[0]
                                 )}
                               </motion.div>
                               <span className="text-[9px] font-bold text-zinc-600 truncate max-w-full pb-1 uppercase">
@@ -293,10 +293,10 @@ export default function ResultsPage({
                                 transition={{ type: "spring", delay: posIdx * 0.05 }}
                                 className="h-10 w-10 bg-[var(--accent-soft)] border-2 border-[var(--accent)] text-[var(--accent)] font-bold text-xs flex items-center justify-center mb-2"
                               >
-                                {first.photoUrl ? (
+                                {first.photoUrl && first.photoUrl !== "null" && first.photoUrl !== "" && first.photoUrl !== "undefined" ? (
                                   <img src={first.photoUrl} alt={first.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
-                                  first.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
+                                  first.fullName[0]
                                 )}
                               </motion.div>
                               <span className="text-[10px] font-extrabold text-[var(--ink)] truncate max-w-full pb-1 uppercase">
@@ -329,10 +329,10 @@ export default function ResultsPage({
                                 transition={{ type: "spring", delay: posIdx * 0.05 + 0.15 }}
                                 className="h-8 w-8 bg-[var(--surface)] text-[var(--ink)] border border-[var(--border)] font-bold text-[10px] flex items-center justify-center mb-2"
                               >
-                                {third.photoUrl ? (
+                                {third.photoUrl && third.photoUrl !== "null" && third.photoUrl !== "" && third.photoUrl !== "undefined" ? (
                                   <img src={third.photoUrl} alt={third.fullName} className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
                                 ) : (
-                                  third.fullName.split(" ").slice(0, 2).map(n => n[0]).join("")
+                                  third.fullName[0]
                                 )}
                               </motion.div>
                               <span className="text-[9px] font-bold text-zinc-500 truncate max-w-full pb-1 uppercase">
