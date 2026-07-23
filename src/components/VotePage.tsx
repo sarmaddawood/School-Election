@@ -171,7 +171,7 @@ export default function VotePage({
     >
       <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT_STATION_04</span>
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT STATION 04</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
             <VoteIcon className="text-[var(--accent)]" size={24} />
             CAST YOUR VOTE
@@ -183,7 +183,7 @@ export default function VotePage({
           className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] hover:bg-[var(--accent)] hover:text-[var(--surface)] text-[var(--ink)] rounded-none border border-[var(--border)] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0"
         >
           <Info size={14} />
-          HOW_TO_VOTE
+          HOW TO VOTE
         </button>
       </motion.div>
 
@@ -201,7 +201,7 @@ export default function VotePage({
                     transition={{ duration: 2, repeat: Infinity }}
                     className="px-2 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 text-[9px] font-bold uppercase tracking-wider shadow-[0_0_8px_var(--accent-soft)]"
                   >
-                    LIVE_POLLING_STATION
+                    LIVE POLLING STATION
                   </motion.span>
                   <h3 className="font-display font-extrabold text-[var(--ink)] text-base uppercase tracking-wider mt-2.5">
                     {activeElection.title}
@@ -247,7 +247,7 @@ export default function VotePage({
                             className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-bold uppercase tracking-wider"
                           >
                             <Check size={11} />
-                            BALLOT_REGISTERED
+                            BALLOT REGISTERED
                           </motion.span>
                         )}
                       </div>
@@ -302,7 +302,7 @@ export default function VotePage({
                                       className="w-full py-2 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 border border-emerald-200"
                                     >
                                       <ShieldCheck size={12} />
-                                      SESSION_BALLOT_CAST
+                                      SESSION BALLOT CAST
                                     </motion.div>
                                   ) : voteForThisPos ? (
                                     <motion.div
@@ -311,7 +311,7 @@ export default function VotePage({
                                       exit={{ opacity: 0 }}
                                       className="w-full py-2 bg-transparent text-zinc-400 text-[10px] font-bold uppercase tracking-widest text-center border border-[var(--border)]"
                                     >
-                                      BALLOT_LOCKED
+                                      BALLOT LOCKED
                                     </motion.div>
                                   ) : (
                                     <motion.button
@@ -327,7 +327,7 @@ export default function VotePage({
                                       })}
                                       className="w-full py-2 bg-transparent hover:bg-[var(--accent)] hover:text-[var(--surface)] text-[var(--accent)] border border-[var(--accent)]/40 rounded-none font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer"
                                     >
-                                      CAST_VOTE
+                                      CAST VOTE
                                     </motion.button>
                                   )}
                                 </AnimatePresence>
@@ -352,7 +352,7 @@ export default function VotePage({
                     className="glass-panel p-12 text-center text-zinc-500 space-y-2"
                   >
                     <AlertCircle size={32} className="mx-auto text-[var(--accent)]" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO_POSITIONS_CONFIGURED</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO POSITIONS CONFIGURED</p>
                     <p className="text-[10px]">This active election currently has no active polling positions defined.</p>
                   </motion.div>
                 )}
@@ -367,7 +367,7 @@ export default function VotePage({
             >
               <h4 className="font-display font-extrabold text-[var(--ink)] text-xs uppercase tracking-widest flex items-center gap-1.5 border-b border-[var(--border)] pb-3">
                 <Info size={14} className="text-[var(--accent)]" />
-                VOTING_PROTOCOL
+                VOTING PROTOCOL
               </h4>
               <ul className="space-y-3 text-[10px] text-zinc-500 leading-relaxed uppercase font-mono">
                 <li className="flex gap-1.5">

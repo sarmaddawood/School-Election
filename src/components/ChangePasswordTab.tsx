@@ -62,7 +62,7 @@ export default function ChangePasswordTab({
         <div className="h-16 w-16 bg-[var(--accent-soft)] text-[var(--accent)] rounded-none flex items-center justify-center mx-auto mb-4 border border-[var(--accent)]/30">
           <ShieldCheck size={32} />
         </div>
-        <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">SECURITY_ENCRYPT_09</span>
+        <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">SECURITY ENCRYPT 09</span>
         <h2 className="text-2xl font-display font-black text-[var(--ink)] uppercase tracking-wider">
           ACCOUNT PASSWORD SECURITY
         </h2>
@@ -118,7 +118,7 @@ export default function ChangePasswordTab({
               {updatingPassword ? (
                 <>
                   <Loader2 size={14} className="animate-spin mr-2" />
-                  UPDATING_SECURITY_KEY...
+                  UPDATING SECURITY KEY...
                 </>
               ) : (
                 "UPDATE PASSWORD VARIABLES"

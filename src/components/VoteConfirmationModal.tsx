@@ -66,7 +66,7 @@ export default function VoteConfirmationModal({
                   <ShieldCheck size={28} />
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT_VALIDATION_STATION</span>
+                  <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT VALIDATION STATION</span>
                   <h3 className="font-display font-black text-[var(--ink)] text-lg tracking-wider uppercase mt-1">
                     Confirm Your Selection
                   </h3>
@@ -82,7 +82,7 @@ export default function VoteConfirmationModal({
                 <div className="space-y-1">
                   <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
                     <Calendar size={11} />
-                    ELECTION_LEDGER
+                    ELECTION LEDGER
                   </span>
                   <div className="bg-[var(--bg)] border border-[var(--border)] p-3 text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
                     {election.title}
@@ -93,7 +93,7 @@ export default function VoteConfirmationModal({
                 <div className="space-y-1">
                   <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
                     <Award size={11} />
-                    TARGET_OFFICE_NOMINATED
+                    TARGET OFFICE NOMINATED
                   </span>
                   <div className="bg-[var(--bg)] border border-[var(--border)] p-3 text-xs font-bold text-[var(--accent)] uppercase tracking-wider">
                     {position.name}
@@ -104,7 +104,7 @@ export default function VoteConfirmationModal({
                 <div className="space-y-1.5">
                   <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
                     <User size={11} />
-                    VERIFIED_NOMINEE_CREDENTIALS
+                    VERIFIED NOMINEE CREDENTIALS
                   </span>
                   
                   <div className="bg-[var(--bg)] border border-[var(--border)] p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
@@ -152,7 +152,7 @@ export default function VoteConfirmationModal({
                 <div className="space-y-1">
                   <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
                     <Flag size={11} />
-                    CAMPAIGN_PLATFORM_MANIFESTO
+                    CAMPAIGN PLATFORM MANIFESTO
                   </span>
                   <div className="bg-[var(--bg)] border border-[var(--border)] p-3 text-[11px] text-zinc-600 leading-relaxed italic max-h-24 overflow-y-auto">
                     "{candidate.manifesto || "No campaign platform details provided."}"
@@ -164,7 +164,7 @@ export default function VoteConfirmationModal({
               <div className="bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-2.5">
                 <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-[10px] text-amber-700 leading-relaxed font-bold uppercase tracking-wide">
-                  CRITICAL_WARNING: Secure session locks active. This ballot transaction is final and cannot be modified or reversed after submission.
+                  CRITICAL WARNING: Secure session locks active. This ballot transaction is final and cannot be modified or reversed after submission.
                 </p>
               </div>
 
@@ -179,7 +179,7 @@ export default function VoteConfirmationModal({
                   className="py-2.5 px-4 bg-transparent border border-[var(--border)] hover:border-[var(--ink)] text-[var(--ink)] text-xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer text-center disabled:opacity-40"
                   id="vote-confirmation-cancel-btn"
                 >
-                  GO_BACK
+                  GO BACK
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -193,10 +193,10 @@ export default function VoteConfirmationModal({
                   {isSubmitting ? (
                     <>
                       <Loader2 size={12} className="animate-spin text-[var(--surface)]" />
-                      CASTING_BALLOT...
+                      CASTING BALLOT...
                     </>
                   ) : (
-                    "SUBMIT_BALLOT"
+                    "SUBMIT BALLOT"
                   )}
                 </motion.button>
               </div>

@@ -232,7 +232,7 @@ export default function PositionsTab({
     >
       <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">ELECTION_MODULE_01</span>
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">ELECTION MODULE 01</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             POLLING POSITIONS
           </h2>
@@ -246,7 +246,7 @@ export default function PositionsTab({
           className="glass-panel p-8 text-center flex flex-col items-center justify-center space-y-3"
         >
           <Award size={32} className="text-[var(--accent)]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO_ELECTIONS_FOUND</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO ELECTIONS FOUND</p>
           <p className="text-[10px] text-zinc-500 max-w-xs leading-relaxed">
             You must configure an election registry before establishing active polling positions.
           </p>
@@ -409,7 +409,7 @@ export default function PositionsTab({
                 className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
               >
                 <Plus size={14} />
-                {submitting ? "ADDING_POSITION..." : "ADD_POSITION"}
+                {submitting ? "ADDING POSITION..." : "ADD POSITION"}
               </motion.button>
             </form>
           </motion.div>

@@ -49,7 +49,7 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
       className="max-w-4xl mx-auto space-y-8 font-mono text-[var(--ink)]"
     >
       <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4">
-        <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">SCHEDULER_INDEX_06</span>
+        <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">SCHEDULER INDEX 06</span>
         <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
           <CalendarDays className="text-[var(--accent)]" size={24} />
           ELECTION TIMELINE CALENDAR
@@ -63,7 +63,7 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
         {sortedElections.length === 0 ? (
           <div className="text-center py-12 glass-panel">
             <CalendarDays size={32} className="mx-auto text-[var(--accent)] mb-4 animate-pulse" />
-            <p className="text-[var(--ink)] font-bold text-xs uppercase tracking-widest">NO_SCHEDULING_RECORDS</p>
+            <p className="text-[var(--ink)] font-bold text-xs uppercase tracking-widest">NO SCHEDULING RECORDS</p>
             <p className="text-[10px] text-neutral-500 mt-1">No upcoming or past elections have been written to the database.</p>
           </div>
         ) : (

@@ -214,7 +214,7 @@ export default function UsersTab({
     >
       <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">REGISTRY_MODULE_02</span>
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">REGISTRY MODULE 02</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             USER ACCOUNT REGISTRY
           </h2>
@@ -409,7 +409,7 @@ export default function UsersTab({
               className="w-full py-3 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
             >
               <Plus size={14} />
-              {submitting ? "REGISTER_ACCOUNTING..." : "REGISTER_ACCOUNT"}
+              {submitting ? "REGISTER ACCOUNTING..." : "REGISTER ACCOUNT"}
             </motion.button>
           </form>
         </motion.div>
@@ -427,7 +427,7 @@ export default function UsersTab({
             <div className="relative max-w-xs w-full">
               <input
                 type="text"
-                placeholder="SEARCH_REGISTRY_LOGS..."
+                placeholder="SEARCH REGISTRY LOGS..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
@@ -443,7 +443,7 @@ export default function UsersTab({
             <table className="w-full border-collapse text-left text-xs">
               <thead>
                 <tr className="border-b border-[var(--border)] text-zinc-500 uppercase font-bold tracking-widest text-[9px]">
-                  <th className="py-3 px-2">VOTER_PROFILE</th>
+                  <th className="py-3 px-2">VOTER PROFILE</th>
                   <th className="py-3 px-2">USERNAME</th>
                   <th className="py-3 px-2">ROLE</th>
                   <th className="py-3 px-2 text-right">ACTIONS</th>
@@ -497,7 +497,7 @@ export default function UsersTab({
                             <Trash2 size={13} />
                           </motion.button>
                         ) : (
-                          <span className="text-[9px] text-zinc-400 italic font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>SYSTEM_LOCK</span>
+                          <span className="text-[9px] text-zinc-400 italic font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>SYSTEM LOCK</span>
                         )}
                       </td>
                     </motion.tr>

@@ -150,20 +150,20 @@ export default function AppShell({
         )}
       </AnimatePresence>
 
-      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[var(--surface)] border-r border-[var(--border)] flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2`}>
-        <div className="mb-12">
-            <div className="w-[50px] h-[50px] bg-white rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                <img src={bolinaoLogo} alt="Logo" className="w-full h-full object-contain" />
+      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[var(--surface)] border-r border-[var(--border)] flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(26,43,72,0.04)]`}>
+        <div className="mb-8 flex flex-col items-center text-center pb-6 border-b border-[var(--border)]">
+            <div className="w-16 h-16 rounded-2xl bg-white p-2 mb-3 flex items-center justify-center border border-[rgba(26,43,72,0.08)] shadow-sm">
+                <img src={bolinaoLogo} alt="Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
-            <div className="font-display text-base uppercase leading-none tracking-tight">
+            <div className="font-display font-bold text-lg uppercase leading-tight tracking-tight text-[var(--ink)]">
                 Bolinao School<br/>of Fisheries
             </div>
-            <span className="font-mono text-[0.6rem] text-[var(--accent)] uppercase tracking-widest mt-2 block">
+            <span className="font-mono text-[0.7rem] text-[var(--secondary)] uppercase tracking-widest mt-2 font-semibold">
                 E-Voting Portal
             </span>
         </div>
         
-        <nav className="flex flex-col gap-2 flex-1 overflow-y-auto min-h-0 pr-1 py-4 scrollbar-none">
+        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto min-h-0 pr-1 py-2 scrollbar-none">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -173,12 +173,14 @@ export default function AppShell({
                   onTabChange(item.id);
                   if (isMobile) setIsMobileMenuOpen(false);
                 }}
-                className={`flex items-center gap-3 px-4 py-3 text-[0.7rem] font-mono uppercase tracking-wider rounded transition-all cursor-pointer border-none text-left ${
-                  isActive ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[rgba(26,26,24,0.6)] hover:bg-[rgba(26,26,24,0.03)] hover:text-[var(--ink)]"
+                className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold tracking-wide rounded-xl transition-all cursor-pointer border-none text-left ${
+                  isActive 
+                    ? "bg-[var(--secondary)] text-white shadow-sm" 
+                    : "text-[var(--ink)]/75 hover:bg-[var(--secondary-soft)] hover:text-[var(--secondary)]"
                 }`}
               >
-                <item.icon size={16} className={isActive ? "opacity-100" : "opacity-60"} />
-                {item.label}
+                <item.icon size={18} className={isActive ? "opacity-100" : "opacity-70"} />
+                <span>{item.label}</span>
               </button>
             );
           })}
@@ -247,7 +249,7 @@ export default function AppShell({
 
       <footer className="hidden md:flex md:col-start-2 px-10 py-4 border-t border-[var(--border)] font-mono text-[0.6rem] opacity-40 justify-between shrink-0 bg-[var(--bg)]">
         <span>© 2026 BOLINAO SCHOOL OF FISHERIES</span>
-        <span>SECURITY PROTOCOL: v4.1.2_SECURE</span>
+        <span>SECURITY PROTOCOL: v4.1.2 SECURE</span>
       </footer>
 
       <ConfirmModal

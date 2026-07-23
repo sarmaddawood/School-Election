@@ -1,25 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Inter:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 :root {
-  --bg: #fdfcf9;
-  --surface: #ffffff;
-  --ink: #1a1a18;
-  --accent: #7c6c4c;
-  --accent-soft: rgba(124, 108, 76, 0.1);
-  --border: rgba(26, 26, 24, 0.08);
-  --mono: 'Space Mono', monospace;
-  --display: 'Cormorant Garamond', serif;
+  --bg: #F4F7FE;
+  --ink: #1A2B48;
+  --accent: #E67E22;
+  --accent-soft: rgba(230, 126, 34, 0.12);
+  --secondary: #3498DB;
+  --secondary-soft: rgba(52, 152, 219, 0.12);
+  --surface: #FFFFFF;
+  --border: rgba(26, 43, 72, 0.08);
+  --mono: 'Inter', monospace;
+  --display: 'Inter', sans-serif;
   --body: 'Inter', sans-serif;
 }
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-display: "Cormorant Garamond", serif;
-  --color-brand-50: rgba(124, 108, 76, 0.05);
-  --color-brand-100: rgba(124, 108, 76, 0.1);
-  --color-brand-500: #7c6c4c;
+  --font-mono: "Inter", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Inter", sans-serif;
+  --color-brand-50: rgba(230, 126, 34, 0.05);
+  --color-brand-100: rgba(230, 126, 34, 0.1);
+  --color-brand-500: #E67E22;
   
   --animate-float: float 6s ease-in-out infinite;
 }
@@ -31,7 +33,7 @@
 }
 
 html {
-  font-size: 112.5%; /* Increases base font size from 16px to 18px */
+  font-size: 100%;
 }
 
 body {
@@ -42,51 +44,86 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Brutalist High Density panels and inputs */
-.glass-panel {
+.font-display {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Card, panel and input utilities */
+.card, .glass-panel, .glass-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  box-shadow: none;
-  transition: all 0.2s ease;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px -10px rgba(26, 43, 72, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hero {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px -10px rgba(26, 43, 72, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .glass-panel-hover:hover {
-  transform: translateY(-1px);
-  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(26, 43, 72, 0.15);
 }
 
-.glass-input {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+.glass-input, input, select, textarea {
+  background: var(--surface);
+  border: 2px solid #E2E8F0;
+  border-radius: 12px;
   color: var(--ink);
-  font-family: "Space Mono", monospace;
+  font-family: "Inter", sans-serif;
   transition: all 0.2s ease;
 }
 
-.glass-input:focus {
+.glass-input:focus, input:focus, select:focus, textarea:focus {
   background: #ffffff;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.15);
   outline: none;
 }
 
-.glass-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+.brutalist-btn, .btn-primary {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.brutalist-btn:hover, .btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.brutalist-btn:active, .btn-primary:active {
+  transform: translateY(1px);
+}
+
+.label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--secondary);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--ink) 40%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--secondary);
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -94,185 +131,35 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
+  background: rgba(26, 43, 72, 0.2);
+  border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-::view-transition-old(root) {
-  animation: 400ms cubic-bezier(0.4, 0, 0.2, 1) both fade-out;
-}
-::view-transition-new(root) {
-  animation: 400ms cubic-bezier(0.4, 0, 0.2, 1) both fade-in;
-}
-
-@keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* LIGHT THEME NORMALIZATION OVERRIDES */
-
-/* 1. Main area global color override */
-main .text-white, main .text-zinc-100, main [class*="text-white"], main [class*="text-zinc-100"] {
+/* Light Theme Normalization Overrides */
+main .text-white, main .text-zinc-100 {
   color: var(--ink) !important;
 }
 
-/* 2. Map transparent white text-colors to transparent ink/dark colors */
-main .text-\[rgba\(255\,255\,255\,0\.45\)\], main [class*="text-[rgba(255,255,255,0.45)]"] {
-  color: rgba(26, 26, 24, 0.55) !important;
-}
-main .text-\[rgba\(255\,255\,255\,0\.4\)\], main [class*="text-[rgba(255,255,255,0.4)]"] {
-  color: rgba(26, 26, 24, 0.45) !important;
-}
-main .text-\[rgba\(255\,255\,255\,0\.5\)\], main [class*="text-[rgba(255,255,255,0.5)]"] {
-  color: rgba(26, 26, 24, 0.6) !important;
-}
-main .text-\[rgba\(255\,255\,255\,0\.6\)\], main [class*="text-[rgba(255,255,255,0.6)]"] {
-  color: rgba(26, 26, 24, 0.7) !important;
-}
-main .text-\[rgba\(255\,255\,255\,0\.8\)\], main [class*="text-[rgba(255,255,255,0.8)]"] {
-  color: rgba(26, 26, 24, 0.8) !important;
-}
-main .text-zinc-400, main .text-zinc-500, main [class*="text-zinc-400"], main [class*="text-zinc-500"] {
-  color: rgba(26, 26, 24, 0.6) !important;
-}
-
-/* 3. Map transparent white borders to light dark borders */
-main .border-\[rgba\(255\,255\,255\,0\.1\)\], main [class*="border-[rgba(255,255,255,0.1)]"] {
-  border-color: var(--border) !important;
-}
-main .border-\[rgba\(255\,255\,255\,0\.15\)\], main [class*="border-[rgba(255,255,255,0.15)]"] {
-  border-color: var(--border) !important;
-}
-main .border-\[rgba\(255\,255\,255\,0\.08\)\], main [class*="border-[rgba(255,255,255,0.08)]"] {
-  border-color: var(--border) !important;
-}
-main .border-\[rgba\(255\,255\,255\,0\.05\)\], main [class*="border-[rgba(255,255,255,0.05)]"] {
-  border-color: var(--border) !important;
-}
-main .border-zinc-800, main .border-zinc-700, main [class*="border-zinc-800"], main [class*="border-zinc-700"] {
-  border-color: var(--border) !important;
-}
-
-/* 4. Force dark card background mappings to light surface background */
-main .glass-panel, 
-main .bg-\[\#0D0D0E\], 
-main .bg-\[\#161618\], 
-main .bg-black,
-main [class*="bg-[#0D0D0E]"],
-main [class*="bg-[#161618]"],
-main [class*="bg-black"],
-main [class*="bg-zinc-900"] {
-  background-color: var(--surface) !important;
-  border-color: var(--border) !important;
-  color: var(--ink) !important;
-}
-
-/* 5. Inputs and selectors */
 main input, main select, main textarea {
-  background-color: var(--bg) !important;
-  border-color: var(--border) !important;
+  background-color: var(--surface) !important;
+  border-color: #E2E8F0 !important;
   color: var(--ink) !important;
 }
+
 main input::placeholder {
-  color: rgba(26, 26, 24, 0.4) !important;
+  color: rgba(26, 43, 72, 0.4) !important;
 }
+
 main select option {
   background-color: var(--surface) !important;
   color: var(--ink) !important;
 }
 
-/* 6. Overriding the Neon Yellow to Accent Bronze */
-main .bg-\[\#E6FE52\], main [class*="bg-[#E6FE52]"] {
-  background-color: var(--accent) !important;
-  color: var(--bg) !important;
-}
-main .bg-\[\#E6FE52\]\/10, main [class*="bg-[#E6FE52]/10"] {
-  background-color: var(--accent-soft) !important;
-}
-main .text-\[\#E6FE52\], main [class*="text-[#E6FE52]"] {
-  color: var(--accent) !important;
-}
-main .hover\:text-\[\#E6FE52\]:hover, main [class*="hover:text-[#E6FE52]"]:hover {
-  color: var(--accent) !important;
-}
-main .group-hover\:text-\[\#E6FE52\] {
-  /* Requires parent to have .group class to work via tailwind, but we'll override */
-}
-.group:hover main .group-hover\:text-\[\#E6FE52\], .group:hover main [class*="group-hover:text-[#E6FE52]"] {
-  color: var(--accent) !important;
-}
-main .border-\[\#E6FE52\], main [class*="border-[#E6FE52]"] {
-  border-color: var(--accent) !important;
-}
-main .border-\[\#E6FE52\]\/30, main [class*="border-[#E6FE52]/30"] {
-  border-color: rgba(124, 108, 76, 0.3) !important;
-}
-main .border-\[\#E6FE52\]\/50, main [class*="border-[#E6FE52]/50"] {
-  border-color: rgba(124, 108, 76, 0.5) !important;
-}
-main .shadow-\[\#E6FE52\], main [class*="shadow-[#E6FE52]"] {
-  box-shadow: 0 0 8px rgba(124, 108, 76, 0.4) !important;
-}
-main .text-amber-400 {
-  color: #c27d38 !important;
-}
-main .bg-amber-500\/10 {
-  background-color: rgba(194, 125, 56, 0.1) !important;
-}
-
-/* 7. Action buttons (Delete, trash, and simple secondary buttons) */
-main button:disabled {
-  opacity: 0.45 !important;
-}
-main .text-zinc-500 {
-  color: rgba(26, 26, 24, 0.5) !important;
-}
-
-/* 8. Make sure system indicators look gorgeous with gold pulse */
-main .bg-\[\#E6FE52\]\.shadow-\[\#E6FE52\], main [class*="bg-[#E6FE52].shadow-[#E6FE52]"] {
-  background-color: var(--accent) !important;
-  box-shadow: 0 0 8px var(--accent) !important;
-}
-
-/* 9. Let's make sure table header, list hover states are light and pretty */
-main table th {
-  color: rgba(26, 26, 24, 0.6) !important;
-}
-main tr.hover\:bg-\[rgba\(255\,255\,255\,0\.04\)\]:hover, main [class*="hover:bg-[rgba(255,255,255,0.04)]"]:hover {
-  background-color: rgba(26, 26, 24, 0.03) !important;
-}
-main div.hover\:bg-\[rgba\(255\,255\,255\,0\.04\)\]:hover, main [class*="hover:bg-[rgba(255,255,255,0.04)]"]:hover {
-  background-color: rgba(26, 26, 24, 0.03) !important;
-}
-main .divide-\[rgba\(255\,255\,255\,0\.06\)\] > * + *, main [class*="divide-[rgba(255,255,255,0.06)]"] > * + * {
-  border-color: var(--border) !important;
-}
-main tr.hover\:bg-\[rgba\(255\,255\,255\,0\.04\)\]:hover {
-  background-color: rgba(26, 26, 24, 0.03) !important;
-}
-main div.hover\:bg-\[rgba\(255\,255\,255\,0\.04\)\]:hover {
-  background-color: rgba(26, 26, 24, 0.03) !important;
-}
-main .divide-\[rgba\(255\,255\,255\,0\.06\)\] > * + * {
-  border-color: var(--border) !important;
-}
-
-/* Scrollbar none utility */
 .scrollbar-none {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .scrollbar-none::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
 }
 

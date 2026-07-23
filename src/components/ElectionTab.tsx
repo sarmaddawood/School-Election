@@ -182,7 +182,7 @@ export default function ElectionTab({
         className="border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">ELECTION_ADMIN_03</span>
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">ELECTION ADMIN 03</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             ELECTION MANAGEMENT
           </h2>
@@ -196,7 +196,7 @@ export default function ElectionTab({
             className="px-4 py-2.5 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer rounded-none"
           >
             <Plus size={14} />
-            CREATE_ELECTION
+            CREATE ELECTION
           </motion.button>
         )}
       </motion.div>
@@ -296,7 +296,7 @@ export default function ElectionTab({
                   disabled={submitting}
                   className="px-4 py-2 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider cursor-pointer rounded-none disabled:opacity-50"
                 >
-                  {submitting ? "SAVING..." : "SAVE_ELECTION"}
+                  {submitting ? "SAVING..." : "SAVE ELECTION"}
                 </button>
               </div>
             </form>

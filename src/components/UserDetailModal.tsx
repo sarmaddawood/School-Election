@@ -97,15 +97,15 @@ export default function UserDetailModal({
                 
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">SYSTEM_UUID:</span>
+                    <span className="text-zinc-500">SYSTEM UUID:</span>
                     <span className="font-bold text-[var(--ink)]">{user.id}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">ROLE_CLASS:</span>
+                    <span className="text-zinc-500">ROLE CLASS:</span>
                     <span className="font-bold text-[var(--ink)] uppercase">{user.role}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">YEAR_LEVEL:</span>
+                    <span className="text-zinc-500">YEAR LEVEL:</span>
                     <span className="font-bold text-[var(--accent)]">
                       {user.role === "student" ? `Year ${user.yearLevel || "Not Configured"}` : "N/A (Faculty)"}
                     </span>
@@ -120,17 +120,17 @@ export default function UserDetailModal({
 
                 <div className="space-y-3 text-xs">
                   <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">TOTAL_BALLOTS_CAST:</span>
+                    <span className="text-zinc-500">TOTAL BALLOTS CAST:</span>
                     <span className="font-bold text-[var(--accent)]">{userVotes.length}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">NOMINATION_COUNT:</span>
+                    <span className="text-zinc-500">NOMINATION COUNT:</span>
                     <span className="font-bold text-[var(--accent)]">{userNominations.length}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">VOTER_STATUS:</span>
+                    <span className="text-zinc-500">VOTER STATUS:</span>
                     <span className={`font-bold ${userVotes.length > 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                      {userVotes.length > 0 ? "ACTIVE_PARTICIPANT" : "PENDING_PARTICIPATION"}
+                      {userVotes.length > 0 ? "ACTIVE PARTICIPANT" : "PENDING PARTICIPATION"}
                     </span>
                   </div>
                 </div>
@@ -172,7 +172,7 @@ export default function UserDetailModal({
 
                         {nom.party && (
                           <p className="text-[9px] text-zinc-500">
-                            PARTY_AFFILIATION: <span className="text-[var(--ink)] font-bold">{nom.party}</span>
+                            PARTY AFFILIATION: <span className="text-[var(--ink)] font-bold">{nom.party}</span>
                           </p>
                         )}
 
@@ -220,7 +220,7 @@ export default function UserDetailModal({
                           </div>
                         </div>
                         <span className="text-[8px] font-mono text-zinc-500 font-bold bg-[var(--surface)] px-1.5 py-0.5 border border-[var(--border)]">
-                          SECURE_REF: {vote.id}
+                          SECURE REF: {vote.id}
                         </span>
                       </div>
                     );

@@ -112,7 +112,7 @@ export default function ResultsPage({
         className="border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">RESULTS_LEDGER_05</span>
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">RESULTS LEDGER 05</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
             <BarChart3 className="text-[var(--accent)] animate-pulse" size={24} />
             ELECTION RESULTS BOARD
@@ -147,7 +147,7 @@ export default function ResultsPage({
           className="glass-panel p-16 text-center space-y-4"
         >
           <BarChart3 size={32} className="mx-auto text-[var(--accent)]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO_ELECTIONS_AUDITED</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">NO ELECTIONS AUDITED</p>
           <p className="text-[10px] text-zinc-500">Configure elections and ballot boards to initialize analytical result displays.</p>
         </motion.div>
       ) : isSealed ? (
@@ -169,7 +169,7 @@ export default function ResultsPage({
 
               <div className="space-y-2">
                 <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest block">
-                  ELECTION_INTEGRITY_SHIELD
+                  ELECTION INTEGRITY SHIELD
                 </span>
                 <h3 className="font-display font-black text-xl md:text-2xl text-[var(--ink)] uppercase tracking-wider">
                   Ballot tallies are sealed until voting completes.

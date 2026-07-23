@@ -207,7 +207,7 @@ export default function CandidatesTab({
     >
       <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">REGISTRY_MODULE_02</span>
+          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">REGISTRY MODULE 02</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
             NOMINATE CANDIDATES
           </h2>
@@ -221,7 +221,7 @@ export default function CandidatesTab({
           className="glass-panel p-8 text-center flex flex-col items-center justify-center space-y-3"
         >
           <Award size={32} className="text-[var(--accent)]" />
-          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">SETUP_PREREQUISITE_REQUIRED</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[var(--ink)]">SETUP PREREQUISITE REQUIRED</p>
           <p className="text-[10px] text-zinc-500 max-w-xs leading-relaxed">
             You must have at least one active election and one position configured before you can nominate candidates.
           </p>

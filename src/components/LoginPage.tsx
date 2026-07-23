@@ -67,92 +67,77 @@ export default function LoginPage({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--bg)] text-[var(--ink)] font-sans flex items-center justify-center p-6 md:p-12 selection:bg-[var(--accent)]/10">
+    <div className="min-h-[100dvh] bg-[var(--bg)] text-[var(--ink)] font-sans flex items-center justify-center p-4 sm:p-6 md:p-12 selection:bg-[var(--secondary)]/15">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_2px_1fr] gap-12 lg:gap-16 items-center"
+        className="w-full max-w-[420px] my-auto"
       >
-        {/* Left Side: Brand Hero */}
-        <motion.div variants={itemVariants} className="flex flex-col justify-center">
-          
-          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.85] tracking-tight text-[var(--ink)] mb-8 flex flex-col gap-6">
-            <img src={bolinaoLogo} alt="BSF Logo" className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 object-contain mix-blend-multiply" />
-            <span>BSF<br />E-Voting</span>
-          </h1>
-          
-          <p className="max-w-[440px] text-sm text-[var(--ink)]/80 leading-relaxed font-sans">
-            A high-integrity, real-time, digital voting platform with Zero-Trust constraints and auditable verification logs.
-          </p>
-
-          <div className="mt-12 text-[10px] tracking-[0.15em] text-[var(--ink)]/40 font-mono uppercase hidden lg:block">
-            VER 2.0.4.R32 // academic standard
-          </div>
-        </motion.div>
-
-        {/* Middle Line Divider */}
         <motion.div 
           variants={itemVariants}
-          className="hidden lg:block bg-[var(--ink)]/10 self-stretch w-[1px] my-4"
-        />
+          className="bg-[var(--surface)] rounded-[24px] p-8 shadow-[0_20px_40px_-10px_rgba(26,43,72,0.1)] border border-[rgba(26,43,72,0.08)]"
+        >
+          <div className="text-center mb-8 flex flex-col items-center">
+            <img src={bolinaoLogo} alt="BSF Logo" className="w-16 h-16 object-contain mb-3 mix-blend-multiply" />
+            <h1 className="font-display font-bold text-4xl text-[var(--ink)] tracking-tight leading-tight mb-2">
+              BSF E-Voting
+            </h1>
+            <p className="text-sm text-[var(--ink)]/70 font-medium">
+              Secure, Transparent, Digital Voting.
+            </p>
+          </div>
 
-        {/* Right Side: Auth Panel */}
-        <motion.div variants={itemVariants} className="w-full">
-          <div className="border border-[var(--ink)]/10 p-8 md:p-12 bg-[var(--surface)]/50 backdrop-blur-sm shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
-            <div className="font-mono text-[10px] tracking-[0.2em] text-[var(--accent)] mb-8 uppercase">
-              Authenticate Identity
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="label">IDENTITY</label>
+              <input
+                type="text"
+                placeholder="USER ID"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full p-3 px-4 border-2 border-[#E2E8F0] rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-[var(--secondary)] focus:ring-4 focus:ring-[#3498DB]/10 transition-all placeholder:text-[var(--ink)]/35 font-sans"
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="USERNAME / ROLL NUMBER"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full bg-transparent border border-[var(--ink)]/20 focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/20 outline-none p-4 font-mono text-xs tracking-wider transition-all placeholder:text-[var(--ink)]/30"
-                />
-              </div>
-
-              <div>
-                <input
-                  type="password"
-                  placeholder="PASSWORD KEY"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent border border-[var(--ink)]/20 focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]/20 outline-none p-4 font-mono text-xs tracking-wider transition-all placeholder:text-[var(--ink)]/30"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-[var(--ink)] text-[var(--bg)] hover:bg-[var(--accent)] font-mono font-bold p-4 text-xs tracking-[0.15em] uppercase cursor-pointer transition-all flex items-center justify-center gap-2.5 active:scale-[0.99] disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={14} />
-                    AUTHORIZING_SESSION...
-                  </>
-                ) : (
-                  <>
-                    <Key size={14} />
-                    Authorize Session
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="mt-8 pt-8 border-t border-[var(--ink)]/10 flex justify-center">
-              <div
-                onClick={() => setShowHowToVote(true)}
-                className="flex items-center justify-center gap-2 text-[10px] text-[var(--accent)] uppercase tracking-[0.15em] hover:text-[var(--ink)] transition-colors cursor-pointer select-none font-mono font-bold"
-              >
-                <Info size={12} />
-                How to Vote Guide
-              </div>
+            <div>
+              <label className="label">CREDENTIAL</label>
+              <input
+                type="password"
+                placeholder="SECRET KEY"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 px-4 border-2 border-[#E2E8F0] rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-[var(--secondary)] focus:ring-4 focus:ring-[#3498DB]/10 transition-all placeholder:text-[var(--ink)]/35 font-sans"
+              />
             </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full p-3.5 bg-[var(--accent)] hover:opacity-90 text-white border-none rounded-xl font-semibold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  <span>AUTHORIZING SESSION...</span>
+                </>
+              ) : (
+                <>
+                  <Key size={18} />
+                  <span>AUTHORIZE SESSION</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => setShowHowToVote(true)}
+              className="text-xs text-[var(--ink)] underline hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer font-sans"
+            >
+              How to Vote Guide
+            </button>
           </div>
         </motion.div>
       </motion.div>

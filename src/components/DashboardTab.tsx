@@ -204,7 +204,7 @@ export default function DashboardTab({
                 <div className="border-b border-[var(--border)] pb-4 mb-6 flex justify-between items-center">
                     <h3 className="font-mono text-[0.75rem] uppercase tracking-widest text-[var(--ink)]">ACTIVE BALLOT MONITOR</h3>
                     {timeLeft.status === "live" ? (
-                      <span className="bg-[var(--accent)] text-[var(--surface)] px-2 py-0.5 font-mono text-[0.6rem] font-bold">LIVE_NOW</span>
+                      <span className="bg-[var(--accent)] text-[var(--surface)] px-2 py-0.5 font-mono text-[0.6rem] font-bold">LIVE NOW</span>
                     ) : timeLeft.status === "upcoming" ? (
                       <span className="bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 font-mono text-[0.6rem] font-bold">UPCOMING</span>
                     ) : (
