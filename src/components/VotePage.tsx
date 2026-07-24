@@ -260,9 +260,13 @@ export default function VotePage({
                             <motion.div
                               layout
                               key={cand.id}
+                              animate={{ scale: isCandidateVoted ? 1.025 : 1 }}
+                              transition={{ type: "spring", stiffness: 350, damping: 22 }}
+                              whileHover={!voteForThisPos ? { scale: 1.015 } : undefined}
+                              whileTap={!voteForThisPos ? { scale: 0.985 } : undefined}
                               className={`glass-panel p-5 transition-all relative overflow-hidden flex flex-col justify-between space-y-4 min-h-[220px] ${
                                 isCandidateVoted
-                                  ? "border-emerald-500/40 bg-emerald-50/50 shadow-[0_0_20px_rgba(16,185,129,0.05)]"
+                                  ? "border-emerald-500/50 bg-emerald-50/60 ring-2 ring-emerald-500/20 shadow-[0_8px_25px_rgba(16,185,129,0.12)]"
                                   : voteForThisPos
                                   ? "opacity-40 border-[var(--border)]"
                                   : "glass-panel-hover"

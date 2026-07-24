@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, User, Shield, Award, Vote, CheckCircle, Calendar } from "lucide-react";
+import { X, User, Shield, Award, Vote, CheckCircle, Calendar, Camera, RefreshCw } from "lucide-react";
 import { User as UserType, Candidate, Position, Election, Vote as VoteType } from "../types";
+import ImageCropModal from "./ImageCropModal";
 
 interface UserDetailModalProps {
   user: UserType | null;
@@ -11,6 +12,10 @@ interface UserDetailModalProps {
   votes: VoteType[];
   isOpen: boolean;
   onClose: () => void;
+  token?: string;
+  onRefreshData?: () => Promise<void>;
+  setErrorNotification?: (msg: string) => void;
+  setSuccessNotification?: (msg: string) => void;
 }
 
 export default function UserDetailModal({
@@ -21,8 +26,76 @@ export default function UserDetailModal({
   votes,
   isOpen,
   onClose,
+  token,
+  onRefreshData,
+  setErrorNotification,
+  setSuccessNotification,
 }: UserDetailModalProps) {
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null);
+
   if (!user) return null;
+
+  const photoToDisplay = currentPhotoUrl || user.photoUrl;
+
+  const handleSaveCroppedPhoto = async (croppedDataUrl: string, fileBlob?: Blob) => {
+    try {
+      if (!token) {
+        throw new Error("Missing auth token");
+      }
+
+      let photoUrlToSave = croppedDataUrl;
+
+      if (fileBlob) {
+        try {
+          const formData = new FormData();
+          formData.append("file", fileBlob, "profile.jpg");
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            if (uploadData.url) {
+              photoUrlToSave = uploadData.url;
+            }
+          }
+        } catch (uploadErr) {
+          console.warn("Direct blob upload failed, falling back to server processing:", uploadErr);
+        }
+      }
+
+      const res = await fetch(`/api/users/${user.id}/photo`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ photoUrl: photoUrlToSave }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update user photo");
+      }
+
+      const newUrl = data.user?.photoUrl || photoUrlToSave;
+      setCurrentPhotoUrl(newUrl);
+      if (setSuccessNotification) {
+        setSuccessNotification(`Updated profile photo for ${user.fullName}`);
+      }
+      if (onRefreshData) {
+        await onRefreshData();
+      }
+    } catch (err: any) {
+      if (setErrorNotification) {
+        setErrorNotification(err.message || "Failed to update profile photo");
+      }
+    }
+  };
 
   // Find candidate profiles for this user
   const userNominations = candidates.filter((c) => c.userId === user.id);
@@ -62,23 +135,43 @@ export default function UserDetailModal({
 
             {/* Header / Profile section */}
             <div className="flex flex-col md:flex-row items-start md:items-center gap-5 pb-6 border-b border-[var(--border)]">
-              {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
-                <img
-                  src={user.photoUrl}
-                  alt={user.fullName}
-                  className="w-16 h-16 rounded-none object-cover border-2 border-[var(--accent)] shadow-md shrink-0"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-none bg-[var(--accent-soft)] border-2 border-[var(--accent)] flex items-center justify-center font-black text-2xl text-[var(--accent)] shrink-0 shadow-lg">
-                  {user.fullName[0]}
-                </div>
-              )}
+              <div className="relative group shrink-0">
+                {photoToDisplay && photoToDisplay !== "null" && photoToDisplay !== "" && photoToDisplay !== "undefined" ? (
+                  <img
+                    src={photoToDisplay}
+                    alt={user.fullName}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-[var(--accent)] shadow-md"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-[var(--accent-soft)] border-2 border-[var(--accent)] flex items-center justify-center font-black text-2xl text-[var(--accent)] shadow-lg">
+                    {user.fullName[0]}
+                  </div>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => setIsCropOpen(true)}
+                  className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer"
+                  title="Change & Crop Profile Picture"
+                >
+                  <Camera size={18} />
+                </button>
+              </div>
 
-              <div className="space-y-1">
-                <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase bg-[var(--accent-soft)] px-2 py-0.5 border border-[var(--accent)]/20">
-                  {user.role} Profile
-                </span>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase bg-[var(--accent-soft)] px-2 py-0.5 border border-[var(--accent)]/20">
+                    {user.role} Profile
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCropOpen(true)}
+                    className="text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Camera size={10} /> CHANGE PHOTO
+                  </button>
+                </div>
                 <h3 className="font-display font-black text-xl md:text-2xl text-[var(--ink)] uppercase tracking-wide mt-1">
                   {user.fullName}
                 </h3>
@@ -244,6 +337,13 @@ export default function UserDetailModal({
                 CLOSE PROFILE
               </button>
             </div>
+
+            <ImageCropModal
+              isOpen={isCropOpen}
+              onClose={() => setIsCropOpen(false)}
+              onCropSave={handleSaveCroppedPhoto}
+              title={`Crop Photo for ${user.fullName}`}
+            />
           </motion.div>
         </div>
       )}

@@ -386,6 +386,25 @@ async function startServer() {
     }
   }
 
+  async function requireAdminOrTeacher(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+      if (user.role !== "admin" && user.role !== "teacher") {
+        res.status(403).json({ error: "Forbidden: Admin or Teacher access required" });
+        return;
+      }
+      (req as any).user = user;
+      next();
+    } catch (err: any) {
+      console.error("Admin/Teacher check failed:", err);
+      res.status(500).json({ error: "Admin/Teacher check failed: " + (err.message || "Unknown error") });
+    }
+  }
+
   async function requireAdmin(req: Request, res: Response, next: NextFunction) {
     try {
       const user = await getAuthenticatedUser(req);
@@ -487,6 +506,47 @@ async function startServer() {
     }
   });
 
+  // Helper to ensure photoUrl is hosted in Appwrite storage and stays < 2048 chars
+  async function ensureHostedPhotoUrl(photoUrl: string | null | undefined): Promise<string | null> {
+    if (!photoUrl || typeof photoUrl !== "string") return null;
+    const trimmed = photoUrl.trim();
+    if (!trimmed || trimmed === "null" || trimmed === "undefined") return null;
+
+    if (trimmed.startsWith("data:") || trimmed.length > 1500) {
+      try {
+        const bucketId = "6a4fc63b003db7179644";
+        const matches = trimmed.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        let buffer: Buffer;
+        let filename = "photo.jpg";
+
+        if (matches && matches.length === 3) {
+          buffer = Buffer.from(matches[2], "base64");
+          const mime = matches[1];
+          if (mime.includes("png")) filename = "photo.png";
+          else if (mime.includes("webp")) filename = "photo.webp";
+        } else {
+          const cleanBase64 = trimmed.replace(/^data:image\/\w+;base64,/, "");
+          buffer = Buffer.from(cleanBase64, "base64");
+        }
+
+        const fileId = "f-" + Math.random().toString(36).substring(2, 9);
+        const appwriteFile = await storage.createFile(
+          bucketId,
+          fileId,
+          InputFile.fromBuffer(buffer, filename)
+        );
+
+        const hostedUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/view?project=${APPWRITE_PROJECT}`;
+        return hostedUrl;
+      } catch (err: any) {
+        console.error("Failed to upload base64 image to Appwrite storage:", err);
+        return null;
+      }
+    }
+
+    return trimmed;
+  }
+
   // --- Upload API ---
   app.post("/api/upload", upload.single("file"), async (req: Request, res: Response) => {
     try {
@@ -514,7 +574,7 @@ async function startServer() {
   });
 
   // --- Users API ---
-  app.get("/api/users", requireAdmin, async (req: Request, res: Response) => {
+  app.get("/api/users", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
       const users = await getAll("users");
       const list = users.map((u: any) => ({
@@ -531,7 +591,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/users", requireAdmin, async (req: Request, res: Response) => {
+  app.post("/api/users", requireAdminOrTeacher, async (req: Request, res: Response) => {
     const { username, fullName, password, role } = req.body;
     if (!username || !fullName || !password || !role) {
       res.status(400).json({ error: "All fields are required" });
@@ -552,6 +612,8 @@ async function startServer() {
         return;
       }
 
+      const finalPhotoUrl = await ensureHostedPhotoUrl(req.body.photoUrl);
+
       const newUser = {
         id: "u-" + Math.random().toString(36).substring(2, 9),
         username,
@@ -559,7 +621,7 @@ async function startServer() {
         password,
         role,
         yearLevel: req.body.yearLevel || null,
-        photoUrl: req.body.photoUrl || null,
+        photoUrl: finalPhotoUrl,
       };
 
       await db.collection("users").doc(newUser.id).set(newUser);
@@ -576,7 +638,75 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/users/:id", requireAdmin, async (req: Request, res: Response) => {
+  app.post("/api/users/bulk", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    const { users } = req.body;
+    if (!Array.isArray(users) || users.length === 0) {
+      res.status(400).json({ error: "Invalid or empty users array provided" });
+      return;
+    }
+
+    try {
+      const existingUsers = await getAll("users");
+      const existingUsernames = new Set(existingUsers.map((u: any) => u.username ? u.username.toLowerCase() : ""));
+
+      const created: any[] = [];
+      const errors: string[] = [];
+
+      for (let i = 0; i < users.length; i++) {
+        const u = users[i];
+        const rowNum = i + 1;
+
+        if (!u.username || !u.fullName || !u.password || !u.role) {
+          errors.push(`Row ${rowNum}: Missing required fields (username, fullName, password, role).`);
+          continue;
+        }
+
+        const trimmedRole = u.role.toString().toLowerCase().trim();
+        if (trimmedRole !== "student" && trimmedRole !== "teacher") {
+          errors.push(`Row ${rowNum}: Invalid role "${u.role}". Must be "student" or "teacher".`);
+          continue;
+        }
+
+        const trimmedUsername = u.username.toString().trim();
+        if (existingUsernames.has(trimmedUsername.toLowerCase())) {
+          errors.push(`Row ${rowNum}: Username "${trimmedUsername}" already exists.`);
+          continue;
+        }
+
+        const newUser = {
+          id: "u-" + Math.random().toString(36).substring(2, 9),
+          username: trimmedUsername,
+          fullName: u.fullName.toString().trim(),
+          password: u.password.toString(),
+          role: trimmedRole,
+          yearLevel: u.yearLevel ? parseInt(u.yearLevel) : null,
+          photoUrl: u.photoUrl || null,
+        };
+
+        await db.collection("users").doc(newUser.id).set(newUser);
+        existingUsernames.add(trimmedUsername.toLowerCase());
+        created.push({
+          id: newUser.id,
+          username: newUser.username,
+          fullName: newUser.fullName,
+          role: newUser.role,
+          yearLevel: newUser.yearLevel,
+          photoUrl: newUser.photoUrl,
+        });
+      }
+
+      res.status(201).json({
+        success: true,
+        createdCount: created.length,
+        errors,
+        users: created,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to process bulk import" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAdminOrTeacher, async (req: Request, res: Response) => {
     const { id } = req.params;
     if (id === "admin-1") {
       res.status(400).json({ error: "Cannot delete the system administrator" });
@@ -603,6 +733,37 @@ async function startServer() {
       res.json({ message: "User deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete user" });
+    }
+  });
+
+  app.put("/api/users/:id/photo", requireAuth, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { photoUrl } = req.body;
+    const authUser = (req as any).user;
+
+    if (authUser.id !== id && authUser.role !== "admin" && authUser.role !== "teacher") {
+      res.status(403).json({ error: "Forbidden: You can only update your own profile photo" });
+      return;
+    }
+
+    try {
+      const userRef = db.collection("users").doc(id);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const finalPhotoUrl = await ensureHostedPhotoUrl(photoUrl);
+
+      await userRef.update({ photoUrl: finalPhotoUrl });
+      const userData = userDoc.data() || {};
+      const updatedUser = { ...userData, id, photoUrl: finalPhotoUrl };
+      delete updatedUser.password;
+
+      res.json({ message: "Profile photo updated successfully", user: updatedUser });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to update profile photo" });
     }
   });
 
@@ -902,7 +1063,7 @@ async function startServer() {
   });
 
   // --- Votes API ---
-  app.get("/api/votes", requireAdmin, async (req: Request, res: Response) => {
+  app.get("/api/votes", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
       const list = await getAll("votes");
       res.json(list);

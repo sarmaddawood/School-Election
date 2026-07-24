@@ -14,9 +14,11 @@ import {
   Activity,
   Menu,
   X,
+  Camera,
 } from "lucide-react";
 import { User as UserType } from "../types";
 import ConfirmModal from "./ConfirmModal";
+import ImageCropModal from "./ImageCropModal";
 
 // @ts-ignore
 import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
@@ -30,6 +32,7 @@ interface AppShellProps {
   children: React.ReactNode;
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
+  onUserUpdate?: (updatedUser: UserType) => void;
 }
 
 export default function AppShell({
@@ -41,11 +44,13 @@ export default function AppShell({
   children,
   setErrorNotification,
   setSuccessNotification,
+  onUserUpdate,
 }: AppShellProps) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 880);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,6 +59,55 @@ export default function AppShell({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const handleSaveProfilePhoto = async (croppedDataUrl: string, fileBlob?: Blob) => {
+    try {
+      let photoUrlToSave = croppedDataUrl;
+
+      if (fileBlob) {
+        try {
+          const formData = new FormData();
+          formData.append("file", fileBlob, "profile.jpg");
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            if (uploadData.url) {
+              photoUrlToSave = uploadData.url;
+            }
+          }
+        } catch (uploadErr) {
+          console.warn("Direct blob upload failed, falling back to server processing:", uploadErr);
+        }
+      }
+
+      const res = await fetch(`/api/users/${user.id}/photo`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ photoUrl: photoUrlToSave }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update profile photo");
+      }
+
+      setSuccessNotification("Profile picture updated and saved!");
+      if (onUserUpdate && data.user) {
+        onUserUpdate(data.user);
+      }
+    } catch (err: any) {
+      setErrorNotification(err.message || "Failed to update profile picture");
+    }
+  };
 
   const navItems =
     user.role === "admin"
@@ -69,6 +123,7 @@ export default function AppShell({
         ]
       : user.role === "teacher"
       ? [
+          { id: "users", label: "Users Registry", icon: User },
           { id: "results", label: "Results Board", icon: BarChart3 },
           { id: "calendar", label: "Election Calendar", icon: CalendarDays },
         ]
@@ -150,15 +205,15 @@ export default function AppShell({
         )}
       </AnimatePresence>
 
-      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[var(--surface)] border-r border-[var(--border)] flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(26,43,72,0.04)]`}>
-        <div className="mb-8 flex flex-col items-center text-center pb-6 border-b border-[var(--border)]">
-            <div className="w-16 h-16 rounded-2xl bg-white p-2 mb-3 flex items-center justify-center border border-[rgba(26,43,72,0.08)] shadow-sm">
+      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[var(--secondary)] text-white border-r border-white/20 flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(26,43,72,0.15)]`}>
+        <div className="mb-8 flex flex-col items-center text-center pb-6 border-b border-white/20">
+            <div className="w-16 h-16 rounded-2xl bg-white p-2 mb-3 flex items-center justify-center border border-white/20 shadow-sm">
                 <img src={bolinaoLogo} alt="Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
-            <div className="font-display font-bold text-lg uppercase leading-tight tracking-tight text-[var(--ink)]">
+            <div className="font-display font-bold text-lg uppercase leading-tight tracking-tight text-white">
                 Bolinao School<br/>of Fisheries
             </div>
-            <span className="font-mono text-[0.7rem] text-[var(--secondary)] uppercase tracking-widest mt-2 font-semibold">
+            <span className="font-mono text-[0.7rem] text-amber-300 uppercase tracking-widest mt-2 font-semibold">
                 E-Voting Portal
             </span>
         </div>
@@ -175,20 +230,20 @@ export default function AppShell({
                 }}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-semibold tracking-wide rounded-xl transition-all cursor-pointer border-none text-left ${
                   isActive 
-                    ? "bg-[var(--secondary)] text-white shadow-sm" 
-                    : "text-[var(--ink)]/75 hover:bg-[var(--secondary-soft)] hover:text-[var(--secondary)]"
+                    ? "bg-[#E8F4FC] text-[var(--ink)] shadow-md font-bold" 
+                    : "text-white/80 hover:bg-white/15 hover:text-white"
                 }`}
               >
-                <item.icon size={18} className={isActive ? "opacity-100" : "opacity-70"} />
+                <item.icon size={18} className={isActive ? "opacity-100 text-[var(--secondary)]" : "opacity-80"} />
                 <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-[var(--border)] relative hidden md:block">
-            <div className="flex items-center gap-3 p-2 hover:bg-[var(--accent-soft)] rounded-lg cursor-pointer transition-colors" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                <div className="w-9 h-9 rounded-full bg-[var(--accent)] text-[var(--surface)] flex items-center justify-center font-bold text-[0.7rem] shrink-0 overflow-hidden">
+        <div className="mt-auto pt-6 border-t border-white/20 relative hidden md:block">
+            <div className="flex items-center gap-3 p-2 hover:bg-white/10 rounded-lg cursor-pointer transition-colors" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                <div className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[0.7rem] shrink-0 overflow-hidden">
                     {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
                         <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
                     ) : (
@@ -196,8 +251,8 @@ export default function AppShell({
                     )}
                 </div>
                 <div className="text-[0.65rem] overflow-hidden flex-1">
-                    <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)]">{user.fullName}</p>
-                    <p className="text-zinc-500 uppercase truncate tracking-wider mt-0.5">{user.role}</p>
+                    <p className="font-bold uppercase truncate tracking-wider text-white">{user.fullName}</p>
+                    <p className="text-blue-100 uppercase truncate tracking-wider mt-0.5">{user.role}</p>
                 </div>
             </div>
 
@@ -208,14 +263,24 @@ export default function AppShell({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 5 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full left-0 mb-2 w-full bg-[var(--surface)] border border-[var(--border)] rounded p-2 z-50 shadow-2xl"
+                  className="absolute bottom-full left-0 mb-2 w-full bg-white border border-[#3498DB]/20 rounded p-2 z-50 shadow-xl"
                 >
+                  <button
+                    onClick={() => {
+                      setIsCropModalOpen(true);
+                      setShowProfileMenu(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-[var(--ink)] hover:bg-[#E8F4FC] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Camera size={13} />
+                    Change Profile Picture
+                  </button>
                   <button
                     onClick={() => {
                       onTabChange("password");
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-[var(--ink)] hover:bg-[#E8F4FC] rounded flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Key size={13} />
                     Change Password
@@ -256,6 +321,15 @@ export default function AppShell({
         isOpen={showConfirmLogout}
         onClose={() => setShowConfirmLogout(false)}
         onConfirm={onLogout}
+      />
+
+      <ImageCropModal
+        isOpen={isCropModalOpen}
+        onClose={() => setIsCropModalOpen(false)}
+        onCropSave={async (croppedUrl, fileBlob) => {
+          await handleSaveProfilePhoto(croppedUrl, fileBlob);
+        }}
+        title={`Crop Profile Picture for ${user.fullName}`}
       />
     </div>
   );

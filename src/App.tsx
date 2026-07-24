@@ -52,7 +52,7 @@ export default function App() {
     }
   }, [notification]);
 
-  const fetchGlobalData = async (authToken: string, isAdmin: boolean) => {
+  const fetchGlobalData = async (authToken: string, canManageUsers: boolean) => {
     setDataLoading(true);
     try {
       const headers = { Authorization: `Bearer ${authToken}` };
@@ -67,7 +67,7 @@ export default function App() {
       if (posRes.ok) setPositions(await posRes.json());
       if (candRes.ok) setCandidates(await candRes.json());
 
-      if (isAdmin) {
+      if (canManageUsers) {
         const [usersRes, votesRes] = await Promise.all([
           fetch("/api/users", { headers }),
           fetch("/api/votes", { headers }),
@@ -84,7 +84,7 @@ export default function App() {
 
   const handleRefreshData = async () => {
     if (token && user) {
-      await fetchGlobalData(token, user.role === "admin");
+      await fetchGlobalData(token, user.role === "admin" || user.role === "teacher");
     }
   };
 
@@ -104,8 +104,8 @@ export default function App() {
         if (response.ok && data.user) {
           setUser(data.user);
           setToken(savedToken);
-          setActiveTab(data.user.role === "admin" ? "dashboard" : data.user.role === "teacher" ? "results" : "vote");
-          await fetchGlobalData(savedToken, data.user.role === "admin");
+          setActiveTab(data.user.role === "admin" ? "dashboard" : data.user.role === "teacher" ? "users" : "vote");
+          await fetchGlobalData(savedToken, data.user.role === "admin" || data.user.role === "teacher");
         } else {
           localStorage.removeItem("civicflow_token");
         }
@@ -123,8 +123,8 @@ export default function App() {
     localStorage.setItem("civicflow_token", newToken);
     setUser(newUser);
     setToken(newToken);
-    setActiveTab(newUser.role === "admin" ? "dashboard" : newUser.role === "teacher" ? "results" : "vote");
-    await fetchGlobalData(newToken, newUser.role === "admin");
+    setActiveTab(newUser.role === "admin" ? "dashboard" : newUser.role === "teacher" ? "users" : "vote");
+    await fetchGlobalData(newToken, newUser.role === "admin" || newUser.role === "teacher");
   };
 
   const handleLogout = () => {
@@ -287,7 +287,7 @@ export default function App() {
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
             onSuccess={() => {
-              const defaultTab = user.role === "admin" ? "dashboard" : user.role === "teacher" ? "results" : "vote";
+              const defaultTab = user.role === "admin" ? "dashboard" : user.role === "teacher" ? "users" : "vote";
               setActiveTab(defaultTab);
             }}
           />
@@ -306,6 +306,7 @@ export default function App() {
       onTabChange={setActiveTab}
       setErrorNotification={setErrorNotification}
       setSuccessNotification={setSuccessNotification}
+      onUserUpdate={(updated) => setUser(updated)}
     >
       <AnimatePresence mode="wait">
         <motion.div

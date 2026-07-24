@@ -1,9 +1,11 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera } from "lucide-react";
 import { User as UserType, UserRole, Candidate, Position, Election, Vote } from "../types";
 import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
+import BulkImportModal from "./BulkImportModal";
+import ImageCropModal from "./ImageCropModal";
 
 interface UsersTabProps {
   users: UserType[];
@@ -43,6 +45,62 @@ export default function UsersTab({
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<{ id: string; name: string } | null>(null);
   const [selectedDetailUser, setSelectedDetailUser] = useState<UserType | null>(null);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isAddUserCropOpen, setIsAddUserCropOpen] = useState(false);
+
+  const handleExportCSV = () => {
+    if (!users || users.length === 0) {
+      setErrorNotification("No user accounts registered to export");
+      return;
+    }
+
+    const escapeCSV = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const headers = ["ID", "Username", "Full Name", "Role", "Year Level", "Photo URL"];
+    const rows = users.map((u) => [
+      escapeCSV(u.id),
+      escapeCSV(u.username),
+      escapeCSV(u.fullName),
+      escapeCSV(u.role),
+      escapeCSV(u.yearLevel || ""),
+      escapeCSV(u.photoUrl || ""),
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `civicflow_users_registry_${timestamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setSuccessNotification(`Exported ${users.length} user records to CSV.`);
+  };
+
+  const handleExportJSON = () => {
+    if (!users || users.length === 0) {
+      setErrorNotification("No user accounts registered to export");
+      return;
+    }
+
+    const jsonContent = JSON.stringify(users, null, 2);
+    const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    link.setAttribute("download", `civicflow_users_registry_${timestamp}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setSuccessNotification(`Exported ${users.length} user records to JSON.`);
+  };
 
   const handleFileChange = (file: File | null) => {
     if (!file) {
@@ -220,6 +278,35 @@ export default function UsersTab({
           </h2>
           <p className="text-xs text-zinc-500">Manage credentials, roles, and cohort permissions for school students and faculty.</p>
         </div>
+
+        <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsBulkImportOpen(true)}
+            className="px-3.5 py-2.5 bg-[var(--accent)] text-[var(--surface)] hover:opacity-90 rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+          >
+            <Upload size={14} /> Bulk Import
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleExportCSV}
+            className="px-3.5 py-2.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <Download size={14} className="text-emerald-600" /> Export CSV
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={handleExportJSON}
+            className="px-3.5 py-2.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <FileSpreadsheet size={14} className="text-blue-600" /> Export JSON
+          </motion.button>
+        </div>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -368,13 +455,23 @@ export default function UsersTab({
                       </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleFileChange(null)}
-                    className="p-1 hover:bg-rose-50 text-rose-500 border border-transparent hover:border-rose-200 transition-all cursor-pointer"
-                  >
-                    <X size={14} />
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsAddUserCropOpen(true)}
+                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 transition-all cursor-pointer rounded text-[9px] font-bold flex items-center gap-1"
+                      title="Crop Photo"
+                    >
+                      <Camera size={11} /> CROP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleFileChange(null)}
+                      className="p-1 hover:bg-rose-50 text-rose-500 border border-transparent hover:border-rose-200 transition-all cursor-pointer rounded"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div
@@ -462,8 +559,12 @@ export default function UsersTab({
                       className="hover:bg-neutral-50 transition-colors cursor-pointer"
                     >
                       <td className="py-3 px-2 font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-none bg-[var(--surface)] text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
-                          {u.fullName[0]}
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-[var(--surface)] text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
+                          {u.photoUrl && u.photoUrl !== "null" && u.photoUrl !== "" && u.photoUrl !== "undefined" ? (
+                            <img src={u.photoUrl} alt={u.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            u.fullName[0]
+                          )}
                         </div>
                         <span className="truncate max-w-[120px] sm:max-w-none">{u.fullName}</span>
                       </td>
@@ -537,6 +638,33 @@ export default function UsersTab({
         votes={votes}
         isOpen={selectedDetailUser !== null}
         onClose={() => setSelectedDetailUser(null)}
+        token={token}
+        onRefreshData={onRefreshData}
+        setErrorNotification={setErrorNotification}
+        setSuccessNotification={setSuccessNotification}
+      />
+
+      <BulkImportModal
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        token={token}
+        existingUsers={users}
+        onSuccess={onRefreshData}
+        setErrorNotification={setErrorNotification}
+        setSuccessNotification={setSuccessNotification}
+      />
+
+      <ImageCropModal
+        isOpen={isAddUserCropOpen}
+        onClose={() => setIsAddUserCropOpen(false)}
+        onCropSave={async (croppedDataUrl, blob) => {
+          setPhotoPreview(croppedDataUrl);
+          if (blob) {
+            const file = new File([blob], "profile.jpg", { type: "image/jpeg" });
+            setPhotoFile(file);
+          }
+        }}
+        title="Crop New User Photo"
       />
     </motion.div>
   );
