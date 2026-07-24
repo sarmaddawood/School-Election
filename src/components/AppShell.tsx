@@ -137,16 +137,16 @@ export default function AppShell({
     <div className="h-[100dvh] w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-[var(--surface)] border-b border-[var(--border)] shrink-0 relative z-30">
+      <div className="md:hidden flex justify-between items-center p-4 bg-[#3498DB] text-white border-b border-white/20 shrink-0 relative z-30">
         <div className="flex items-center gap-3">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1 -ml-1 text-[var(--ink)]">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1 -ml-1 text-white">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <img src={bolinaoLogo} alt="Logo" className="w-8 h-8 rounded bg-white object-contain" />
-          <div className="font-display text-sm font-bold uppercase">BSF E-Voting</div>
+          <img src={bolinaoLogo} alt="Logo" className="w-12 h-12 rounded-xl bg-white p-1 object-contain shadow-sm" />
+          <div className="font-display text-sm font-bold uppercase text-white">BSF E-Voting</div>
         </div>
         <div className="relative">
-          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center font-bold text-xs border border-[var(--border)] overflow-hidden">
+          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-white/20 text-white flex items-center justify-center font-bold text-xs border border-white/30 overflow-hidden">
             {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
               <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
             ) : (
@@ -160,7 +160,7 @@ export default function AppShell({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -5 }}
                 transition={{ duration: 0.15 }}
-                className="absolute top-full right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded p-2 z-50 shadow-2xl"
+                className="absolute top-full right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded p-2 z-50 shadow-2xl text-[var(--ink)]"
               >
                 <div className="px-3 py-2 border-b border-[var(--border)] mb-2">
                     <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)] text-[10px]">{user.fullName}</p>
@@ -205,15 +205,15 @@ export default function AppShell({
         )}
       </AnimatePresence>
 
-      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[var(--secondary)] text-white border-r border-white/20 flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(26,43,72,0.15)]`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[#3498DB] text-white border-r border-white/20 flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(52,152,219,0.2)]`}>
         <div className="mb-8 flex flex-col items-center text-center pb-6 border-b border-white/20">
-            <div className="w-16 h-16 rounded-2xl bg-white p-2 mb-3 flex items-center justify-center border border-white/20 shadow-sm">
+            <div className="w-28 h-28 rounded-3xl bg-white p-3 mb-4 flex items-center justify-center border-2 border-white/30 shadow-lg shrink-0">
                 <img src={bolinaoLogo} alt="Logo" className="w-full h-full object-contain mix-blend-multiply" />
             </div>
-            <div className="font-display font-bold text-lg uppercase leading-tight tracking-tight text-white">
+            <div className="font-display font-bold text-xl uppercase leading-tight tracking-tight text-white">
                 Bolinao School<br/>of Fisheries
             </div>
-            <span className="font-mono text-[0.7rem] text-amber-300 uppercase tracking-widest mt-2 font-semibold">
+            <span className="font-mono text-[0.7rem] text-amber-300 uppercase tracking-widest mt-2 font-semibold bg-black/20 px-2.5 py-0.5 rounded-full">
                 E-Voting Portal
             </span>
         </div>

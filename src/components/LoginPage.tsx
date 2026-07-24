@@ -76,45 +76,47 @@ export default function LoginPage({
       >
         <motion.div 
           variants={itemVariants}
-          className="bg-[var(--surface)] rounded-[24px] p-8 shadow-[0_20px_40px_-10px_rgba(26,43,72,0.1)] border border-[rgba(26,43,72,0.08)]"
+          className="bg-[#3498DB] rounded-[28px] p-8 sm:p-10 shadow-[0_24px_48px_-12px_rgba(52,152,219,0.35)] border border-[#2980B9] text-white"
         >
           <div className="text-center mb-8 flex flex-col items-center">
-            <img src={bolinaoLogo} alt="BSF Logo" className="w-16 h-16 object-contain mb-3 mix-blend-multiply" />
-            <h1 className="font-display font-bold text-4xl text-[var(--ink)] tracking-tight leading-tight mb-2">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-white p-3 mb-4 flex items-center justify-center shadow-xl border-2 border-white/30 shrink-0">
+              <img src={bolinaoLogo} alt="BSF Logo" className="w-full h-full object-contain mix-blend-multiply" />
+            </div>
+            <h1 className="font-display font-bold text-4xl text-white tracking-tight leading-tight mb-2">
               BSF E-Voting
             </h1>
-            <p className="text-sm text-[var(--ink)]/70 font-medium">
+            <p className="text-sm text-blue-100 font-medium">
               Secure, Transparent, Digital Voting.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="label">IDENTITY</label>
+              <label className="label text-white/90 font-bold">IDENTITY</label>
               <input
                 type="text"
                 placeholder="USER ID"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-3 px-4 border-2 border-[#E2E8F0] rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-[var(--secondary)] focus:ring-4 focus:ring-[#3498DB]/10 transition-all placeholder:text-[var(--ink)]/35 font-sans"
+                className="w-full p-3.5 px-4 border-2 border-white/20 rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-white focus:ring-4 focus:ring-white/20 transition-all placeholder:text-[var(--ink)]/40 font-sans shadow-inner"
               />
             </div>
 
             <div>
-              <label className="label">CREDENTIAL</label>
+              <label className="label text-white/90 font-bold">CREDENTIAL</label>
               <input
                 type="password"
                 placeholder="SECRET KEY"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 px-4 border-2 border-[#E2E8F0] rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-[var(--secondary)] focus:ring-4 focus:ring-[#3498DB]/10 transition-all placeholder:text-[var(--ink)]/35 font-sans"
+                className="w-full p-3.5 px-4 border-2 border-white/20 rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-white focus:ring-4 focus:ring-white/20 transition-all placeholder:text-[var(--ink)]/40 font-sans shadow-inner"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full p-3.5 bg-[var(--accent)] hover:opacity-90 text-white border-none rounded-xl font-semibold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
+              className="w-full p-4 bg-[var(--ink)] hover:bg-[#111e33] text-white border-none rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-lg mt-3"
             >
               {loading ? (
                 <>
@@ -134,7 +136,7 @@ export default function LoginPage({
             <button
               type="button"
               onClick={() => setShowHowToVote(true)}
-              className="text-xs text-[var(--ink)] underline hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer font-sans"
+              className="text-xs text-white/90 underline hover:text-white transition-opacity bg-transparent border-none cursor-pointer font-sans font-medium"
             >
               How to Vote Guide
             </button>
