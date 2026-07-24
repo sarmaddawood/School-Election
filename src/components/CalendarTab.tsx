@@ -104,7 +104,7 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
                 }`}
               >
                 {/* Center marker */}
-                <div className="absolute left-6 md:left-1/2 w-8 h-8 rounded-none bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center transform -translate-x-1/2 z-10">
+                <div className="absolute left-6 md:left-1/2 w-8 h-8 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center transform -translate-x-1/2 z-10 shadow-sm">
                   <div className={`w-2.5 h-2.5 ${status === 'active' ? 'bg-emerald-500 animate-ping' : status === 'completed' ? 'bg-[var(--accent)]' : 'bg-neutral-300'}`} />
                 </div>
 

@@ -67,32 +67,44 @@ export default function LoginPage({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--bg)] text-[var(--ink)] font-sans flex items-center justify-center p-4 sm:p-6 md:p-12 selection:bg-[var(--secondary)]/15">
+    <div className="relative min-h-[100dvh] w-full overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-10 font-sans selection:bg-[var(--secondary)]/15 bg-[#1a2b48]">
+      {/* Full Screen Logo Background */}
+      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none">
+        <img 
+          src={bolinaoLogo} 
+          alt="Bolinao School of Fisheries Background Logo" 
+          className="w-full h-full object-cover opacity-25 filter brightness-110 scale-105" 
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a2b48]/90 via-[#3498DB]/80 to-[#1a2b48]/95 backdrop-blur-[2px]" />
+      </div>
+
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="w-full max-w-[420px] my-auto"
+        className="relative z-10 w-full max-w-[460px] my-auto"
       >
         <motion.div 
           variants={itemVariants}
-          className="bg-[#3498DB] rounded-[28px] p-8 sm:p-10 shadow-[0_24px_48px_-12px_rgba(52,152,219,0.35)] border border-[#2980B9] text-white"
+          className="bg-[#3498DB]/90 rounded-[28px] p-8 sm:p-10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.5)] border border-white/25 text-white backdrop-blur-md"
         >
-          <div className="text-center mb-8 flex flex-col items-center">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-white p-3 mb-4 flex items-center justify-center shadow-xl border-2 border-white/30 shrink-0">
-              <img src={bolinaoLogo} alt="BSF Logo" className="w-full h-full object-contain mix-blend-multiply" />
-            </div>
-            <h1 className="font-display font-bold text-4xl text-white tracking-tight leading-tight mb-2">
-              BSF E-Voting
+          <div className="text-center mb-6">
+            <span className="inline-block bg-white/20 text-white font-mono text-[0.65rem] uppercase tracking-widest px-3.5 py-1 rounded-full font-bold mb-3 border border-white/20 shadow-sm">
+              BSF E-Voting Portal
+            </span>
+            <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight leading-tight mb-2">
+              Welcome!
             </h1>
-            <p className="text-sm text-blue-100 font-medium">
-              Secure, Transparent, Digital Voting.
+            <p className="text-sm text-blue-100 font-medium leading-relaxed">
+              Welcome to Bolinao School of Fisheries E-Voting System. Please enter your credentials to authorize your session.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label text-white/90 font-bold">IDENTITY</label>
+              <label className="label text-white/90 font-bold text-xs uppercase tracking-wider block mb-1.5">
+                IDENTITY
+              </label>
               <input
                 type="text"
                 placeholder="USER ID"
@@ -103,7 +115,9 @@ export default function LoginPage({
             </div>
 
             <div>
-              <label className="label text-white/90 font-bold">CREDENTIAL</label>
+              <label className="label text-white/90 font-bold text-xs uppercase tracking-wider block mb-1.5">
+                CREDENTIAL
+              </label>
               <input
                 type="password"
                 placeholder="SECRET KEY"
@@ -116,7 +130,7 @@ export default function LoginPage({
             <button
               type="submit"
               disabled={loading}
-              className="w-full p-4 bg-[var(--ink)] hover:bg-[#111e33] text-white border-none rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-lg mt-3"
+              className="w-full p-4 bg-[var(--ink)] hover:bg-[#111e33] text-white border-none rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-lg mt-2"
             >
               {loading ? (
                 <>
@@ -132,7 +146,7 @@ export default function LoginPage({
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-5 text-center">
             <button
               type="button"
               onClick={() => setShowHowToVote(true)}

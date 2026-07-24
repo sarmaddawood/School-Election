@@ -49,7 +49,7 @@ export default function NotificationModal({ message, type, onClose }: Notificati
             className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all active:scale-[0.98] cursor-pointer shadow-lg ${
               type === "success"
                 ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-violet-500/25"
-                : "bg-rose-600 hover:bg-rose-700 text-zinc-900 shadow-rose-500/25"
+                : "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/25"
             }`}
           >
             Close

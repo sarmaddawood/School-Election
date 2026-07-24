@@ -146,7 +146,7 @@ export default function AppShell({
           <div className="font-display text-sm font-bold uppercase text-white">BSF E-Voting</div>
         </div>
         <div className="relative">
-          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-8 h-8 rounded bg-white/20 text-white flex items-center justify-center font-bold text-xs border border-white/30 overflow-hidden">
+          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-xs border border-white/30 overflow-hidden">
             {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
               <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
             ) : (
@@ -160,7 +160,7 @@ export default function AppShell({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -5 }}
                 transition={{ duration: 0.15 }}
-                className="absolute top-full right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded p-2 z-50 shadow-2xl text-[var(--ink)]"
+                className="absolute top-full right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-2 z-50 shadow-2xl text-[var(--ink)]"
               >
                 <div className="px-3 py-2 border-b border-[var(--border)] mb-2">
                     <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)] text-[10px]">{user.fullName}</p>
@@ -171,7 +171,7 @@ export default function AppShell({
                     onTabChange("password");
                     setShowProfileMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                 >
                   <Key size={13} />
                   Change Password
@@ -181,7 +181,7 @@ export default function AppShell({
                     setShowConfirmLogout(true);
                     setShowProfileMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                 >
                   <LogOut size={13} />
                   Sign Out
@@ -242,8 +242,8 @@ export default function AppShell({
         </nav>
 
         <div className="mt-auto pt-6 border-t border-white/20 relative hidden md:block">
-            <div className="flex items-center gap-3 p-2 hover:bg-white/10 rounded-lg cursor-pointer transition-colors" onClick={() => setShowProfileMenu(!showProfileMenu)}>
-                <div className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[0.7rem] shrink-0 overflow-hidden">
+            <div className="flex items-center gap-3 p-2.5 hover:bg-white/15 rounded-xl cursor-pointer transition-colors" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+                <div className="w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-[0.7rem] shrink-0 overflow-hidden shadow-inner">
                     {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
                         <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
                     ) : (
@@ -263,14 +263,14 @@ export default function AppShell({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 5 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full left-0 mb-2 w-full bg-white border border-[#3498DB]/20 rounded p-2 z-50 shadow-xl"
+                  className="absolute bottom-full left-0 mb-3 w-full bg-white border border-[#3498DB]/20 rounded-2xl p-2 z-50 shadow-2xl text-[var(--ink)]"
                 >
                   <button
                     onClick={() => {
                       setIsCropModalOpen(true);
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-[var(--ink)] hover:bg-[#E8F4FC] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-[var(--ink)] hover:bg-[#E8F4FC] rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Camera size={13} />
                     Change Profile Picture
@@ -280,7 +280,7 @@ export default function AppShell({
                       onTabChange("password");
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-[var(--ink)] hover:bg-[#E8F4FC] rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-[var(--ink)] hover:bg-[#E8F4FC] rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Key size={13} />
                     Change Password
@@ -290,7 +290,7 @@ export default function AppShell({
                       setShowConfirmLogout(true);
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <LogOut size={13} />
                     Sign Out
@@ -309,7 +309,18 @@ export default function AppShell({
             </div>
         </header>
 
-        {children}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="w-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       <footer className="hidden md:flex md:col-start-2 px-10 py-4 border-t border-[var(--border)] font-mono text-[0.6rem] opacity-40 justify-between shrink-0 bg-[var(--bg)]">

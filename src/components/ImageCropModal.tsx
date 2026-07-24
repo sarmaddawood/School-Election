@@ -276,7 +276,7 @@ export default function ImageCropModal({
                   <button
                     type="button"
                     onClick={() => setZoom((z) => Math.max(1, z - 0.2))}
-                    className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors"
+                    className="p-1 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors"
                   >
                     <ZoomOut size={14} />
                   </button>
@@ -292,7 +292,7 @@ export default function ImageCropModal({
                   <button
                     type="button"
                     onClick={() => setZoom((z) => Math.min(3, z + 0.2))}
-                    className="p-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 transition-colors"
+                    className="p-1 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 transition-colors"
                   >
                     <ZoomIn size={14} />
                   </button>
