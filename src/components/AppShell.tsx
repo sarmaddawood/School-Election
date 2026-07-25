@@ -21,7 +21,7 @@ import ConfirmModal from "./ConfirmModal";
 import ImageCropModal from "./ImageCropModal";
 
 // @ts-ignore
-import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
+import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.png";
 
 interface AppShellProps {
   user: UserType;

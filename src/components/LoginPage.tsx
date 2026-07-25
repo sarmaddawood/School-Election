@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { Key, Info, Loader2 } from "lucide-react";
 import { User } from "../types";
 import HowToVoteModal from "./HowToVoteModal";
-import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.jpg";
+import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.png";
 
 interface LoginPageProps {
   onLoginSuccess: (user: User, token: string) => void;
@@ -88,7 +88,12 @@ export default function LoginPage({
           variants={itemVariants}
           className="bg-[#3498DB]/90 rounded-[28px] p-8 sm:p-10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.5)] border border-white/25 text-white backdrop-blur-md"
         >
-          <div className="text-center mb-6">
+          <div className="text-center mb-6 flex flex-col items-center">
+            <img 
+              src={bolinaoLogo} 
+              alt="Bolinao School of Fisheries Logo" 
+              className="w-24 h-24 sm:w-28 sm:h-28 object-contain mb-3 drop-shadow-lg" 
+            />
             <span className="inline-block bg-white/20 text-white font-mono text-[0.65rem] uppercase tracking-widest px-3.5 py-1 rounded-full font-bold mb-3 border border-white/20 shadow-sm">
               BSF E-Voting Portal
             </span>
