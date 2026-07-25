@@ -2,5 +2,5 @@
   "name": "School Election",
   "description": "A secure, animated, and roles-based school e-voting system for administrators, teachers, and students with real-time results and election window schedules.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
