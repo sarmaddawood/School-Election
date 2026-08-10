@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Key, Info, Loader2, Lock, ShieldCheck, UserCheck } from "lucide-react";
-import { User } from "../types";
+import { SchoolBranding, User } from "../types";
 import HowToVoteModal from "./HowToVoteModal";
 import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.png";
 
@@ -9,13 +9,16 @@ interface LoginPageProps {
   onLoginSuccess: (user: User, token: string) => void;
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
+  branding?: SchoolBranding;
 }
 
 export default function LoginPage({
   onLoginSuccess,
   setErrorNotification,
   setSuccessNotification,
+  branding,
 }: LoginPageProps) {
+  const brandingLogo = branding?.logoUrl && !branding.logoUrl.startsWith("/src/") ? branding.logoUrl : bolinaoLogo;
   const [studentNumber, setStudentNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +26,7 @@ export default function LoginPage({
 
   // First time password setup state
   const [passwordSetupData, setPasswordSetupData] = useState<{
-    userId: string;
+    setupToken: string;
     studentNumber: string;
     fullName: string;
   } | null>(null);
@@ -34,7 +37,7 @@ export default function LoginPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentNumber.trim()) {
-      setErrorNotification("Please enter your Student Number (or Username for Admins/Teachers)");
+      setErrorNotification("Please enter your Student Number");
       return;
     }
     setLoading(true);
@@ -51,8 +54,8 @@ export default function LoginPage({
 
       if (data.needsPasswordSetup) {
         setPasswordSetupData({
-          userId: data.user.id,
-          studentNumber: data.user.studentNumber || data.user.username,
+          setupToken: data.setupToken,
+          studentNumber: data.user.studentNumber,
           fullName: data.user.fullName,
         });
         setSuccessNotification(`Welcome ${data.user.fullName}! As a first-time user, please create your password.`);
@@ -69,8 +72,8 @@ export default function LoginPage({
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 4) {
-      setErrorNotification("Password must be at least 4 characters long.");
+    if (!newPassword || newPassword.length < 8) {
+      setErrorNotification("Password must be at least 8 characters long.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -84,7 +87,7 @@ export default function LoginPage({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: passwordSetupData?.userId,
+          setupToken: passwordSetupData?.setupToken,
           newPassword,
         }),
       });
@@ -128,7 +131,7 @@ export default function LoginPage({
       {/* Full Screen Logo Background */}
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none">
         <img 
-          src={bolinaoLogo} 
+          src={brandingLogo}
           alt="Golden West Colleges Logo Background" 
           className="w-full h-full object-cover opacity-20 filter brightness-110 scale-105" 
         />
@@ -147,12 +150,12 @@ export default function LoginPage({
         >
           <div className="text-center mb-6 flex flex-col items-center">
             <img 
-              src={bolinaoLogo} 
+              src={brandingLogo}
               alt="Golden West Colleges Logo" 
               className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-3 drop-shadow-md" 
             />
             <span className="inline-block bg-sky-500/20 text-sky-200 font-mono text-[0.7rem] uppercase tracking-wider px-3.5 py-1 rounded-full font-bold mb-2 border border-sky-400/30">
-              Golden West Colleges E-Voting Portal
+              {branding?.tagline || "Golden West Colleges E-Voting Portal"}
             </span>
             <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight leading-tight mb-1.5">
               Welcome Student!
@@ -165,7 +168,7 @@ export default function LoginPage({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                STUDENT NUMBER / USERNAME
+                STUDENT NUMBER
               </label>
               <input
                 type="text"
@@ -251,7 +254,7 @@ export default function LoginPage({
                 </label>
                 <input
                   type="password"
-                  placeholder="At least 4 characters"
+                  placeholder="At least 8 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-sm"

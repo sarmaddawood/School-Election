@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle, Shield, Flag, Filter } from "lucide-react";
 import { Election, ElectionPhase } from "../types";
@@ -10,6 +10,8 @@ interface ElectionTabProps {
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
   token: string;
+  initialDate?: string | null;
+  onInitialDateConsumed?: () => void;
 }
 
 export default function ElectionTab({
@@ -18,6 +20,8 @@ export default function ElectionTab({
   setErrorNotification,
   setSuccessNotification,
   token,
+  initialDate,
+  onInitialDateConsumed,
 }: ElectionTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingElection, setEditingElection] = useState<Election | null>(null);
@@ -52,6 +56,29 @@ export default function ElectionTab({
     setEndsAt("");
     setShowForm(true);
   };
+
+  useEffect(() => {
+    if (!initialDate) return;
+    const selected = new Date(initialDate);
+    if (!Number.isFinite(selected.getTime())) return;
+    selected.setHours(8, 0, 0, 0);
+    const end = new Date(selected);
+    end.setHours(17, 0, 0, 0);
+    const toLocalInput = (date: Date) => {
+      const offset = date.getTimezoneOffset() * 60_000;
+      return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    };
+    setEditingElection(null);
+    setTitle("");
+    setDescription("");
+    setScope("all");
+    setScopeValue("");
+    setHasPartyList(false);
+    setStartsAt(toLocalInput(selected));
+    setEndsAt(toLocalInput(end));
+    setShowForm(true);
+    onInitialDateConsumed?.();
+  }, [initialDate, onInitialDateConsumed]);
 
   const handleOpenEdit = (el: Election) => {
     setEditingElection(el);

@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, CheckCircle2, Search, Hand, ShieldCheck } from "lucide-react";
+import { X, CheckCircle2, Search, Hand, FileLock2 } from "lucide-react";
 
 interface HowToVoteModalProps {
   isOpen: boolean;
@@ -69,7 +69,7 @@ export default function HowToVoteModal({ isOpen, onClose }: HowToVoteModalProps)
                     Make Your Selection
                   </h4>
                   <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                    When you are ready, click the "Vote for [Candidate]" button under your chosen candidate. You can only vote for one candidate per position.
+                    When you are ready, click the "Cast Vote" button under your chosen candidate. You can have one effective selection per position.
                   </p>
                 </div>
               </div>
@@ -84,7 +84,7 @@ export default function HowToVoteModal({ isOpen, onClose }: HowToVoteModalProps)
                     Confirm Your Choice
                   </h4>
                   <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                    A confirmation window will appear. Review your selection carefully, as votes cannot be changed once submitted. Click "Confirm Vote" to proceed.
+                    A confirmation window will appear. Click "Confirm Vote" to proceed. If you later choose another candidate while voting is open, the new valid selection replaces your earlier one.
                   </p>
                 </div>
               </div>
@@ -95,11 +95,11 @@ export default function HowToVoteModal({ isOpen, onClose }: HowToVoteModalProps)
                 </div>
                 <div>
                   <h4 className="text-zinc-900 font-medium text-sm flex items-center gap-2">
-                    <ShieldCheck size={16} className="text-emerald-600" />
-                    Ballot Secured
+                    <FileLock2 size={16} className="text-emerald-600" />
+                    Online or Encrypted Offline Ballot
                   </h4>
                   <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                    Your vote will be securely recorded. You will see a green "Your Registered Vote" indicator confirming your participation for that position.
+                    Online votes are recorded immediately. If your device goes offline, make your selections and download the encrypted JSON ballot, then send it to a Teacher or Admin for authenticated import.
                   </p>
                 </div>
               </div>

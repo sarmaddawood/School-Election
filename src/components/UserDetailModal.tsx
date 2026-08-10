@@ -176,7 +176,7 @@ export default function UserDetailModal({
                   {user.fullName}
                 </h3>
                 <p className="text-xs text-zinc-500">
-                  VOTER ID: <span className="text-[var(--ink)] font-bold">{user.username}</span>
+                  STUDENT NUMBER: <span className="text-[var(--ink)] font-bold">{user.studentNumber}</span>
                 </p>
               </div>
             </div>

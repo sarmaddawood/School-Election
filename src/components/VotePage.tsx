@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Vote as VoteIcon, Check, Award, AlertCircle, ShieldCheck, Loader2, Info, Lock, Search, DoorOpen, Hash, ArrowRight, Sparkles } from "lucide-react";
-import { Election, Position, Candidate, Vote, User } from "../types";
+import { Vote as VoteIcon, Check, AlertCircle, ShieldCheck, Info, Search, DoorOpen, ArrowRight, Sparkles, WifiOff, Download, FileLock2 } from "lucide-react";
+import { Election, Position, Candidate, Vote, User, OfflineBallotCredential } from "../types";
 import Countdown from "./Countdown";
 import BallotDropCelebration from "./BallotDropCelebration";
 import CandidateModal from "./CandidateModal";
 import VoteConfirmationModal from "./VoteConfirmationModal";
 import HowToVoteModal from "./HowToVoteModal";
 import { CandidateVoteGridSkeleton } from "./Skeleton";
+import { downloadOfflineBallot, encryptOfflineBallot } from "../lib/offlineBallot";
 
 interface VotePageProps {
   user: User;
@@ -52,12 +53,27 @@ export default function VotePage({
   const [showHowToVote, setShowHowToVote] = useState(false);
 
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [offlineCredential, setOfflineCredential] = useState<OfflineBallotCredential | null>(null);
+  const [offlineSelections, setOfflineSelections] = useState<Record<string, string>>({});
+  const [preparingOfflineFile, setPreparingOfflineFile] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
   }, []);
 
   const getPhase = (startsAt: string, endsAt: string) => {
@@ -69,8 +85,17 @@ export default function VotePage({
   };
 
   // Find active live or upcoming elections
+  const isEligible = (election: Election) => {
+    const scope = election.scope || "all";
+    const value = (election.scopeValue || "").trim().toLowerCase();
+    if (scope === "grade") return user.yearLevel === (election.targetGradeLevel || Number.parseInt(value, 10));
+    if (scope === "section") return Boolean(user.section) && user.section!.trim().toLowerCase() === (election.targetSection || value).trim().toLowerCase();
+    if (scope === "room") return Boolean(user.room) && user.room!.trim().toLowerCase() === (election.targetRoom || value).trim().toLowerCase();
+    return true;
+  };
+
   const availableElections = elections.filter(
-    (e) => getPhase(e.startsAt, e.endsAt) !== "ended"
+    (e) => getPhase(e.startsAt, e.endsAt) !== "ended" && isEligible(e)
   );
 
   useEffect(() => {
@@ -154,13 +179,56 @@ export default function VotePage({
   useEffect(() => {
     if (activeElection) {
       fetchMyVotes(activeElection.id);
+      setOfflineSelections({});
     } else {
       setMyVotes([]);
     }
   }, [activeElection]);
 
+  useEffect(() => {
+    if (!activeElection) {
+      setOfflineCredential(null);
+      return;
+    }
+    const storageKey = `offline_ballot_credential:${user.id}:${activeElection.id}`;
+    const cached = localStorage.getItem(storageKey);
+    if (cached) {
+      try {
+        setOfflineCredential(JSON.parse(cached));
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
+    }
+    if (!isOnline || getPhase(activeElection.startsAt, activeElection.endsAt) !== "live") return;
+
+    fetch(`/api/offline/credentials?electionId=${encodeURIComponent(activeElection.id)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then((credential) => {
+        if (!credential) return;
+        localStorage.setItem(storageKey, JSON.stringify(credential));
+        setOfflineCredential(credential);
+      })
+      .catch(() => undefined);
+  }, [activeElection, isOnline, token, user.id]);
+
   const handleCastVote = async (positionId: string, candidateId: string) => {
     if (!activeElection) return;
+    if (!isOnline) {
+      if (!offlineCredential) {
+        setErrorNotification("Offline voting was not prepared on this device. Reconnect briefly while the election is live, then try again.");
+        setConfirmingVote(null);
+        return;
+      }
+      setOfflineSelections((current) => ({ ...current, [positionId]: candidateId }));
+      setConfirmingVote(null);
+      setSuccessNotification("Selection added to the encrypted offline ballot. Download the file when finished.");
+      return;
+    }
     setCastingVoteId(candidateId);
     try {
       const response = await fetch("/api/votes", {
@@ -197,6 +265,32 @@ export default function VotePage({
       setErrorNotification(err.message || "An error occurred");
     } finally {
       setCastingVoteId(null);
+    }
+  };
+
+  const handleDownloadOfflineBallot = async () => {
+    if (!activeElection || !offlineCredential) return;
+    const votes = (Object.entries(offlineSelections) as Array<[string, string]>).map(([positionId, candidateId]) => ({ positionId, candidateId }));
+    if (votes.length === 0) {
+      setErrorNotification("Select at least one candidate before downloading the offline ballot.");
+      return;
+    }
+    setPreparingOfflineFile(true);
+    try {
+      const ballot = await encryptOfflineBallot(offlineCredential, {
+        voterId: user.id,
+        studentNumber: user.studentNumber,
+        electionId: activeElection.id,
+        votes,
+        timestamp: new Date().toISOString(),
+      });
+      const safeElection = activeElection.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase();
+      downloadOfflineBallot(ballot, `${safeElection || "election"}-${user.studentNumber}-offline-ballot.json`);
+      setSuccessNotification("Encrypted ballot downloaded. Send this JSON file to your teacher for import.");
+    } catch (error: any) {
+      setErrorNotification(error.message || "Could not create the encrypted offline ballot");
+    } finally {
+      setPreparingOfflineFile(false);
     }
   };
 
@@ -254,6 +348,35 @@ export default function VotePage({
           HOW TO VOTE
         </button>
       </motion.div>
+
+      {!isOnline && (
+        <motion.div
+          variants={itemVariants}
+          className="border border-amber-300 bg-amber-50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-start gap-3">
+            <WifiOff size={20} className="text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-900 uppercase tracking-wider">Encrypted Offline Voting</p>
+              <p className="text-[11px] text-amber-800 mt-1">
+                Select candidates below, download the tamper-protected JSON ballot, and send it to a teacher for import.
+              </p>
+              {!offlineCredential && (
+                <p className="text-[10px] text-rose-700 font-bold mt-1">This device did not cache a live-election offline credential before losing its connection.</p>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleDownloadOfflineBallot}
+            disabled={!offlineCredential || Object.keys(offlineSelections).length === 0 || preparingOfflineFile}
+            className="px-4 py-2.5 bg-amber-700 hover:bg-amber-800 disabled:bg-amber-200 disabled:text-amber-500 text-white text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed shrink-0"
+          >
+            {preparingOfflineFile ? <FileLock2 size={14} className="animate-pulse" /> : <Download size={14} />}
+            Download Encrypted Ballot ({Object.keys(offlineSelections).length})
+          </button>
+        </motion.div>
+      )}
 
       {/* Room Number / Vote Code Quick Search Panel */}
       <motion.div variants={itemVariants} className="glass-panel p-5 space-y-3">
@@ -432,9 +555,12 @@ export default function VotePage({
               <div className="space-y-8 animate-fade-in">
                 {electionPositions.map((pos) => {
                   const positionCandidates = candidates.filter(
-                    (c) => c.positionId === pos.id && (!c.yearLevel || c.yearLevel === user.yearLevel)
+                    (c) => c.positionId === pos.id && c.electionId === activeElection.id
                   );
                   const voteForThisPos = myVotes.find((v) => v.positionId === pos.id);
+                  const selectedCandidateId = !isOnline
+                    ? (offlineSelections[pos.id] || voteForThisPos?.candidateId)
+                    : voteForThisPos?.candidateId;
 
                   if (positionCandidates.length === 0) return null;
 
@@ -459,7 +585,7 @@ export default function VotePage({
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {positionCandidates.map((cand) => {
-                          const isCandidateVoted = voteForThisPos?.candidateId === cand.id;
+                          const isCandidateVoted = selectedCandidateId === cand.id;
 
                           return (
                             <motion.div
@@ -467,13 +593,11 @@ export default function VotePage({
                               key={cand.id}
                               animate={{ scale: isCandidateVoted ? 1.025 : 1 }}
                               transition={{ type: "spring", stiffness: 350, damping: 22 }}
-                              whileHover={!voteForThisPos ? { scale: 1.015 } : undefined}
-                              whileTap={!voteForThisPos ? { scale: 0.985 } : undefined}
+                              whileHover={{ scale: 1.015 }}
+                              whileTap={{ scale: 0.985 }}
                               className={`glass-panel p-5 transition-all relative overflow-hidden flex flex-col justify-between space-y-4 min-h-[220px] ${
                                 isCandidateVoted
                                   ? "border-emerald-500/50 bg-emerald-50/60 ring-2 ring-emerald-500/20 shadow-[0_8px_25px_rgba(16,185,129,0.12)]"
-                                  : voteForThisPos
-                                  ? "opacity-40 border-[var(--border)]"
                                   : "glass-panel-hover"
                               }`}
                             >
@@ -511,16 +635,7 @@ export default function VotePage({
                                       className="w-full py-2 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 border border-emerald-200"
                                     >
                                       <ShieldCheck size={12} />
-                                      SESSION BALLOT CAST
-                                    </motion.div>
-                                  ) : voteForThisPos ? (
-                                    <motion.div
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      exit={{ opacity: 0 }}
-                                      className="w-full py-2 bg-transparent text-zinc-400 text-[10px] font-bold uppercase tracking-widest text-center border border-[var(--border)]"
-                                    >
-                                      BALLOT LOCKED
+                                      {isOnline ? "CURRENT BALLOT SELECTION" : "OFFLINE SELECTION SAVED"}
                                     </motion.div>
                                   ) : (
                                     <motion.button
@@ -528,15 +643,16 @@ export default function VotePage({
                                       whileHover={{ scale: 1.01 }}
                                       whileTap={{ scale: 0.99 }}
                                       type="button"
+                                      disabled={getPhase(activeElection.startsAt, activeElection.endsAt) !== "live"}
                                       onClick={() => setConfirmingVote({
                                         positionId: pos.id,
                                         candidateId: cand.id,
                                         candidateName: cand.fullName,
                                         positionName: pos.name,
                                       })}
-                                      className="w-full py-2 bg-transparent hover:bg-[var(--accent)] hover:text-[var(--surface)] text-[var(--accent)] border border-[var(--accent)]/40 rounded-none font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                                      className="w-full py-2 bg-transparent hover:bg-[var(--accent)] hover:text-[var(--surface)] disabled:hover:bg-transparent disabled:hover:text-zinc-400 disabled:text-zinc-400 disabled:border-zinc-300 text-[var(--accent)] border border-[var(--accent)]/40 rounded-none font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer disabled:cursor-not-allowed"
                                     >
-                                      CAST VOTE
+                                      {getPhase(activeElection.startsAt, activeElection.endsAt) !== "live" ? "VOTING NOT OPEN" : !isOnline ? "SELECT FOR OFFLINE BALLOT" : voteForThisPos ? "CHANGE VOTE" : "CAST VOTE"}
                                     </motion.button>
                                   )}
                                 </AnimatePresence>
@@ -585,7 +701,7 @@ export default function VotePage({
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-[var(--accent)] font-bold">•</span>
-                  Confirmed ballots are final and immutable.
+                  A later valid selection replaces the earlier effective vote.
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-[var(--accent)] font-bold">•</span>
@@ -593,7 +709,7 @@ export default function VotePage({
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-[var(--accent)] font-bold">•</span>
-                  Zero-Knowledge tracking QR active upon submittal.
+                  Offline files are encrypted and checked for tampering on import.
                 </li>
               </ul>
             </motion.div>

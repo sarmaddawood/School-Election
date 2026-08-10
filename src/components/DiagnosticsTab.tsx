@@ -147,7 +147,7 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
         }
 
         case "auth-invalid": {
-          const payload = { headers: { Authorization: `Bearer mock-token-invalid-hacker` } };
+          const payload = { headers: { Authorization: `Bearer forged.invalid.token` } };
           updateTestStatus(testId, { payload });
 
           const res = await fetch("/api/users", payload);
@@ -321,7 +321,7 @@ export default function DiagnosticsTab({ token, currentUser, onRefreshData }: Di
     setIsRunningAll(true);
     setLogs([]);
     addLog(`STARTING COMPLETE SYSTEM DIAGNOSTICS SUITE`);
-    addLog(`Target Authorization: Bearer mock-token-admin...`);
+    addLog(`Target Authorization: Bearer signed-session-token...`);
 
     // Reset status
     setTests((prev) => prev.map((t) => ({ ...t, status: "idle", error: undefined, response: undefined })));

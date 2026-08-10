@@ -20,17 +20,15 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              const normalizedId = id.replace(/\\/g, '/');
+              if (/node_modules\/(react|react-dom|scheduler)\//.test(normalizedId)) {
                 return 'vendor-react';
               }
-              if (id.includes('lucide-react') || id.includes('motion')) {
+              if (/node_modules\/(lucide-react|motion)\//.test(normalizedId)) {
                 return 'vendor-ui';
               }
-              if (id.includes('recharts') || id.includes('d3')) {
+              if (/node_modules\/(recharts|d3(?:-[^/]+)?)\//.test(normalizedId)) {
                 return 'vendor-charts';
-              }
-              if (id.includes('appwrite') || id.includes('firebase')) {
-                return 'vendor-db';
               }
             }
           },

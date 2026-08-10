@@ -1,11 +1,12 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera } from "lucide-react";
+import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera, FileLock2 } from "lucide-react";
 import { User as UserType, UserRole, Candidate, Position, Election, Vote } from "../types";
 import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
 import BulkImportModal from "./BulkImportModal";
 import ImageCropModal from "./ImageCropModal";
+import OfflineBallotImportModal from "./OfflineBallotImportModal";
 
 interface UsersTabProps {
   users: UserType[];
@@ -17,6 +18,7 @@ interface UsersTabProps {
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
   token: string;
+  currentUser: UserType;
 }
 
 export default function UsersTab({
@@ -29,12 +31,15 @@ export default function UsersTab({
   setErrorNotification,
   setSuccessNotification,
   token,
+  currentUser,
 }: UsersTabProps) {
-  const [username, setUsername] = useState("");
+  const [studentNumber, setStudentNumber] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   const [yearLevel, setYearLevel] = useState<number | undefined>(undefined);
+  const [section, setSection] = useState("");
+  const [room, setRoom] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -47,6 +52,7 @@ export default function UsersTab({
   const [selectedDetailUser, setSelectedDetailUser] = useState<UserType | null>(null);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isAddUserCropOpen, setIsAddUserCropOpen] = useState(false);
+  const [isOfflineImportOpen, setIsOfflineImportOpen] = useState(false);
 
   const handleExportCSV = () => {
     if (!users || users.length === 0) {
@@ -60,13 +66,15 @@ export default function UsersTab({
       return `"${str}"`;
     };
 
-    const headers = ["ID", "Username", "Full Name", "Role", "Year Level", "Photo URL"];
+    const headers = ["ID", "Student Number", "Full Name", "Role", "Grade Level", "Section", "Room", "Photo URL"];
     const rows = users.map((u) => [
       escapeCSV(u.id),
-      escapeCSV(u.username),
+      escapeCSV(u.studentNumber),
       escapeCSV(u.fullName),
       escapeCSV(u.role),
       escapeCSV(u.yearLevel || ""),
+      escapeCSV(u.section || ""),
+      escapeCSV(u.room || ""),
       escapeCSV(u.photoUrl || ""),
     ]);
 
@@ -141,8 +149,12 @@ export default function UsersTab({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !fullName || !role) {
-      setErrorNotification("Username, Full Name, and Role are required");
+    if (!studentNumber || !fullName || !role) {
+      setErrorNotification("Student Number, Full Name, and Role are required");
+      return;
+    }
+    if (role === "student" && !yearLevel) {
+      setErrorNotification("Grade Level is required for student accounts");
       return;
     }
 
@@ -177,11 +189,13 @@ export default function UsersTab({
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          username, 
+          studentNumber,
           fullName, 
           password, 
           role, 
           yearLevel, 
+          section,
+          room,
           photoUrl: uploadedUrl || null 
         }),
       });
@@ -192,11 +206,13 @@ export default function UsersTab({
       }
 
       setSuccessNotification(`User "${fullName}" created successfully`);
-      setUsername("");
+      setStudentNumber("");
       setFullName("");
       setPassword("");
       setRole("student");
       setYearLevel(undefined);
+      setSection("");
+      setRoom("");
       setPhotoFile(null);
       setPhotoPreview(null);
       await onRefreshData();
@@ -243,7 +259,7 @@ export default function UsersTab({
 
   const filteredUsers = users.filter((u) => {
     const q = searchQuery.toLowerCase();
-    return u.fullName.toLowerCase().includes(q) || u.username.toLowerCase().includes(q);
+    return u.fullName.toLowerCase().includes(q) || u.studentNumber.toLowerCase().includes(q);
   });
 
   const containerVariants = {
@@ -280,6 +296,15 @@ export default function UsersTab({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setIsOfflineImportOpen(true)}
+            className="px-3.5 py-2.5 bg-amber-600 text-white hover:bg-amber-700 rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+          >
+            <FileLock2 size={14} /> Import Offline Ballot
+          </motion.button>
+
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -337,22 +362,22 @@ export default function UsersTab({
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                Username / Roll Number
+                Student Number
               </label>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type="text"
                 required
-                placeholder={role === "teacher" ? "e.g. Teacher ID" : "e.g. Student ID"}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder={role === "teacher" ? "e.g. FACULTY-001" : "e.g. 2026-0001"}
+                value={studentNumber}
+                onChange={(e) => setStudentNumber(e.target.value.toUpperCase().replace(/\s+/g, ""))}
                 className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                Assign Password (Optional)
+                Assign Password (Optional, 8+ characters)
               </label>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
@@ -380,17 +405,19 @@ export default function UsersTab({
                 >
                   Student
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setRole("teacher")}
-                  className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-none transition-all border cursor-pointer ${
-                    role === "teacher"
-                      ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)]"
-                      : "bg-[var(--surface)] border-[var(--border)] text-zinc-500 hover:border-[var(--accent)]"
-                  }`}
-                >
-                  Teacher
-                </button>
+                {currentUser.role === "admin" && (
+                  <button
+                    type="button"
+                    onClick={() => setRole("teacher")}
+                    className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-none transition-all border cursor-pointer ${
+                      role === "teacher"
+                        ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)]"
+                        : "bg-[var(--surface)] border-[var(--border)] text-zinc-500 hover:border-[var(--accent)]"
+                    }`}
+                  >
+                    Teacher
+                  </button>
+                )}
               </div>
             </div>
 
@@ -402,19 +429,20 @@ export default function UsersTab({
                   exit={{ opacity: 0, height: 0 }}
                   className="space-y-1.5 overflow-hidden"
                 >
-                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                    Year Level (Optional)
-                  </label>
-                  <motion.input
-                    whileFocus={{ scale: 1.01 }}
-                    type="number"
-                    min="1"
-                    max="12"
-                    placeholder="e.g. 10"
-                    value={yearLevel || ""}
-                    onChange={(e) => setYearLevel(e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Grade Level</label>
+                      <motion.input whileFocus={{ scale: 1.01 }} type="number" min="1" max="12" required placeholder="10" value={yearLevel || ""} onChange={(e) => setYearLevel(e.target.value ? parseInt(e.target.value) : undefined)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Section</label>
+                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Rizal" value={section} onChange={(e) => setSection(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Room</label>
+                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Room 204" value={room} onChange={(e) => setRoom(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -540,7 +568,7 @@ export default function UsersTab({
               <thead>
                 <tr className="border-b border-[var(--border)] text-zinc-500 uppercase font-bold tracking-widest text-[9px]">
                   <th className="py-3 px-2">VOTER PROFILE</th>
-                  <th className="py-3 px-2">USERNAME</th>
+                  <th className="py-3 px-2">STUDENT NUMBER</th>
                   <th className="py-3 px-2">ROLE</th>
                   <th className="py-3 px-2 text-right">ACTIONS</th>
                 </tr>
@@ -568,7 +596,7 @@ export default function UsersTab({
                         <span className="truncate max-w-[120px] sm:max-w-none">{u.fullName}</span>
                       </td>
                       <td className="py-3 px-2 text-zinc-500 font-mono text-xs uppercase">
-                        {u.username}
+                        {u.studentNumber}
                       </td>
                       <td className="py-3 px-2">
                         <span
@@ -649,6 +677,15 @@ export default function UsersTab({
         token={token}
         existingUsers={users}
         onSuccess={onRefreshData}
+        setErrorNotification={setErrorNotification}
+        setSuccessNotification={setSuccessNotification}
+      />
+
+      <OfflineBallotImportModal
+        isOpen={isOfflineImportOpen}
+        onClose={() => setIsOfflineImportOpen(false)}
+        token={token}
+        onImported={onRefreshData}
         setErrorNotification={setErrorNotification}
         setSuccessNotification={setSuccessNotification}
       />

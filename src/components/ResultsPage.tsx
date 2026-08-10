@@ -71,20 +71,14 @@ export default function ResultsPage({
   // Fetch voters status for Admin / Teacher turnout analysis
   const fetchVoterTurnoutData = async (electionId: string) => {
     try {
-      const [usersRes, votesRes] = await Promise.all([
-        fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`/api/votes?electionId=${electionId}`, { headers: { Authorization: `Bearer ${token}` } }),
-      ]);
-      const usersData = await usersRes.json();
-      const votesData = await votesRes.json();
-
-      if (Array.isArray(usersData)) {
-        setAllStudents(usersData.filter((u: User) => u.role === "student"));
-      }
-      if (Array.isArray(votesData)) {
-        const uniqueVoters = Array.from(new Set(votesData.map((v: any) => v.voterId || v.userId)));
-        setVotedUserIds(uniqueVoters as string[]);
-      }
+      const response = await fetch(`/api/elections/${electionId}/turnout`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not load turnout");
+      const students = Array.isArray(data.students) ? data.students : [];
+      setAllStudents(students);
+      setVotedUserIds(students.filter((student: any) => student.hasVoted).map((student: User) => student.id));
     } catch (err) {
       console.error("Turnout fetch error", err);
     }
@@ -272,7 +266,7 @@ export default function ResultsPage({
                   </div>
                   <div className="overflow-hidden text-xs">
                     <p className="font-bold text-slate-800 truncate">{st.fullName}</p>
-                    <p className="text-[11px] text-slate-500 font-mono">ID: {st.studentNumber || st.username}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">ID: {st.studentNumber}</p>
                     <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-600">
                       {st.yearLevel && <span className="bg-slate-200 px-1.5 py-0.5 rounded font-mono">Gr. {st.yearLevel}</span>}
                       {st.section && <span>Sec: {st.section}</span>}

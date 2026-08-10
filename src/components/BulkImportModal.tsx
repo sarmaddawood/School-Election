@@ -26,11 +26,11 @@ interface BulkImportModalProps {
 
 interface ParsedUserRow {
   rowNum: number;
-  username: string;
+  studentNumber: string;
   fullName: string;
-  password: string;
-  role: string;
   yearLevel?: number;
+  section: string;
+  room: string;
   isValid: boolean;
   validationError?: string;
 }
@@ -57,7 +57,7 @@ export default function BulkImportModal({
   if (!isOpen) return null;
 
   const downloadSampleTemplate = () => {
-    const csvContent = "username,fullName,password,role,yearLevel\nstudent101,Juan Dela Cruz,,student,10\nteacher202,Maria Santos,,teacher,\nstudent102,Pedro Penduko,,student,11\n";
+    const csvContent = "studentNumber,fullName,gradeLevel,section,room\n2026-0001,Juan Dela Cruz,10,Rizal,Room 204\n2026-0002,Pedro Penduko,11,Bonifacio,Room 305\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -69,8 +69,8 @@ export default function BulkImportModal({
   };
 
   const parseRawData = (text: string) => {
-    const existingUsernameSet = new Set(existingUsers.map(u => u.username.toLowerCase()));
-    const seenImportUsernames = new Set<string>();
+    const existingStudentNumberSet = new Set(existingUsers.map(u => u.studentNumber.toUpperCase()));
+    const seenImportStudentNumbers = new Set<string>();
     const rows: ParsedUserRow[] = [];
 
     const trimmed = text.trim();
@@ -85,36 +85,38 @@ export default function BulkImportModal({
         const json = JSON.parse(trimmed);
         const list = Array.isArray(json) ? json : [json];
         list.forEach((item, index) => {
-          const u = String(item.username || item.username_id || item.id || "").trim();
+          const studentNumber = String(item.studentNumber || item.student_number || item.id || "").trim().replace(/\s+/g, "").toUpperCase();
           const fn = String(item.fullName || item.full_name || item.name || "").trim();
-          const pw = String(item.password || item.pass || "").trim();
-          let r = String(item.role || "student").toLowerCase().trim();
-          if (r !== "student" && r !== "teacher") r = "student";
-          const yl = item.yearLevel || item.year_level || item.year ? parseInt(item.yearLevel || item.year_level || item.year) : undefined;
+          const yl = item.gradeLevel || item.grade_level || item.yearLevel || item.year_level ? parseInt(item.gradeLevel || item.grade_level || item.yearLevel || item.year_level) : undefined;
+          const section = String(item.section || item.class || "").trim();
+          const room = String(item.room || "").trim();
 
           let isValid = true;
           let error = "";
 
-          if (!u || !fn) {
+          if (!studentNumber || !fn) {
             isValid = false;
-            error = "Missing username or full name";
-          } else if (existingUsernameSet.has(u.toLowerCase())) {
+            error = "Missing Student Number or Full Name";
+          } else if (!yl || yl < 1 || yl > 12) {
             isValid = false;
-            error = `Username "${u}" already exists in registry`;
-          } else if (seenImportUsernames.has(u.toLowerCase())) {
+            error = "Grade Level must be 1-12";
+          } else if (existingStudentNumberSet.has(studentNumber)) {
             isValid = false;
-            error = `Duplicate username "${u}" in import file`;
+            error = `Student Number "${studentNumber}" already exists`;
+          } else if (seenImportStudentNumbers.has(studentNumber)) {
+            isValid = false;
+            error = `Duplicate Student Number "${studentNumber}" in import file`;
           } else {
-            seenImportUsernames.add(u.toLowerCase());
+            seenImportStudentNumbers.add(studentNumber);
           }
 
           rows.push({
             rowNum: index + 1,
-            username: u,
+            studentNumber,
             fullName: fn,
-            password: pw,
-            role: r,
             yearLevel: yl,
+            section,
+            room,
             isValid,
             validationError: error,
           });
@@ -157,25 +159,25 @@ export default function BulkImportModal({
     
     // Detect header row
     const isHeader = firstLineCols.some(col => 
-      col.includes("username") || col.includes("fullname") || col.includes("name") || col.includes("password") || col.includes("role")
+      col.includes("student") || col.includes("fullname") || col.includes("name") || col.includes("grade") || col.includes("section")
     );
 
-    let usernameIdx = 0;
+    let studentNumberIdx = 0;
     let fullNameIdx = 1;
-    let passwordIdx = 2;
-    let roleIdx = 3;
-    let yearLevelIdx = 4;
+    let yearLevelIdx = 2;
+    let sectionIdx = 3;
+    let roomIdx = 4;
 
     let dataLines = lines;
 
     if (isHeader) {
       dataLines = lines.slice(1);
       firstLineCols.forEach((col, idx) => {
-        if (col.includes("user")) usernameIdx = idx;
+        if (col.includes("student") || col === "id") studentNumberIdx = idx;
         else if (col.includes("full") || col.includes("name")) fullNameIdx = idx;
-        else if (col.includes("pass")) passwordIdx = idx;
-        else if (col.includes("role")) roleIdx = idx;
         else if (col.includes("year") || col.includes("level") || col.includes("grade")) yearLevelIdx = idx;
+        else if (col.includes("section") || col.includes("class")) sectionIdx = idx;
+        else if (col.includes("room")) roomIdx = idx;
       });
     }
 
@@ -183,12 +185,8 @@ export default function BulkImportModal({
       const cols = parseCSVLine(line);
       if (cols.length === 0 || (cols.length === 1 && cols[0] === "")) return;
 
-      const u = (cols[usernameIdx] || "").trim();
+      const studentNumber = (cols[studentNumberIdx] || "").trim().replace(/\s+/g, "").toUpperCase();
       const fn = (cols[fullNameIdx] || "").trim();
-      const pw = (cols[passwordIdx] || "").trim();
-      let r = (cols[roleIdx] || "student").toLowerCase().trim();
-      if (r !== "student" && r !== "teacher") r = "student";
-      
       const rawYl = cols[yearLevelIdx] || "";
       const parsedYl = rawYl ? parseInt(rawYl) : undefined;
       const yl = !isNaN(parsedYl as number) ? parsedYl : undefined;
@@ -196,26 +194,29 @@ export default function BulkImportModal({
       let isValid = true;
       let error = "";
 
-      if (!u || !fn) {
+      if (!studentNumber || !fn) {
         isValid = false;
-        error = "Missing username or full name";
-      } else if (existingUsernameSet.has(u.toLowerCase())) {
+        error = "Missing Student Number or Full Name";
+      } else if (!yl || yl < 1 || yl > 12) {
         isValid = false;
-        error = `Username "${u}" already registered`;
-      } else if (seenImportUsernames.has(u.toLowerCase())) {
+        error = "Grade Level must be 1-12";
+      } else if (existingStudentNumberSet.has(studentNumber)) {
         isValid = false;
-        error = `Duplicate username "${u}" in import file`;
+        error = `Student Number "${studentNumber}" already registered`;
+      } else if (seenImportStudentNumbers.has(studentNumber)) {
+        isValid = false;
+        error = `Duplicate Student Number "${studentNumber}" in import file`;
       } else {
-        seenImportUsernames.add(u.toLowerCase());
+        seenImportStudentNumbers.add(studentNumber);
       }
 
       rows.push({
         rowNum: index + 1,
-        username: u,
+        studentNumber,
         fullName: fn,
-        password: pw,
-        role: r,
         yearLevel: yl,
+        section: (cols[sectionIdx] || "").trim(),
+        room: (cols[roomIdx] || "").trim(),
         isValid,
         validationError: error,
       });
@@ -263,11 +264,11 @@ export default function BulkImportModal({
     setIsSubmitting(true);
     try {
       const payload = validRows.map(r => ({
-        username: r.username,
+        studentNumber: r.studentNumber,
         fullName: r.fullName,
-        password: r.password,
-        role: r.role,
         yearLevel: r.yearLevel,
+        section: r.section,
+        room: r.room,
       }));
 
       const res = await fetch("/api/users/bulk", {
@@ -289,7 +290,7 @@ export default function BulkImportModal({
         errors: data.errors || [],
       });
 
-      setSuccessNotification(`Successfully imported ${data.createdCount} new user accounts!`);
+      setSuccessNotification(`Successfully imported ${data.createdCount} students without passwords.`);
       await onSuccess();
     } catch (err: any) {
       setErrorNotification(err.message || "Bulk import failed");
@@ -324,7 +325,7 @@ export default function BulkImportModal({
                 BULK USER REGISTRY IMPORT
               </h3>
               <p className="text-xs text-slate-300">
-                Upload CSV or JSON files to batch register students and faculty members.
+                  Register student details without passwords; students create one on first login.
               </p>
             </div>
           </div>
@@ -478,7 +479,7 @@ export default function BulkImportModal({
                   </label>
                   <textarea
                     rows={6}
-                    placeholder={`username,fullName,password,role,yearLevel\nstudent101,John Doe,,student,10\nteacher202,Maria Clara,,teacher,`}
+                    placeholder={`studentNumber,fullName,gradeLevel,section,room\n2026-0001,John Doe,10,Rizal,Room 204`}
                     value={pastedText}
                     onChange={(e) => {
                       setPastedText(e.target.value);
@@ -515,10 +516,10 @@ export default function BulkImportModal({
                         <tr>
                           <th className="py-2.5 px-3">#</th>
                           <th className="py-2.5 px-3">Status</th>
-                          <th className="py-2.5 px-3">Username</th>
+                          <th className="py-2.5 px-3">Student Number</th>
                           <th className="py-2.5 px-3">Full Name</th>
-                          <th className="py-2.5 px-3">Role</th>
-                          <th className="py-2.5 px-3">Year</th>
+                          <th className="py-2.5 px-3">Grade</th>
+                          <th className="py-2.5 px-3">Section / Room</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800">
@@ -544,22 +545,16 @@ export default function BulkImportModal({
                               )}
                             </td>
                             <td className="py-2.5 px-3 font-mono font-bold text-white uppercase">
-                              {r.username || "-"}
+                              {r.studentNumber || "-"}
                             </td>
                             <td className="py-2.5 px-3 text-slate-200">
                               {r.fullName || "-"}
                             </td>
-                            <td className="py-2.5 px-3 uppercase text-[10px]">
-                              <span className={`px-2 py-0.5 rounded font-bold ${
-                                r.role === "teacher" 
-                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                              }`}>
-                                {r.role}
-                              </span>
-                            </td>
                             <td className="py-2.5 px-3 font-mono text-slate-300">
                               {r.yearLevel || "N/A"}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-300">
+                              {[r.section, r.room].filter(Boolean).join(" / ") || "-"}
                             </td>
                           </tr>
                         ))}
@@ -600,7 +595,7 @@ export default function BulkImportModal({
                   </>
                 ) : (
                   <>
-                    <Sparkles size={14} /> Register {validRows.length} Accounts
+                    <Sparkles size={14} /> Register {validRows.length} Students
                   </>
                 )}
               </button>

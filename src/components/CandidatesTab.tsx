@@ -41,6 +41,9 @@ export default function CandidatesTab({
   const [studentSearchTerm, setStudentSearchTerm] = useState("");
   const [partyLists, setPartyLists] = useState<PartyList[]>([]);
   const [selectedPartyListId, setSelectedPartyListId] = useState("");
+  const [newPartyName, setNewPartyName] = useState("");
+  const [newPartyAcronym, setNewPartyAcronym] = useState("");
+  const [savingParty, setSavingParty] = useState(false);
 
   const [modalCandidate, setModalCandidate] = useState<Candidate | null>(null);
   const [modalPosition, setModalPosition] = useState("");
@@ -110,6 +113,52 @@ export default function CandidatesTab({
     }
   };
 
+  const refreshPartyLists = async () => {
+    if (!selectedElectionId) return;
+    const response = await fetch(`/api/partylists?electionId=${selectedElectionId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
+    if (response.ok && Array.isArray(data)) setPartyLists(data);
+  };
+
+  const handleCreatePartyList = async () => {
+    if (!newPartyName.trim()) return;
+    setSavingParty(true);
+    try {
+      const response = await fetch("/api/partylists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ electionId: selectedElectionId, name: newPartyName, acronym: newPartyAcronym }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not create Party-List");
+      setNewPartyName("");
+      setNewPartyAcronym("");
+      await refreshPartyLists();
+      setSuccessNotification("Party-List created successfully");
+    } catch (error: any) {
+      setErrorNotification(error.message || "Could not create Party-List");
+    } finally {
+      setSavingParty(false);
+    }
+  };
+
+  const handleDeletePartyList = async (id: string) => {
+    try {
+      const response = await fetch(`/api/partylists/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not remove Party-List");
+      if (selectedPartyListId === id) setSelectedPartyListId("");
+      await refreshPartyLists();
+    } catch (error: any) {
+      setErrorNotification(error.message || "Could not remove Party-List");
+    }
+  };
+
   // Direct Nominate Action for a specific student
   const handleNominateStudent = async (studentId: string, studentName: string) => {
     if (!selectedElectionId || !selectedPositionId) {
@@ -129,7 +178,6 @@ export default function CandidatesTab({
           electionId: selectedElectionId,
           positionId: selectedPositionId,
           userId: studentId,
-          targetYearLevel: selectedYearLevel ? parseInt(selectedYearLevel) : null,
           partyListId: selectedPartyListId || null,
           manifesto: manifesto || `${studentName}'s campaign platform.`,
         }),
@@ -159,7 +207,7 @@ export default function CandidatesTab({
     .filter((u) => {
       if (!studentSearchTerm.trim()) return true;
       const term = studentSearchTerm.toLowerCase();
-      const sNum = (u.studentNumber || u.username || "").toLowerCase();
+      const sNum = u.studentNumber.toLowerCase();
       const name = (u.fullName || "").toLowerCase();
       const sec = (u.section || "").toLowerCase();
       return sNum.includes(term) || name.includes(term) || sec.includes(term);
@@ -329,6 +377,29 @@ export default function CandidatesTab({
                 </div>
               )}
 
+              {elections.find((e) => e.id === selectedElectionId)?.hasPartyList && (
+                <div className="space-y-2 p-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+                  <label className="text-xs font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <Flag size={12} /> Manage Party-Lists
+                  </label>
+                  <div className="grid grid-cols-[1fr_90px_auto] gap-2">
+                    <input type="text" value={newPartyName} onChange={(e) => setNewPartyName(e.target.value)} placeholder="Party-List name" className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
+                    <input type="text" value={newPartyAcronym} onChange={(e) => setNewPartyAcronym(e.target.value.toUpperCase())} placeholder="Acronym" maxLength={12} className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
+                    <button type="button" onClick={handleCreatePartyList} disabled={!newPartyName.trim() || savingParty} className="px-3 py-2 bg-indigo-600 disabled:bg-indigo-200 text-white rounded-lg text-[10px] font-bold cursor-pointer disabled:cursor-not-allowed">ADD</button>
+                  </div>
+                  {partyLists.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {partyLists.map((partyList) => (
+                        <span key={partyList.id} className="inline-flex items-center gap-1.5 bg-white border border-indigo-200 text-indigo-800 px-2 py-1 rounded-lg text-[10px] font-bold">
+                          {partyList.name}{partyList.acronym ? ` (${partyList.acronym})` : ""}
+                          <button type="button" onClick={() => handleDeletePartyList(partyList.id)} className="text-rose-500 hover:text-rose-700 cursor-pointer" aria-label={`Remove ${partyList.name}`}><Trash2 size={11} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -393,7 +464,7 @@ export default function CandidatesTab({
                             <div className="truncate">
                               <p className="text-xs font-bold text-slate-800 truncate">{st.fullName}</p>
                               <p className="text-[10px] text-slate-500 font-mono">
-                                {st.studentNumber || st.username} {st.section ? `• Sec: ${st.section}` : ""}
+                                {st.studentNumber} {st.section ? `• Sec: ${st.section}` : ""}
                               </p>
                             </div>
                           </div>

@@ -2,8 +2,8 @@ export type UserRole = "admin" | "teacher" | "student";
 
 export interface User {
   id: string;
-  studentNumber?: string; // Unique student number / ID for login
-  username: string; // Retained for backwards compatibility or fallback
+  studentNumber: string; // Unique Student Number used for login
+  username?: string; // Legacy read compatibility only; never used for authentication
   fullName: string;
   role: UserRole;
   yearLevel?: number; // Grade level e.g. 7, 8, 9, 10, 11, 12
@@ -71,16 +71,20 @@ export interface Vote {
 }
 
 export interface OfflineBallot {
-  voterId: string;
-  studentNumber: string;
-  electionId: string;
-  votes: Array<{
-    positionId: string;
-    candidateId: string;
-  }>;
-  timestamp: string;
+  version: 1;
+  algorithm: "ECDH-P256/HKDF-SHA256/AES-256-GCM";
+  ephemeralPublicKey: string;
+  salt: string;
+  iv: string;
+  ciphertext: string;
+}
+
+export interface OfflineBallotCredential {
+  permit: string;
+  publicKey: string;
   nonce: string;
-  signature: string;
+  issuedAt: string;
+  electionEndsAt: string;
 }
 
 export interface SchoolBranding {

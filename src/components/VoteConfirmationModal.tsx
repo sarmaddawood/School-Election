@@ -132,8 +132,8 @@ export default function VoteConfirmationModal({
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] uppercase tracking-wider text-zinc-500">
                         <div>
-                          <span>School Year: </span>
-                          <span className="text-[var(--ink)] font-bold">YEAR {candidate.yearLevel || "ALL COHORTS"}</span>
+                          <span>Candidate Grade: </span>
+                          <span className="text-[var(--ink)] font-bold">{candidate.yearLevel ? `GRADE ${candidate.yearLevel}` : "NOT SPECIFIED"}</span>
                         </div>
                         <div>
                           <span>Party: </span>

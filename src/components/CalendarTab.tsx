@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Calendar as CalendarIcon, CalendarDays, Clock, CheckCircle2, CircleDashed, ChevronLeft, ChevronRight, Filter, Info } from "lucide-react";
-import { Election } from "../types";
+import { CalendarDays, ChevronLeft, ChevronRight, Filter, Info, Plus } from "lucide-react";
+import { Election, User } from "../types";
 
 interface CalendarTabProps {
   elections: Election[];
+  currentUser: User;
+  onCreateElectionAtDate?: (date: Date) => void;
 }
 
-export default function CalendarTab({ elections }: CalendarTabProps) {
+export default function CalendarTab({ elections, currentUser, onCreateElectionAtDate }: CalendarTabProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [viewMode, setViewMode] = useState<"calendar" | "timeline">("calendar");
+  const [filterMode, setFilterMode] = useState<"all" | "eligible">("all");
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -31,7 +34,17 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
     visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 120, damping: 18 } },
   };
 
-  const sortedElections = [...elections].sort(
+  const isEligible = (election: Election) => {
+    const scope = election.scope || "all";
+    const value = (election.scopeValue || "").trim().toLowerCase();
+    if (scope === "grade") return currentUser.yearLevel === (election.targetGradeLevel || Number.parseInt(value, 10));
+    if (scope === "section") return Boolean(currentUser.section) && currentUser.section!.trim().toLowerCase() === (election.targetSection || value).trim().toLowerCase();
+    if (scope === "room") return Boolean(currentUser.room) && currentUser.room!.trim().toLowerCase() === (election.targetRoom || value).trim().toLowerCase();
+    return currentUser.role === "student";
+  };
+
+  const visibleElections = filterMode === "eligible" ? elections.filter(isEligible) : elections;
+  const sortedElections = [...visibleElections].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
   );
 
@@ -78,7 +91,7 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
     const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
     const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
 
-    return elections.filter((el) => {
+    return visibleElections.filter((el) => {
       const elStart = new Date(el.startsAt);
       const elEnd = new Date(el.endsAt);
       return elStart <= endOfDay && elEnd >= startOfDay;
@@ -126,6 +139,14 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
             Timeline View
           </button>
         </div>
+      </motion.div>
+
+      <motion.div variants={itemVariants} className="flex items-center gap-2 flex-wrap">
+        <Filter size={14} className="text-slate-500" />
+        <button type="button" onClick={() => setFilterMode("all")} className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${filterMode === "all" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-slate-200"}`}>All Elections</button>
+        {currentUser.role === "student" && (
+          <button type="button" onClick={() => setFilterMode("eligible")} className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${filterMode === "eligible" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-slate-200"}`}>Elections I Can Vote In</button>
+        )}
       </motion.div>
 
       {viewMode === "calendar" ? (
@@ -307,15 +328,25 @@ export default function CalendarTab({ elections }: CalendarTabProps) {
                   })
                 )}
               </div>
+
+              {currentUser.role === "admin" && selectedDate && onCreateElectionAtDate && (
+                <button
+                  type="button"
+                  onClick={() => onCreateElectionAtDate(selectedDate)}
+                  className="w-full px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus size={14} /> Create Election on This Date
+                </button>
+              )}
             </div>
 
             {/* Quick Summary Card */}
             <div className="bg-sky-900 text-white rounded-2xl p-5 space-y-3 shadow-md">
               <h4 className="font-bold text-xs uppercase tracking-wider text-sky-300">Total Elections</h4>
-              <div className="text-3xl font-black">{elections.length}</div>
+              <div className="text-3xl font-black">{visibleElections.length}</div>
               <p className="text-xs text-sky-200">
-                {elections.filter((e) => getElectionStatus(e) === "active").length} active now •{" "}
-                {elections.filter((e) => getElectionStatus(e) === "upcoming").length} upcoming
+                {visibleElections.filter((e) => getElectionStatus(e) === "active").length} active now •{" "}
+                {visibleElections.filter((e) => getElectionStatus(e) === "upcoming").length} upcoming
               </p>
             </div>
           </motion.div>

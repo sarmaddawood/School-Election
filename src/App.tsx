@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { AlertCircle, CheckCircle, Loader2, Vote } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { User, Election, Position, Candidate, Vote as VoteType } from "./types";
+import { User, Election, Position, Candidate, Vote as VoteType, SchoolBranding } from "./types";
 import LoginPage from "./components/LoginPage";
 import AppShell from "./components/AppShell";
 import NotificationModal from "./components/NotificationModal";
@@ -16,12 +16,23 @@ import CalendarTab from "./components/CalendarTab";
 import ChangePasswordTab from "./components/ChangePasswordTab";
 import DiagnosticsTab from "./components/DiagnosticsTab";
 import { DashboardSkeletonPage } from "./components/Skeleton";
+import BrandingTab from "./components/BrandingTab";
+
+const defaultBranding: SchoolBranding = {
+  schoolName: "Golden West Colleges, Inc.",
+  tagline: "Golden West Colleges Student E-Voting Portal",
+  logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
+  primaryColor: "#0284c7",
+  attributionText: "Developed by students of Golden West Colleges, Inc.",
+};
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [calendarDraftDate, setCalendarDraftDate] = useState<string | null>(null);
+  const [branding, setBranding] = useState<SchoolBranding>(defaultBranding);
 
   const [elections, setElections] = useState<Election[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -52,6 +63,19 @@ export default function App() {
     }
   }, [notification]);
 
+  useEffect(() => {
+    fetch("/api/branding")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (data?.schoolName) setBranding(data);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--accent", branding.primaryColor);
+  }, [branding.primaryColor]);
+
   const fetchGlobalData = async (authToken: string, canManageUsers: boolean) => {
     setDataLoading(true);
     try {
@@ -63,20 +87,33 @@ export default function App() {
         fetch("/api/candidates", { headers }),
       ]);
 
-      if (elRes.ok) setElections(await elRes.json());
-      if (posRes.ok) setPositions(await posRes.json());
-      if (candRes.ok) setCandidates(await candRes.json());
+      const primaryResponses = [elRes, posRes, candRes];
+      const failedPrimary = primaryResponses.find((response) => !response.ok);
+      if (failedPrimary) {
+        const detail = await failedPrimary.json().catch(() => ({}));
+        throw new Error(detail.error || `Data synchronization failed (${failedPrimary.status})`);
+      }
+
+      setElections(await elRes.json());
+      setPositions(await posRes.json());
+      setCandidates(await candRes.json());
 
       if (canManageUsers) {
         const [usersRes, votesRes] = await Promise.all([
           fetch("/api/users", { headers }),
           fetch("/api/votes", { headers }),
         ]);
-        if (usersRes.ok) setUsers(await usersRes.json());
-        if (votesRes.ok) setVotes(await votesRes.json());
+        const failedManagement = [usersRes, votesRes].find((response) => !response.ok);
+        if (failedManagement) {
+          const detail = await failedManagement.json().catch(() => ({}));
+          throw new Error(detail.error || `Management data synchronization failed (${failedManagement.status})`);
+        }
+        setUsers(await usersRes.json());
+        setVotes(await votesRes.json());
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to sync system data", err);
+      setErrorNotification(err.message || "Failed to synchronize application data");
     } finally {
       setDataLoading(false);
     }
@@ -171,6 +208,7 @@ export default function App() {
           onLoginSuccess={handleLoginSuccess}
           setErrorNotification={setErrorNotification}
           setSuccessNotification={setSuccessNotification}
+          branding={branding}
         />
         {notification && (
           <NotificationModal
@@ -211,6 +249,8 @@ export default function App() {
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
             token={token}
+            initialDate={calendarDraftDate}
+            onInitialDateConsumed={() => setCalendarDraftDate(null)}
           />
         );
       case "positions":
@@ -241,6 +281,7 @@ export default function App() {
       case "users":
         return (
           <UsersTab
+            currentUser={user}
             users={users}
             candidates={candidates}
             positions={positions}
@@ -283,8 +324,25 @@ export default function App() {
         );
       case "calendar":
         return (
-          <CalendarTab elections={elections} />
+          <CalendarTab
+            elections={elections}
+            currentUser={user}
+            onCreateElectionAtDate={user.role === "admin" ? (date) => {
+              setCalendarDraftDate(date.toISOString());
+              setActiveTab("elections");
+            } : undefined}
+          />
         );
+      case "branding":
+        return user.role === "admin" ? (
+          <BrandingTab
+            branding={branding}
+            token={token}
+            onUpdated={setBranding}
+            setErrorNotification={setErrorNotification}
+            setSuccessNotification={setSuccessNotification}
+          />
+        ) : null;
       case "diagnostics":
         return (
           <DiagnosticsTab
@@ -320,6 +378,7 @@ export default function App() {
       setErrorNotification={setErrorNotification}
       setSuccessNotification={setSuccessNotification}
       onUserUpdate={(updated) => setUser(updated)}
+      branding={branding}
     >
       <AnimatePresence mode="wait">
         <motion.div
