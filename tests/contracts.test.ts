@@ -149,6 +149,7 @@ test("Vercel deploys the Vite frontend and Express API from one Git push", () =>
   assert.deepEqual(config.regions, ["sin1"]);
   assert.equal(config.fluid, true);
   assert.equal(config.functions["api/index.ts"].maxDuration, 60);
+  assert.equal(config.functions["api/index.ts"].includeFiles, "server{.ts,/**}");
   assert.equal(config.functions["api/index.ts"].memory, undefined);
   assert.deepEqual(config.rewrites[0], { source: "/api/:path*", destination: "/api/index" });
   assert.deepEqual(config.rewrites[1], { source: "/:path*", destination: "/index.html" });
