@@ -10,7 +10,7 @@
     "dev": "node --use-system-ca --import tsx local-server.ts",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "esbuild local-server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --define:process.env.NODE_ENV='production' --outfile=dist/server.cjs",
+    "build:server": "esbuild local-server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --define:__BUNDLED_PRODUCTION__=true --outfile=dist/server.cjs",
     "vercel-build": "npm run build:client",
     "start": "node --use-system-ca dist/server.cjs",
     "clean": "rm -rf dist",
@@ -19,11 +19,9 @@
     "test:live": "node --use-system-ca --import tsx tests/live-workflows.ts"
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "d3": "^7.9.0",
-    "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",

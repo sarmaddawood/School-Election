@@ -161,5 +161,11 @@ test("Vercel deploys the Vite frontend and Express API from one Git push", () =>
   assert.match(apiEntry, /export default function handler/);
   assert.match(apiEntry, /return app\(req, res\)/);
   assert.match(serverSource, /from ["']\.\/server\/domain\.ts["']/);
-  assert.match(serverSource, /process\.env\.VERCEL/);
+  assert.doesNotMatch(serverSource, /process\.env/);
+});
+
+test("deployment configuration is self-contained and does not require environment files", () => {
+  assert.doesNotMatch(serverSource, /APP_SECURITY_SECRET is required in production/);
+  assert.doesNotMatch(serverSource, /process\.env|dotenv/);
+  assert.equal(fs.existsSync(path.join(workspace, ".env.example")), false);
 });

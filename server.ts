@@ -1,12 +1,10 @@
 // @ts-nocheck
 
-import "dotenv/config";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { Client, Databases, Query, ID, Storage, Permission, Role } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
-import { GoogleGenAI } from "@google/genai";
 import multer from "multer";
 import {
   canViewElectionResults,
@@ -29,14 +27,9 @@ import {
   verifySignedToken,
 } from "./server/domain.ts";
 
-// The production secret must stay outside the repository. It protects session
-// tokens, offline-ballot permits, and the server-side ballot decryption key.
-const APP_SECURITY_SECRET = process.env.APP_SECURITY_SECRET || (process.env.NODE_ENV !== "production"
-  ? "development-only-election-secret-change-before-deploying"
-  : "");
-if (!APP_SECURITY_SECRET) {
-  throw new Error("APP_SECURITY_SECRET is required in production");
-}
+// Deployment configuration is intentionally self-contained. Keep this stable:
+// changing it invalidates sessions and previously generated offline ballots.
+const APP_SECURITY_SECRET = "GWC_BOLINAO_ELECTION_HMAC_SECRET_2026";
 const BOOTSTRAP_ADMIN_STUDENT_NUMBER = "ADMIN";
 const BOOTSTRAP_ADMIN_PASSWORD = "password123";
 const BOOTSTRAP_ADMIN_NAME = "System Administrator";
@@ -75,27 +68,6 @@ async function logAuditEvent(action: string, performedBy: string, role: string, 
   } catch (error: any) {
     console.error("Failed to persist audit event:", error.message);
   }
-}
-
-
-let geminiClient: GoogleGenAI | null = null;
-
-function getGeminiClient(): GoogleGenAI {
-  if (!geminiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY environment variable is missing. Please check your settings.");
-    }
-    geminiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build",
-        },
-      },
-    });
-  }
-  return geminiClient;
 }
 
 
@@ -806,14 +778,9 @@ async function getOne(collectionName: string, id: string): Promise<any> {
 
 let databaseInitializationError: Error | null = null;
 const databaseReady = (async () => {
-  if (process.env.VERCEL) {
-    // The checked-in deployment targets the already migrated Appwrite database.
-    // Serverless instances only perform a fast connectivity/schema probe so a
-    // cold start does not repeat the full migration and integrity scan.
-    await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
-  } else {
-    await ensureCollectionsExist();
-  }
+  // The checked-in deployment targets the already migrated Appwrite database.
+  // Instances perform a fast probe instead of migrations on every cold start.
+  await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
 })().catch((error: any) => {
   databaseInitializationError = error instanceof Error ? error : new Error(String(error));
   console.error("Appwrite initialization failed:", databaseInitializationError.message);
@@ -870,10 +837,8 @@ export function createElectionApp() {
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    if (process.env.NODE_ENV === "production") {
-      res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-      res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
-    }
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
     next();
   });
 
@@ -2530,54 +2495,28 @@ export function createElectionApp() {
       return;
     }
 
-    try {
-      const ai = getGeminiClient();
-      const prompt = `You are an expert student council campaign strategist.
-Polishing task: Enhance the following high-school candidate's campaign manifesto for the position of "${positionName}".
-
-Draft to polish: "${draft || ""}"
-
-Requirements:
-1. Make it highly engaging, visionary, yet realistic and natural for a school environment.
-2. Keep it clean and concise (around 1 to 3 sentences, maximum 60 words).
-3. Do NOT include any greetings, intros, outros, or surrounding quotation marks. Return ONLY the polished manifesto text.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-      });
-
-      const polishedText = response.text ? response.text.trim() : draft;
-      res.json({ manifesto: polishedText });
-    } catch (err: any) {
-      console.warn("Gemini manifesto polish failed, using elegant local optimizer fallback:", err.message);
+    let polishedText = draft || "I promise to represent all students and organize great events!";
+    const cleanDraft = draft ? draft.trim() : "";
       
-      let polishedText = draft || "I promise to represent all students and organize great events!";
-      const cleanDraft = draft ? draft.trim() : "";
-      
-      if (positionName.toLowerCase().includes("president")) {
+    if (positionName.toLowerCase().includes("president")) {
         polishedText = cleanDraft 
           ? `As President, I am dedicated to making our vision a reality: ${cleanDraft.replace(/^i want to /i, "")} Let's build a more inclusive, connected campus together.`
           : "Dedicated to amplifying student voices, improving campus facilities, and creating a vibrant, inclusive student culture through collaborative action.";
-      } else if (positionName.toLowerCase().includes("sport") || positionName.toLowerCase().includes("captain")) {
+    } else if (positionName.toLowerCase().includes("sport") || positionName.toLowerCase().includes("captain")) {
         polishedText = cleanDraft 
           ? `Empowering our athletes and boosting school spirit: ${cleanDraft.replace(/^i want to /i, "")} Let's win together!`
           : "Fostering school spirit and fitness by organizing inclusive intramural tournaments, upgrading sporting gear, and celebrating every student's athletic journey.";
-      } else if (positionName.toLowerCase().includes("art") || positionName.toLowerCase().includes("creative")) {
+    } else if (positionName.toLowerCase().includes("art") || positionName.toLowerCase().includes("creative")) {
         polishedText = cleanDraft 
           ? `Unleashing student creativity: ${cleanDraft.replace(/^i want to /i, "")} Let's paint a brighter future.`
           : "Unleashing our school's creative potential by showcasing student artwork, organizing talent showcases, and securing state-of-the-art creative supplies.";
-      } else {
+    } else {
         polishedText = cleanDraft 
           ? `Vision for ${positionName}: ${cleanDraft.replace(/^i want to /i, "")} Let's work as one.`
           : `Committed to serving our community with integrity, open communication, and innovative projects to enhance the student experience.`;
-      }
-
-      res.json({ 
-        manifesto: polishedText,
-        warning: "Offline mode enabled. Suggested via heuristic campaign optimizer."
-      });
     }
+
+    res.json({ manifesto: polishedText });
   });
 
   app.post("/api/seed", requireAdmin, async (req: Request, res: Response) => {

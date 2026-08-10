@@ -1,14 +1,17 @@
-import "dotenv/config";
 import express from "express";
 import type { Request, Response } from "express";
 import path from "node:path";
 import { createServer as createViteServer } from "vite";
 import { createElectionApp } from "./server.ts";
 
+declare const __BUNDLED_PRODUCTION__: boolean;
+const isBundledProduction = typeof __BUNDLED_PRODUCTION__ !== "undefined" && __BUNDLED_PRODUCTION__;
+const SERVER_PORT = 3000;
+
 async function startLocalServer() {
   const app = createElectionApp();
 
-  if (process.env.NODE_ENV === "production") {
+  if (isBundledProduction) {
     const distPath = path.join(process.cwd(), "dist");
     app.use(
       express.static(distPath, {
@@ -34,9 +37,8 @@ async function startLocalServer() {
     app.use(vite.middlewares);
   }
 
-  const port = Number.parseInt(process.env.PORT || "3000", 10);
-  app.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on port ${port}`);
+  app.listen(SERVER_PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${SERVER_PORT}`);
   });
 }
 

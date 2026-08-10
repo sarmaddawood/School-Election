@@ -13,9 +13,9 @@ single Express Function in Singapore, close to the Appwrite database.
 After that one-time connection, every push to the production branch deploys
 automatically. Pull requests receive Vercel preview deployments.
 
-The deployment settings are committed in `vercel.json`; no dashboard build or
-output-directory overrides are needed. The optional Gemini AI enhancement will
-use its built-in local fallback unless `GEMINI_API_KEY` is added in Vercel.
+The deployment settings and application configuration are committed in the
+repository; no dashboard variables, build overrides, or environment files are
+needed. Manifesto suggestions use the built-in local campaign-text optimizer.
 
 ## Verification
 
