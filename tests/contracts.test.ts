@@ -137,3 +137,23 @@ test("frontend keeps the permanent attribution and Student Number login terminol
   assert.match(votingGuide, /replaces your earlier one/i);
   assert.doesNotMatch(votingGuide, /cannot be changed once submitted/i);
 });
+
+test("Vercel deploys the Vite frontend and Express API from one Git push", () => {
+  const config = JSON.parse(fs.readFileSync(path.join(workspace, "vercel.json"), "utf8"));
+  const apiEntry = fs.readFileSync(path.join(workspace, "api", "index.ts"), "utf8");
+  const packageJson = JSON.parse(fs.readFileSync(path.join(workspace, "package.json"), "utf8"));
+
+  assert.equal(config.$schema, "https://openapi.vercel.sh/vercel.json");
+  assert.equal(config.framework, "vite");
+  assert.equal(config.buildCommand, "npm run build:client");
+  assert.equal(config.outputDirectory, "dist");
+  assert.deepEqual(config.regions, ["sin1"]);
+  assert.equal(config.fluid, true);
+  assert.equal(config.functions["api/index.ts"].maxDuration, 60);
+  assert.deepEqual(config.rewrites[0], { source: "/api/:path*", destination: "/api/index" });
+  assert.deepEqual(config.rewrites[1], { source: "/:path*", destination: "/index.html" });
+  assert.equal(packageJson.scripts["vercel-build"], "npm run build:client");
+  assert.match(apiEntry, /createElectionApp\(\)/);
+  assert.match(apiEntry, /export default async function handler/);
+  assert.match(serverSource, /process\.env\.VERCEL/);
+});

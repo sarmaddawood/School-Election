@@ -1,0 +1,9 @@
+.git
+.vercel
+node_modules
+dist
+coverage
+tests
+src/qa
+qa.html
+*.log

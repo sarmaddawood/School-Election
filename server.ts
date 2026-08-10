@@ -2,10 +2,7 @@
 
 import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
-import path from "path";
-import fs from "fs";
 import crypto from "crypto";
-import { createServer as createViteServer } from "vite";
 import { Client, Databases, Query, ID, Storage, Permission, Role } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
 import { GoogleGenAI } from "@google/genai";
@@ -793,7 +790,14 @@ async function getOne(collectionName: string, id: string): Promise<any> {
 
 let databaseInitializationError: Error | null = null;
 const databaseReady = (async () => {
-  await ensureCollectionsExist();
+  if (process.env.VERCEL) {
+    // The checked-in deployment targets the already migrated Appwrite database.
+    // Serverless instances only perform a fast connectivity/schema probe so a
+    // cold start does not repeat the full migration and integrity scan.
+    await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
+  } else {
+    await ensureCollectionsExist();
+  }
 })().catch((error: any) => {
   databaseInitializationError = error instanceof Error ? error : new Error(String(error));
   console.error("Appwrite initialization failed:", databaseInitializationError.message);
@@ -840,9 +844,8 @@ async function queryMyVotes(electionId: string, voterId: string): Promise<any[]>
   return list;
 }
 
-async function startServer() {
+export async function createElectionApp() {
   const app = express();
-  const PORT = 3000;
 
   app.disable("x-powered-by");
 
@@ -1009,7 +1012,7 @@ async function startServer() {
 
       if (!user) {
         recordFailedLogin(attemptKey);
-        void logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Student Number was not found");
+        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Student Number was not found");
         res.status(401).json({ error: "No account found matching this Student Number" });
         return;
       }
@@ -1030,7 +1033,7 @@ async function startServer() {
 
       if (!(await verifyPassword(password, user.password))) {
         recordFailedLogin(attemptKey);
-        void logAuditEvent("LOGIN_FAILED", user.fullName, user.role, `Sign-in rejected for Student Number ${identifier}: incorrect password`);
+        await logAuditEvent("LOGIN_FAILED", user.fullName, user.role, `Sign-in rejected for Student Number ${identifier}: incorrect password`);
         res.status(401).json({ error: "Invalid password for this account" });
         return;
       }
@@ -1040,7 +1043,7 @@ async function startServer() {
       }
       loginAttempts.delete(attemptKey);
 
-      void logAuditEvent("LOGIN_SUCCESS", user.fullName, user.role, `Logged in via Student Number ${identifier}`);
+      await logAuditEvent("LOGIN_SUCCESS", user.fullName, user.role, `Logged in via Student Number ${identifier}`);
 
       res.json({
         user: { ...toPublicUser(user), hasSetPassword: true },
@@ -1090,7 +1093,7 @@ async function startServer() {
         hasSetPassword: true
       };
 
-      void logAuditEvent("FIRST_TIME_PASSWORD_SET", updatedUser.fullName, updatedUser.role, `Set account password for Student Number ${claims.studentNumber}`);
+      await logAuditEvent("FIRST_TIME_PASSWORD_SET", updatedUser.fullName, updatedUser.role, `Set account password for Student Number ${claims.studentNumber}`);
 
       res.json({
         message: "Password configured successfully! Account ready.",
@@ -1130,7 +1133,7 @@ async function startServer() {
       }
 
       await userRef.update({ password: await hashPassword(newPassword), hasSetPassword: true });
-      void logAuditEvent("CHANGE_PASSWORD", user.fullName, user.role, "Updated account password");
+      await logAuditEvent("CHANGE_PASSWORD", user.fullName, user.role, "Updated account password");
       res.json({ message: "Password updated successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update password" });
@@ -1207,7 +1210,7 @@ async function startServer() {
 
       const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/view?project=${APPWRITE_PROJECT}`;
 
-      void logAuditEvent("UPLOAD_IMAGE", (req as any).user.fullName, (req as any).user.role, `Uploaded image file ${appwriteFile.$id}`);
+      await logAuditEvent("UPLOAD_IMAGE", (req as any).user.fullName, (req as any).user.role, `Uploaded image file ${appwriteFile.$id}`);
       res.json({ url: fileUrl, fileId: appwriteFile.$id });
     } catch (err: any) {
       console.error("Upload error:", err);
@@ -1312,7 +1315,7 @@ async function startServer() {
       };
 
       await db.collection("users").doc(newUser.id).set(newUser);
-      void logAuditEvent("CREATE_USER", requester.fullName, requester.role, `Created ${role} account for ${fullName} (${finalStudentNumber})`);
+      await logAuditEvent("CREATE_USER", requester.fullName, requester.role, `Created ${role} account for ${fullName} (${finalStudentNumber})`);
       res.status(201).json(toPublicUser(newUser));
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
@@ -1389,7 +1392,7 @@ async function startServer() {
         }
       }
 
-      void logAuditEvent("BULK_USER_IMPORT", (req as any).user.fullName, (req as any).user.role, `Bulk imported ${created.length} student records without passwords (${errors.length} skipped/errors).`);
+      await logAuditEvent("BULK_USER_IMPORT", (req as any).user.fullName, (req as any).user.role, `Bulk imported ${created.length} student records without passwords (${errors.length} skipped/errors).`);
 
       res.status(201).json({
         success: true,
@@ -1440,7 +1443,7 @@ async function startServer() {
       votesSnapshot.forEach((d) => { batch.delete(db.collection("votes").doc(d.id)); });
       await batch.commit();
 
-      void logAuditEvent("DELETE_USER", requester.fullName, requester.role, `Deleted user account ${userData.fullName} (${normalizeStudentNumber(userData.studentNumber || userData.username)})`);
+      await logAuditEvent("DELETE_USER", requester.fullName, requester.role, `Deleted user account ${userData.fullName} (${normalizeStudentNumber(userData.studentNumber || userData.username)})`);
 
       res.json({ message: "User deleted successfully" });
     } catch (err: any) {
@@ -1477,7 +1480,7 @@ async function startServer() {
       await userRef.update({ photoUrl: finalPhotoUrl });
       const userData = targetUser || {};
       const updatedUser = { ...userData, id, photoUrl: finalPhotoUrl };
-      void logAuditEvent("UPDATE_PROFILE_PHOTO", authUser.fullName, authUser.role, `Updated profile photo for ${targetUser.fullName || id}`);
+      await logAuditEvent("UPDATE_PROFILE_PHOTO", authUser.fullName, authUser.role, `Updated profile photo for ${targetUser.fullName || id}`);
       res.json({ message: "Profile photo updated successfully", user: toPublicUser(updatedUser) });
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to update profile photo" });
@@ -1541,7 +1544,7 @@ async function startServer() {
       };
 
       await db.collection("elections").doc(newElection.id).set(newElection);
-      void logAuditEvent("CREATE_ELECTION", (req as any).user.fullName, "admin", `Created election: ${title} (Scope: ${newElection.scope}${finalScopeValue ? `, target: ${finalScopeValue}` : ""})`);
+      await logAuditEvent("CREATE_ELECTION", (req as any).user.fullName, "admin", `Created election: ${title} (Scope: ${newElection.scope}${finalScopeValue ? `, target: ${finalScopeValue}` : ""})`);
 
       res.status(201).json(newElection);
     } catch (err: any) {
@@ -1588,7 +1591,7 @@ async function startServer() {
       };
 
       await electionRef.set(updatedElection);
-      void logAuditEvent("UPDATE_ELECTION", (req as any).user.fullName, "admin", `Updated election: ${title} (Scope: ${scope}${finalScopeValue ? `, target: ${finalScopeValue}` : ""})`);
+      await logAuditEvent("UPDATE_ELECTION", (req as any).user.fullName, "admin", `Updated election: ${title} (Scope: ${scope}${finalScopeValue ? `, target: ${finalScopeValue}` : ""})`);
 
       res.json(updatedElection);
     } catch (err: any) {
@@ -1631,7 +1634,7 @@ async function startServer() {
 
       await batch.commit();
 
-      void logAuditEvent("DELETE_ELECTION", (req as any).user.fullName, "admin", `Deleted election: ${elTitle} and all associated records`);
+      await logAuditEvent("DELETE_ELECTION", (req as any).user.fullName, "admin", `Deleted election: ${elTitle} and all associated records`);
 
       res.json({ message: "Election deleted successfully" });
     } catch (err: any) {
@@ -1690,7 +1693,7 @@ async function startServer() {
       };
 
       await db.collection("partyLists").doc(newParty.id).set(newParty);
-      void logAuditEvent("CREATE_PARTY_LIST", (req as any).user.fullName, "admin", `Registered Party-List "${newParty.name}" (${newParty.acronym})`);
+      await logAuditEvent("CREATE_PARTY_LIST", (req as any).user.fullName, "admin", `Registered Party-List "${newParty.name}" (${newParty.acronym})`);
 
       res.status(201).json(newParty);
     } catch (err: any) {
@@ -1721,7 +1724,7 @@ async function startServer() {
         partyListName: null,
       }));
       await batch.commit();
-      void logAuditEvent("DELETE_PARTY_LIST", (req as any).user.fullName, "admin", `Removed Party-List "${partyList.name}"`);
+      await logAuditEvent("DELETE_PARTY_LIST", (req as any).user.fullName, "admin", `Removed Party-List "${partyList.name}"`);
       res.json({ message: "Party-List removed successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete party-list" });
@@ -1770,7 +1773,7 @@ async function startServer() {
       };
 
       await db.collection("positions").doc(newPosition.id).set(newPosition);
-      void logAuditEvent("CREATE_POSITION", (req as any).user.fullName, "admin", `Created position "${cleanName}" for election ${electionId}`);
+      await logAuditEvent("CREATE_POSITION", (req as any).user.fullName, "admin", `Created position "${cleanName}" for election ${electionId}`);
       res.status(201).json(newPosition);
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
@@ -1804,7 +1807,7 @@ async function startServer() {
       votes.forEach((doc) => batch.delete(db.collection("votes").doc(doc.id)));
 
       await batch.commit();
-      void logAuditEvent("DELETE_POSITION", (req as any).user.fullName, "admin", `Deleted position "${positionDoc.data()?.name || id}" and associated nominations and votes`);
+      await logAuditEvent("DELETE_POSITION", (req as any).user.fullName, "admin", `Deleted position "${positionDoc.data()?.name || id}" and associated nominations and votes`);
       res.json({ message: "Position deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete position" });
@@ -1836,7 +1839,7 @@ async function startServer() {
         return;
       }
       await positionRef.update({ name: cleanName, normalizedName: cleanName.toLocaleLowerCase() });
-      void logAuditEvent("UPDATE_POSITION", (req as any).user.fullName, "admin", `Renamed position to "${cleanName}"`);
+      await logAuditEvent("UPDATE_POSITION", (req as any).user.fullName, "admin", `Renamed position to "${cleanName}"`);
       res.json({ message: "Position updated successfully" });
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
@@ -1949,7 +1952,7 @@ async function startServer() {
       };
 
       await db.collection("candidates").doc(newCandidate.id).set(newCandidate);
-      void logAuditEvent("NOMINATE_CANDIDATE", (req as any).user.fullName, "admin", `Nominated ${user.fullName} for ${position.name} in ${election.title}`);
+      await logAuditEvent("NOMINATE_CANDIDATE", (req as any).user.fullName, "admin", `Nominated ${user.fullName} for ${position.name} in ${election.title}`);
 
       res.status(201).json(newCandidate);
     } catch (err: any) {
@@ -1981,7 +1984,7 @@ async function startServer() {
       votesSnapshot.forEach((d) => { batch.delete(db.collection("votes").doc(d.id)); });
       await batch.commit();
 
-      void logAuditEvent("DELETE_CANDIDATE", (req as any).user.fullName, "admin", `Removed candidate ${candidate.fullName || id}`);
+      await logAuditEvent("DELETE_CANDIDATE", (req as any).user.fullName, "admin", `Removed candidate ${candidate.fullName || id}`);
 
       res.json({ message: "Candidate removed successfully" });
     } catch (err: any) {
@@ -2115,7 +2118,7 @@ async function startServer() {
     try {
       const user = (req as any).user;
       const result = await saveEffectiveVote({ student: user, electionId, positionId, candidateId });
-      void logAuditEvent(
+      await logAuditEvent(
         result.replaced ? "VOTE_REVISED" : "VOTE_CAST",
         user.fullName,
         user.role,
@@ -2300,7 +2303,7 @@ async function startServer() {
       }
 
       const importer = (req as any).user;
-      void logAuditEvent("OFFLINE_BALLOT_IMPORTED", importer.fullName, importer.role, `Imported encrypted offline ballot for ${student.fullName} (${normalizeStudentNumber(student.studentNumber || student.username)})`);
+      await logAuditEvent("OFFLINE_BALLOT_IMPORTED", importer.fullName, importer.role, `Imported encrypted offline ballot for ${student.fullName} (${normalizeStudentNumber(student.studentNumber || student.username)})`);
       res.json({
         success: true,
         message: `Offline ballot imported: ${importedCount} new selection(s), ${revisedCount} replacement(s).`,
@@ -2318,7 +2321,7 @@ async function startServer() {
       }
       const tamper = /tamper|decrypt|authenticate|cipher|permit/i.test(String(err.message || ""));
       const importer = (req as any).user;
-      void logAuditEvent("OFFLINE_BALLOT_REJECTED", importer.fullName, importer.role, `Rejected offline ballot import: ${tamper ? "cryptographic verification failed" : String(err.message || "validation failed").slice(0, 300)}`);
+      await logAuditEvent("OFFLINE_BALLOT_REJECTED", importer.fullName, importer.role, `Rejected offline ballot import: ${tamper ? "cryptographic verification failed" : String(err.message || "validation failed").slice(0, 300)}`);
       res.status(err.status || (tamper ? 400 : 500)).json({ error: tamper ? "TAMPER DETECTED: encrypted offline ballot verification failed" : (err.message || "Failed to process offline ballot import") });
     }
   });
@@ -2403,7 +2406,7 @@ async function startServer() {
         return;
       }
       await db.collection("branding").doc("school").set(branding);
-      void logAuditEvent("UPDATE_BRANDING", (req as any).user.fullName, "admin", "Updated reusable school branding settings");
+      await logAuditEvent("UPDATE_BRANDING", (req as any).user.fullName, "admin", "Updated reusable school branding settings");
       res.json(branding);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to update branding settings" });
@@ -2582,36 +2585,5 @@ Requirements:
     res.status(500).json({ error: err.message || "Internal server error" });
   });
 
-  // Serve static UI assets
-  if (process.env.NODE_ENV === "production") {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(
-      express.static(distPath, {
-        maxAge: "1d",
-        etag: true,
-        setHeaders: (res, filePath) => {
-          if (filePath.endsWith(".html")) {
-            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-          } else if (filePath.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$/)) {
-            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-          }
-        },
-      })
-    );
-    app.get("*", (req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  } else {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  return app;
 }
-
-startServer();
