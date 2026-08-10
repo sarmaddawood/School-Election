@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle, Shield, Flag, Filter } from "lucide-react";
 import { Election, ElectionPhase } from "../types";
 import ConfirmModal from "./ConfirmModal";
 
@@ -24,6 +24,9 @@ export default function ElectionTab({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [scope, setScope] = useState<"all" | "grade" | "section" | "room">("all");
+  const [scopeValue, setScopeValue] = useState("");
+  const [hasPartyList, setHasPartyList] = useState(false);
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -42,6 +45,9 @@ export default function ElectionTab({
     setEditingElection(null);
     setTitle("");
     setDescription("");
+    setScope("all");
+    setScopeValue("");
+    setHasPartyList(false);
     setStartsAt("");
     setEndsAt("");
     setShowForm(true);
@@ -51,6 +57,9 @@ export default function ElectionTab({
     setEditingElection(el);
     setTitle(el.title);
     setDescription(el.description || "");
+    setScope(el.scope || "all");
+    setScopeValue(el.scopeValue || "");
+    setHasPartyList(!!el.hasPartyList);
 
     const toLocalISOString = (dateStr: string) => {
       const d = new Date(dateStr);
@@ -71,6 +80,11 @@ export default function ElectionTab({
     e.preventDefault();
     if (!title || !startsAt || !endsAt) {
       setErrorNotification("Title, start date, and end date are required");
+      return;
+    }
+
+    if (scope !== "all" && !scopeValue.trim()) {
+      setErrorNotification(`Please enter the required ${scope} designation (e.g. Grade '10', Section '10-A', or Room '204')`);
       return;
     }
 
@@ -98,6 +112,9 @@ export default function ElectionTab({
         body: JSON.stringify({
           title,
           description,
+          scope,
+          scopeValue: scope !== "all" ? scopeValue.trim() : null,
+          hasPartyList,
           startsAt: startVal.toISOString(),
           endsAt: endVal.toISOString(),
         }),
@@ -175,27 +192,27 @@ export default function ElectionTab({
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6 font-mono text-[var(--ink)]"
+      className="space-y-6 font-sans text-slate-800"
     >
       <motion.div
         variants={cardVariants}
-        className="border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+        className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">ELECTION ADMIN 03</span>
-          <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider">
-            ELECTION MANAGEMENT
+          <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">ELECTION ADMINISTRATION</span>
+          <h2 className="font-display font-black text-2xl text-slate-900 tracking-tight mt-1">
+            Election Management
           </h2>
-          <p className="text-xs text-zinc-500">Configure and orchestrate secure polling events and active timelines.</p>
+          <p className="text-xs text-slate-500">Configure elections by grade level, section, room, or school-wide scopes.</p>
         </div>
         {!showForm && (
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer rounded-none"
+            className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-sky-900/10 transition-all"
           >
-            <Plus size={14} />
+            <Plus size={15} />
             CREATE ELECTION
           </motion.button>
         )}
@@ -211,92 +228,143 @@ export default function ElectionTab({
           >
             <form
               onSubmit={handleSubmit}
-              className="glass-panel p-6 space-y-5"
+              className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm"
             >
-              <div className="flex justify-between items-center border-b border-[var(--border)] pb-3">
-                <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider">
-                  {editingElection ? "EDIT ELECTION PARAMETERS" : "INITIALIZE NEW ELECTION"}
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="font-display font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+                  {editingElection ? "Edit Election Parameters" : "Initialize New Election"}
                 </h3>
-                <motion.button
-                  whileHover={{ scale: 1.1, rotate: 90 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="p-1.5 hover:bg-[var(--surface)] border border-[var(--border)] rounded-none text-zinc-500 hover:text-[var(--ink)] cursor-pointer"
+                  className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer transition-all"
                 >
-                  <X size={15} />
-                </motion.button>
+                  <X size={16} />
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Election Title
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Student Council Elections 2026"
+                    placeholder="e.g. Grade 10 Representative Election 2026"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
                   />
                 </div>
 
                 <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Description / Polling Directives
                   </label>
                   <textarea
-                    rows={3}
-                    placeholder="Provide a description of this election..."
+                    rows={2}
+                    placeholder="Provide a description or guidelines for voters..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)] resize-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white resize-none"
                   />
                 </div>
 
+                {/* ELECTION SCOPE SELECTION */}
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
-                    <Calendar size={13} /> Starts At
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Filter size={13} className="text-sky-600" />
+                    <span>Eligibility Scope</span>
+                  </label>
+                  <select
+                    value={scope}
+                    onChange={(e) => setScope(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
+                  >
+                    <option value="all">School-Wide (All Eligible Students)</option>
+                    <option value="grade">Grade Level Specific</option>
+                    <option value="section">Class / Section Specific</option>
+                    <option value="room">Room Number Specific</option>
+                  </select>
+                </div>
+
+                {scope !== "all" ? (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Target {scope === "grade" ? "Grade Level" : scope === "section" ? "Section Name" : "Room Number"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={scope === "grade" ? "e.g. 10" : scope === "section" ? "e.g. Grade 10-Aquarius" : "e.g. Room 204"}
+                      value={scopeValue}
+                      onChange={(e) => setScopeValue(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Flag size={13} className="text-sky-600" />
+                      <span>Party-List Support</span>
+                    </label>
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="hasPartyList"
+                        checked={hasPartyList}
+                        onChange={(e) => setHasPartyList(e.target.checked)}
+                        className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
+                      />
+                      <label htmlFor="hasPartyList" className="text-xs text-slate-700 font-medium cursor-pointer">
+                        Enable Party-List alliances for candidate slates
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar size={13} className="text-sky-600" /> Starts At
                   </label>
                   <input
                     type="datetime-local"
                     required
                     value={startsAt}
                     onChange={(e) => setStartsAt(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
-                    <Clock size={13} /> Ends At
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock size={13} className="text-sky-600" /> Ends At
                   </label>
                   <input
                     type="datetime-local"
                     required
                     value={endsAt}
                     onChange={(e) => setEndsAt(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-4 py-2 border border-[var(--border)] hover:bg-[var(--surface)] text-[var(--ink)] text-xs font-bold uppercase tracking-wider cursor-pointer rounded-none"
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider cursor-pointer rounded-none disabled:opacity-50"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50 transition-all shadow-md shadow-sky-900/10"
                 >
-                  {submitting ? "SAVING..." : "SAVE ELECTION"}
+                  {submitting ? "Saving..." : "Save Election"}
                 </button>
               </div>
             </form>
@@ -316,62 +384,70 @@ export default function ElectionTab({
             <motion.div
               key={el.id}
               variants={cardVariants}
-              whileHover={{ scale: 1.01 }}
-              className="glass-panel p-5 flex flex-col justify-between space-y-4"
+              whileHover={{ scale: 1.005 }}
+              className="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col justify-between space-y-4 shadow-sm"
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-start gap-3">
-                  <h3 className="font-display font-bold text-[var(--ink)] text-sm uppercase tracking-wide leading-snug">
-                    {el.title}
-                  </h3>
-                  <motion.span
-                    animate={phase === "live" ? { scale: [1, 1.03, 1] } : {}}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className={`px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider border ${
+                  <div>
+                    <h3 className="font-display font-bold text-slate-900 text-sm tracking-tight leading-snug">
+                      {el.title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 uppercase">
+                        Scope: {el.scope ? el.scope.toUpperCase() : "ALL"} {el.scopeValue ? `(${el.scopeValue})` : ""}
+                      </span>
+                      {el.hasPartyList && (
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 uppercase">
+                          Party-List Active
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full border ${
                       phase === "live"
-                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                         : phase === "upcoming"
                         ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-neutral-100 text-neutral-500 border-neutral-200"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
                     }`}
                   >
                     {phase}
-                  </motion.span>
+                  </span>
                 </div>
-                <p className="text-xs text-[var(--ink)] opacity-70 line-clamp-3 leading-relaxed">
+                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed pt-1">
                   {el.description || "No description provided."}
                 </p>
               </div>
 
               <div className="space-y-3 pt-2">
-                <div className="border-t border-[var(--border)] pt-3 space-y-1.5 text-[10px] text-neutral-500 uppercase">
+                <div className="border-t border-slate-100 pt-3 space-y-1 text-[11px] text-slate-500 font-mono">
                   <div className="flex justify-between">
                     <span>Starts:</span>
-                    <span className="text-[var(--ink)] font-bold">{new Date(el.startsAt).toLocaleString()}</span>
+                    <span className="text-slate-800 font-semibold">{new Date(el.startsAt).toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Ends:</span>
-                    <span className="text-[var(--ink)] font-bold">{new Date(el.endsAt).toLocaleString()}</span>
+                    <span className="text-slate-800 font-semibold">{new Date(el.endsAt).toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
+                    type="button"
                     onClick={() => handleOpenEdit(el)}
-                    className="p-2 hover:bg-[var(--accent-soft)] border border-[var(--border)] text-[var(--ink)] cursor-pointer"
+                    className="p-2 hover:bg-sky-50 rounded-lg border border-slate-200 text-slate-600 hover:text-sky-600 cursor-pointer transition-all"
                   >
-                    <Edit2 size={13} />
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    <Edit2 size={14} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleDelete(el.id, el.title)}
-                    className="p-2 hover:bg-rose-50 border border-rose-200 text-rose-600 cursor-pointer"
+                    className="p-2 hover:bg-rose-50 rounded-lg border border-rose-200 text-rose-600 cursor-pointer transition-all"
                   >
-                    <Trash2 size={13} />
-                  </motion.button>
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -381,23 +457,22 @@ export default function ElectionTab({
         {elections.length === 0 && (
           <motion.div
             variants={cardVariants}
-            className="col-span-1 md:col-span-2 glass-panel p-12 text-center flex flex-col items-center justify-center space-y-4"
+            className="col-span-1 md:col-span-2 bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center space-y-3 shadow-sm"
           >
-            <AlertCircle size={32} className="text-[var(--accent)]" />
+            <AlertCircle size={32} className="text-sky-600" />
             <div className="space-y-1">
-              <p className="font-bold text-[var(--ink)] uppercase tracking-wider text-xs">NO ELECTIONS PROGRAMMED</p>
-              <p className="text-[10px] text-zinc-500 max-w-sm leading-relaxed">
-                Initialize a secure election module to begin registering polling options and recording votes.
+              <p className="font-bold text-slate-800 uppercase tracking-wider text-xs">No Elections Configured</p>
+              <p className="text-xs text-slate-500 max-w-sm leading-relaxed">
+                Initialize an election module to begin registering candidates and accepting votes.
               </p>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            <button
+              type="button"
               onClick={handleOpenCreate}
-              className="px-4 py-2 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider cursor-pointer"
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-xl cursor-pointer transition-all shadow-md"
             >
-              CREATE FIRST ELECTION
-            </motion.button>
+              Create First Election
+            </button>
           </motion.div>
         )}
       </motion.div>
@@ -414,3 +489,4 @@ export default function ElectionTab({
     </motion.div>
   );
 }
+

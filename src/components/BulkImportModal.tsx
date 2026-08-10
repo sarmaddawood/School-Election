@@ -57,7 +57,7 @@ export default function BulkImportModal({
   if (!isOpen) return null;
 
   const downloadSampleTemplate = () => {
-    const csvContent = "username,fullName,password,role,yearLevel\nstudent101,Juan Dela Cruz,pass123,student,10\nteacher202,Maria Santos,pass456,teacher,\nstudent102,Pedro Penduko,pass789,student,11\n";
+    const csvContent = "username,fullName,password,role,yearLevel\nstudent101,Juan Dela Cruz,,student,10\nteacher202,Maria Santos,,teacher,\nstudent102,Pedro Penduko,,student,11\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -95,9 +95,9 @@ export default function BulkImportModal({
           let isValid = true;
           let error = "";
 
-          if (!u || !fn || !pw) {
+          if (!u || !fn) {
             isValid = false;
-            error = "Missing username, full name, or password";
+            error = "Missing username or full name";
           } else if (existingUsernameSet.has(u.toLowerCase())) {
             isValid = false;
             error = `Username "${u}" already exists in registry`;
@@ -196,9 +196,9 @@ export default function BulkImportModal({
       let isValid = true;
       let error = "";
 
-      if (!u || !fn || !pw) {
+      if (!u || !fn) {
         isValid = false;
-        error = "Missing username, full name, or password";
+        error = "Missing username or full name";
       } else if (existingUsernameSet.has(u.toLowerCase())) {
         isValid = false;
         error = `Username "${u}" already registered`;
@@ -478,7 +478,7 @@ export default function BulkImportModal({
                   </label>
                   <textarea
                     rows={6}
-                    placeholder={`username,fullName,password,role,yearLevel\nstudent101,John Doe,pass123,student,10\nteacher202,Maria Clara,pass456,teacher,`}
+                    placeholder={`username,fullName,password,role,yearLevel\nstudent101,John Doe,,student,10\nteacher202,Maria Clara,,teacher,`}
                     value={pastedText}
                     onChange={(e) => {
                       setPastedText(e.target.value);

@@ -141,8 +141,8 @@ export default function UsersTab({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !fullName || !password || !role) {
-      setErrorNotification("All fields are required to create a user");
+    if (!username || !fullName || !role) {
+      setErrorNotification("Username, Full Name, and Role are required");
       return;
     }
 
@@ -352,13 +352,12 @@ export default function UsersTab({
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                Assign Password
+                Assign Password (Optional)
               </label>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type="password"
-                required
-                placeholder="••••••••"
+                placeholder="•••••••• (Optional - user sets on 1st login)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"

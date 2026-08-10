@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Key, Info, Loader2 } from "lucide-react";
+import { Key, Info, Loader2, Lock, ShieldCheck, UserCheck } from "lucide-react";
 import { User } from "../types";
 import HowToVoteModal from "./HowToVoteModal";
 import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.png";
@@ -16,15 +16,25 @@ export default function LoginPage({
   setErrorNotification,
   setSuccessNotification,
 }: LoginPageProps) {
-  const [username, setUsername] = useState("");
+  const [studentNumber, setStudentNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showHowToVote, setShowHowToVote] = useState(false);
 
+  // First time password setup state
+  const [passwordSetupData, setPasswordSetupData] = useState<{
+    userId: string;
+    studentNumber: string;
+    fullName: string;
+  } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [setupLoading, setSetupLoading] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      setErrorNotification("Please enter both username and password");
+    if (!studentNumber.trim()) {
+      setErrorNotification("Please enter your Student Number (or Username for Admins/Teachers)");
       return;
     }
     setLoading(true);
@@ -32,17 +42,64 @@ export default function LoginPage({
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ studentNumber: studentNumber.trim(), password }),
       });
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || "Authentication failed");
       }
+
+      if (data.needsPasswordSetup) {
+        setPasswordSetupData({
+          userId: data.user.id,
+          studentNumber: data.user.studentNumber || data.user.username,
+          fullName: data.user.fullName,
+        });
+        setSuccessNotification(`Welcome ${data.user.fullName}! As a first-time user, please create your password.`);
+        return;
+      }
+
       onLoginSuccess(data.user, data.token);
     } catch (err: any) {
       setErrorNotification(err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || newPassword.length < 4) {
+      setErrorNotification("Password must be at least 4 characters long.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setErrorNotification("Passwords do not match. Please verify and try again.");
+      return;
+    }
+
+    setSetupLoading(true);
+    try {
+      const response = await fetch("/api/auth/setup-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: passwordSetupData?.userId,
+          newPassword,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to set password");
+      }
+
+      setSuccessNotification("Password created successfully! Logging you in...");
+      setPasswordSetupData(null);
+      onLoginSuccess(data.user, data.token);
+    } catch (err: any) {
+      setErrorNotification(err.message || "Failed to complete password setup");
+    } finally {
+      setSetupLoading(false);
     }
   };
 
@@ -67,103 +124,179 @@ export default function LoginPage({
   };
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-10 font-sans selection:bg-[var(--secondary)]/15 bg-[#1a2b48]">
+    <div className="relative min-h-[100dvh] w-full overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-10 font-sans selection:bg-sky-500/20 bg-[#0f172a]">
       {/* Full Screen Logo Background */}
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none">
         <img 
           src={bolinaoLogo} 
-          alt="Bolinao School of Fisheries Background Logo" 
-          className="w-full h-full object-cover opacity-25 filter brightness-110 scale-105" 
+          alt="Golden West Colleges Logo Background" 
+          className="w-full h-full object-cover opacity-20 filter brightness-110 scale-105" 
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a2b48]/90 via-[#3498DB]/80 to-[#1a2b48]/95 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-sky-950/80 to-slate-900/95 backdrop-blur-[3px]" />
       </div>
 
       <motion.div
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="relative z-10 w-full max-w-[460px] my-auto"
+        className="relative z-10 w-full max-w-[480px] my-auto"
       >
         <motion.div 
           variants={itemVariants}
-          className="bg-[#3498DB]/90 rounded-[28px] p-8 sm:p-10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.5)] border border-white/25 text-white backdrop-blur-md"
+          className="bg-slate-800/90 rounded-[28px] p-7 sm:p-9 shadow-2xl border border-white/20 text-white backdrop-blur-md"
         >
           <div className="text-center mb-6 flex flex-col items-center">
             <img 
               src={bolinaoLogo} 
-              alt="Bolinao School of Fisheries Logo" 
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain mb-3 drop-shadow-lg" 
+              alt="Golden West Colleges Logo" 
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-3 drop-shadow-md" 
             />
-            <span className="inline-block bg-white/20 text-white font-mono text-[0.65rem] uppercase tracking-widest px-3.5 py-1 rounded-full font-bold mb-3 border border-white/20 shadow-sm">
-              BSF E-Voting Portal
+            <span className="inline-block bg-sky-500/20 text-sky-200 font-mono text-[0.7rem] uppercase tracking-wider px-3.5 py-1 rounded-full font-bold mb-2 border border-sky-400/30">
+              Golden West Colleges E-Voting Portal
             </span>
-            <h1 className="font-display font-extrabold text-3xl sm:text-4xl text-white tracking-tight leading-tight mb-2">
-              Welcome!
+            <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight leading-tight mb-1.5">
+              Welcome Student!
             </h1>
-            <p className="text-sm text-blue-100 font-medium leading-relaxed">
-              Welcome to Bolinao School of Fisheries E-Voting System. Please enter your credentials to authorize your session.
+            <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
+              Log in with your official <strong className="text-white">Student Number</strong> and password to access active elections.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label text-white/90 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                IDENTITY
+              <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
+                STUDENT NUMBER / USERNAME
               </label>
               <input
                 type="text"
-                placeholder="USER ID"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full p-3.5 px-4 border-2 border-white/20 rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-white focus:ring-4 focus:ring-white/20 transition-all placeholder:text-[var(--ink)]/40 font-sans shadow-inner"
+                placeholder="e.g. 2026-0001"
+                value={studentNumber}
+                onChange={(e) => setStudentNumber(e.target.value)}
+                className="w-full p-3.5 px-4 border border-slate-600 rounded-xl text-base bg-slate-900/90 text-white outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 transition-all placeholder:text-slate-500 font-mono shadow-inner"
               />
             </div>
 
             <div>
-              <label className="label text-white/90 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                CREDENTIAL
+              <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
+                PASSWORD
               </label>
               <input
                 type="password"
-                placeholder="SECRET KEY"
+                placeholder="Enter password (leave blank if first time)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3.5 px-4 border-2 border-white/20 rounded-xl text-base bg-white text-[var(--ink)] outline-none focus:border-white focus:ring-4 focus:ring-white/20 transition-all placeholder:text-[var(--ink)]/40 font-sans shadow-inner"
+                className="w-full p-3.5 px-4 border border-slate-600 rounded-xl text-base bg-slate-900/90 text-white outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 transition-all placeholder:text-slate-500 font-sans shadow-inner"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full p-4 bg-[var(--ink)] hover:bg-[#111e33] text-white border-none rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-lg mt-2"
+              className="w-full p-4 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shadow-lg shadow-sky-900/30 mt-2"
             >
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={18} />
-                  <span>AUTHORIZING SESSION...</span>
+                  <span>VERIFYING ACCOUNT...</span>
                 </>
               ) : (
                 <>
                   <Key size={18} />
-                  <span>AUTHORIZE SESSION</span>
+                  <span>LOG IN TO E-VOTING</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-5 text-center">
+          <div className="mt-5 text-center flex items-center justify-center gap-3 text-xs text-slate-400">
             <button
               type="button"
               onClick={() => setShowHowToVote(true)}
-              className="text-xs text-white/90 underline hover:text-white transition-opacity bg-transparent border-none cursor-pointer font-sans font-medium"
+              className="text-slate-300 hover:text-white underline transition-opacity bg-transparent border-none cursor-pointer font-sans font-medium"
             >
               How to Vote Guide
             </button>
+            <span>•</span>
+            <span className="text-slate-400 font-mono">First time? Leave password blank</span>
           </div>
         </motion.div>
       </motion.div>
+
+      {/* First Time Password Creation Modal */}
+      {passwordSetupData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-slate-900 border border-sky-500/40 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-white"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
+                <ShieldCheck size={22} />
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-white">First-Time Account Setup</h3>
+                <p className="text-xs text-slate-400">Student Number: <span className="font-mono text-sky-300">{passwordSetupData.studentNumber}</span></p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 mb-5 leading-relaxed bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+              Welcome, <strong className="text-white">{passwordSetupData.fullName}</strong>! You are logging in for the first time. Please create a password to secure your account for future voting sessions.
+            </p>
+
+            <form onSubmit={handlePasswordSetup} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                  NEW PASSWORD
+                </label>
+                <input
+                  type="password"
+                  placeholder="At least 4 characters"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                  CONFIRM NEW PASSWORD
+                </label>
+                <input
+                  type="password"
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-sm"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPasswordSetupData(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-sm font-semibold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={setupLoading}
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-sky-900/30"
+                >
+                  {setupLoading ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
+                  <span>Save Password & Log In</span>
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
 
       <HowToVoteModal isOpen={showHowToVote} onClose={() => setShowHowToVote(false)} />
     </div>
   );
 }
+

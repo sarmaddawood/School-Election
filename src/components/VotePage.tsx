@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Vote as VoteIcon, Check, Award, AlertCircle, ShieldCheck, Loader2, Info, Lock } from "lucide-react";
+import { Vote as VoteIcon, Check, Award, AlertCircle, ShieldCheck, Loader2, Info, Lock, Search, DoorOpen, Hash, ArrowRight, Sparkles } from "lucide-react";
 import { Election, Position, Candidate, Vote, User } from "../types";
 import Countdown from "./Countdown";
 import BallotDropCelebration from "./BallotDropCelebration";
@@ -31,6 +31,8 @@ export default function VotePage({
   onLogout,
 }: VotePageProps) {
   const [activeElection, setActiveElection] = useState<Election | null>(null);
+  const [roomQuery, setRoomQuery] = useState(user.room || "");
+  const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
   const [myVotes, setMyVotes] = useState<Vote[]>([]);
   const [loadingVotes, setLoadingVotes] = useState(false);
   const [confirmingVote, setConfirmingVote] = useState<{
@@ -66,12 +68,69 @@ export default function VotePage({
     return "ended";
   };
 
+  // Find active live or upcoming elections
+  const availableElections = elections.filter(
+    (e) => getPhase(e.startsAt, e.endsAt) !== "ended"
+  );
+
   useEffect(() => {
-    const liveEl = elections.find((e) => getPhase(e.startsAt, e.endsAt) === "live");
-    if (liveEl?.id !== activeElection?.id) {
-      setActiveElection(liveEl || null);
+    if (!activeElection && availableElections.length > 0) {
+      // Auto pick user's room election or first live election
+      const roomEl = user.room
+        ? availableElections.find((e) => {
+            const r = (e.scopeValue || e.targetRoom || "").toLowerCase();
+            const uRoom = user.room?.toLowerCase() || "";
+            return r === uRoom || uRoom.includes(r) || r.includes(uRoom);
+          })
+        : null;
+
+      const defaultEl = roomEl || availableElections.find((e) => getPhase(e.startsAt, e.endsAt) === "live") || availableElections[0];
+      if (defaultEl) {
+        setActiveElection(defaultEl);
+      }
     }
-  }, [elections, currentTime, activeElection]);
+  }, [elections, user.room, activeElection]);
+
+  const handleRoomSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSearchFeedback(null);
+
+    const query = roomQuery.trim().toLowerCase();
+    if (!query) {
+      const live = availableElections.find((el) => getPhase(el.startsAt, el.endsAt) === "live") || availableElections[0];
+      if (live) setActiveElection(live);
+      return;
+    }
+
+    const matched = availableElections.find((el) => {
+      const title = (el.title || "").toLowerCase();
+      const id = (el.id || "").toLowerCase();
+      const scopeVal = (el.scopeValue || "").toLowerCase();
+      const targetRoom = (el.targetRoom || "").toLowerCase();
+      const targetSec = (el.targetSection || "").toLowerCase();
+      const targetGrade = el.targetGradeLevel ? String(el.targetGradeLevel) : "";
+
+      return (
+        title.includes(query) ||
+        id.includes(query) ||
+        scopeVal === query ||
+        targetRoom === query ||
+        `room ${scopeVal}` === query ||
+        `room ${targetRoom}` === query ||
+        scopeVal.includes(query) ||
+        targetRoom.includes(query) ||
+        targetSec.includes(query) ||
+        targetGrade === query
+      );
+    });
+
+    if (matched) {
+      setActiveElection(matched);
+      setSuccessNotification(`Entered polling station for: ${matched.title}`);
+    } else {
+      setSearchFeedback(`No active election found for Room or Code "${roomQuery.trim()}". Displaying available elections.`);
+    }
+  };
 
   const fetchMyVotes = async (electionId: string) => {
     setLoadingVotes(true);
@@ -162,21 +221,30 @@ export default function VotePage({
     }
   };
 
+  // Collect distinct room badges for quick selection
+  const roomBadges = Array.from(
+    new Set(
+      elections
+        .map((e) => e.scopeValue || e.targetRoom)
+        .filter((r): r is string => Boolean(r && r.trim()))
+    )
+  );
+
   return (
     <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="space-y-6 max-w-4xl mx-auto font-mono text-[var(--ink)]"
+      className="space-y-6 max-w-5xl mx-auto font-mono text-[var(--ink)]"
     >
       <motion.div variants={itemVariants} className="border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT STATION 04</span>
           <h2 className="font-display font-black text-2xl text-[var(--ink)] uppercase tracking-wider flex items-center gap-2">
             <VoteIcon className="text-[var(--accent)]" size={24} />
-            CAST YOUR VOTE
+            STUDENT POLLING STATION
           </h2>
-          <p className="text-xs text-zinc-500">Secure cryptographic polling station. Double-ballot protections active.</p>
+          <p className="text-xs text-zinc-500">Vote via Room Number or Election Code. Double-ballot cryptographic protection active.</p>
         </div>
         <button
           onClick={() => setShowHowToVote(true)}
@@ -187,6 +255,136 @@ export default function VotePage({
         </button>
       </motion.div>
 
+      {/* Room Number / Vote Code Quick Search Panel */}
+      <motion.div variants={itemVariants} className="glass-panel p-5 space-y-3">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+          <div className="flex items-center gap-2">
+            <DoorOpen size={18} className="text-[var(--accent)]" />
+            <h3 className="font-display font-black text-xs text-[var(--ink)] uppercase tracking-wider">
+              ENTER VIA ROOM NUMBER OR ELECTION CODE
+            </h3>
+          </div>
+          {user.room && (
+            <button
+              type="button"
+              onClick={() => {
+                setRoomQuery(user.room || "");
+                const matched = availableElections.find((el) => {
+                  const r = (el.scopeValue || el.targetRoom || "").toLowerCase();
+                  return r === user.room?.toLowerCase();
+                });
+                if (matched) setActiveElection(matched);
+              }}
+              className="text-[10px] font-bold px-2.5 py-1 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 hover:bg-[var(--accent)] hover:text-white transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <Sparkles size={12} />
+              MY ASSIGNED ROOM: {user.room}
+            </button>
+          )}
+        </div>
+
+        <form onSubmit={handleRoomSearchSubmit} className="flex gap-2">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input
+              type="text"
+              value={roomQuery}
+              onChange={(e) => {
+                setRoomQuery(e.target.value);
+                setSearchFeedback(null);
+              }}
+              placeholder="Enter Room # or Vote Code (e.g., 101, 204, Room 101, or Election ID)..."
+              className="w-full pl-9 pr-4 py-2.5 bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)] transition-all font-mono"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-5 py-2.5 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+          >
+            <span>ENTER ROOM</span>
+            <ArrowRight size={14} />
+          </button>
+        </form>
+
+        {searchFeedback && (
+          <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1">
+            <AlertCircle size={14} />
+            {searchFeedback}
+          </p>
+        )}
+
+        {/* Quick Room Badges */}
+        {roomBadges.length > 0 && (
+          <div className="pt-2 border-t border-[var(--border)] flex flex-wrap items-center gap-2">
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">AVAILABLE ROOMS:</span>
+            {roomBadges.map((room) => {
+              const matchedEl = availableElections.find(
+                (el) => (el.scopeValue || el.targetRoom || "").toLowerCase() === room.toLowerCase()
+              );
+              const isActive = activeElection && (activeElection.scopeValue === room || activeElection.targetRoom === room);
+              return (
+                <button
+                  key={room}
+                  type="button"
+                  onClick={() => {
+                    setRoomQuery(room);
+                    if (matchedEl) setActiveElection(matchedEl);
+                  }}
+                  className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-[var(--accent)] text-[var(--surface)] border-[var(--accent)]"
+                      : "bg-[var(--surface)] text-[var(--ink)] border-[var(--border)] hover:border-[var(--accent)]/50"
+                  }`}
+                >
+                  ROOM {room}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Available Elections Switcher (if multiple exist) */}
+      {availableElections.length > 1 && (
+        <motion.div variants={itemVariants} className="space-y-2">
+          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">SELECT ELECTION POLLING STATION:</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {availableElections.map((el) => {
+              const isSelected = activeElection?.id === el.id;
+              const phase = getPhase(el.startsAt, el.endsAt);
+              const roomInfo = el.scopeValue || el.targetRoom;
+
+              return (
+                <button
+                  key={el.id}
+                  type="button"
+                  onClick={() => setActiveElection(el)}
+                  className={`p-3 text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    isSelected
+                      ? "bg-[var(--surface)] border-[var(--accent)] ring-1 ring-[var(--accent)]"
+                      : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--accent)]/40"
+                  }`}
+                >
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center gap-2">
+                      <span className={`px-2 py-0.5 text-[8px] font-bold uppercase ${phase === "live" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800"}`}>
+                        {phase}
+                      </span>
+                      {roomInfo && (
+                        <span className="text-[9px] font-bold text-[var(--accent)]">
+                          ROOM {roomInfo}
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-bold text-xs text-[var(--ink)] truncate">{el.title}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {activeElection ? (
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1 space-y-6">
@@ -196,13 +394,20 @@ export default function VotePage({
             >
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-[var(--border)] pb-4">
                 <div>
-                  <motion.span
-                    animate={{ scale: [1, 1.03, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="px-2 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 text-[9px] font-bold uppercase tracking-wider shadow-[0_0_8px_var(--accent-soft)]"
-                  >
-                    LIVE POLLING STATION
-                  </motion.span>
+                  <div className="flex items-center gap-2">
+                    <motion.span
+                      animate={{ scale: [1, 1.03, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="px-2 py-0.5 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 text-[9px] font-bold uppercase tracking-wider shadow-[0_0_8px_var(--accent-soft)]"
+                    >
+                      LIVE POLLING STATION
+                    </motion.span>
+                    {(activeElection.scopeValue || activeElection.targetRoom) && (
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-800 border border-slate-300 text-[9px] font-bold uppercase">
+                        📍 ROOM {activeElection.scopeValue || activeElection.targetRoom}
+                      </span>
+                    )}
+                  </div>
                   <h3 className="font-display font-extrabold text-[var(--ink)] text-base uppercase tracking-wider mt-2.5">
                     {activeElection.title}
                   </h3>
@@ -244,7 +449,7 @@ export default function VotePage({
                           <motion.span
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[8px] font-bold uppercase tracking-wider"
+                            className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 text-[8px] font-bold uppercase tracking-wider"
                           >
                             <Check size={11} />
                             BALLOT REGISTERED
@@ -384,7 +589,7 @@ export default function VotePage({
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-[var(--accent)] font-bold">•</span>
-                  Nominees filtered by student cohort lock.
+                  Nominees filtered by room or student cohort.
                 </li>
                 <li className="flex gap-1.5">
                   <span className="text-[var(--accent)] font-bold">•</span>
@@ -407,9 +612,9 @@ export default function VotePage({
             <AlertCircle size={36} className="text-zinc-500" />
           </motion.div>
           <div className="space-y-1">
-            <p className="font-display font-extrabold text-[var(--ink)] text-sm uppercase tracking-wider">NO ACTIVE ELECTIONS</p>
+            <p className="font-display font-extrabold text-[var(--ink)] text-sm uppercase tracking-wider">NO ACTIVE ELECTIONS FOR THIS ROOM</p>
             <p className="text-[10px] text-zinc-500 max-w-sm mx-auto leading-relaxed">
-              Secure polling services are offline. We will notify you when a school-wide election window is scheduled.
+              No live polling station was found matching room number or code "{roomQuery}". Please check the room number or select an election from above.
             </p>
           </div>
         </motion.div>

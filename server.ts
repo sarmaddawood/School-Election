@@ -3,11 +3,65 @@
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { Client, Databases, Query, ID, Storage } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
 import { GoogleGenAI } from "@google/genai";
 import multer from "multer";
+
+const HMAC_OFFLINE_SECRET = "GWC_BOLINAO_ELECTION_HMAC_SECRET_2026";
+
+function generateBallotSignature(payloadStr: string): string {
+  return crypto.createHmac("sha256", HMAC_OFFLINE_SECRET).update(payloadStr).digest("hex");
+}
+
+function verifyBallotSignature(payloadStr: string, signature: string): boolean {
+  try {
+    const expected = generateBallotSignature(payloadStr);
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch (e) {
+    return false;
+  }
+}
+
+let inMemoryPartyLists: any[] = [];
+let inMemoryAuditLogs: any[] = [
+  {
+    id: "log-1",
+    action: "SYSTEM_INIT",
+    performedBy: "System Administrator",
+    performedByRole: "admin",
+    timestamp: new Date().toISOString(),
+    details: "Golden West Colleges E-Voting Security Kernel initialized."
+  }
+];
+
+let inMemoryBranding: any = {
+  schoolName: "Golden West Colleges, Inc.",
+  tagline: "Golden West Colleges Student E-Voting Portal",
+  logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
+  primaryColor: "#0284c7",
+  attributionText: "Developed by students of Golden West Colleges, Inc.",
+  contactEmail: "admin@goldenwest.edu.ph",
+  address: "Golden West Colleges Campus, Philippines"
+};
+
+function logAuditEvent(action: string, performedBy: string, role: string, details: string) {
+  const entry = {
+    id: "log-" + Math.random().toString(36).substring(2, 9),
+    action,
+    performedBy,
+    performedByRole: role,
+    timestamp: new Date().toISOString(),
+    details
+  };
+  inMemoryAuditLogs.unshift(entry);
+  if (inMemoryAuditLogs.length > 500) {
+    inMemoryAuditLogs.pop();
+  }
+}
+
 
 let geminiClient: GoogleGenAI | null = null;
 
@@ -61,11 +115,15 @@ async function ensureCollectionsExist() {
         id: "users",
         name: "Users",
         attributes: [
-          { key: "username", type: "string", size: 255, required: true },
-          { key: "password", type: "string", size: 255, required: true },
-          { key: "fullName", type: "string", size: 255, required: true },
-          { key: "role", type: "string", size: 50, required: true },
+          { key: "username", type: "string", size: 255, required: false },
+          { key: "password", type: "string", size: 255, required: false },
+          { key: "fullName", type: "string", size: 255, required: false },
+          { key: "role", type: "string", size: 50, required: false },
+          { key: "studentNumber", type: "string", size: 255, required: false },
           { key: "yearLevel", type: "integer", required: false },
+          { key: "section", type: "string", size: 255, required: false },
+          { key: "room", type: "string", size: 255, required: false },
+          { key: "hasSetPassword", type: "boolean", required: false },
           { key: "photoUrl", type: "string", size: 1000, required: false }
         ]
       },
@@ -73,30 +131,42 @@ async function ensureCollectionsExist() {
         id: "elections",
         name: "Elections",
         attributes: [
-          { key: "title", type: "string", size: 255, required: true },
+          { key: "title", type: "string", size: 255, required: false },
           { key: "description", type: "string", size: 5000, required: false },
-          { key: "startsAt", type: "string", size: 255, required: true },
-          { key: "endsAt", type: "string", size: 255, required: true }
+          { key: "startsAt", type: "string", size: 255, required: false },
+          { key: "endsAt", type: "string", size: 255, required: false },
+          { key: "scope", type: "string", size: 50, required: false },
+          { key: "scopeValue", type: "string", size: 255, required: false },
+          { key: "hasPartyList", type: "boolean", required: false },
+          { key: "targetGradeLevel", type: "integer", required: false },
+          { key: "targetSection", type: "string", size: 255, required: false },
+          { key: "targetRoom", type: "string", size: 255, required: false },
+          { key: "hasPartyListSupport", type: "boolean", required: false }
         ]
       },
       {
         id: "positions",
         name: "Positions",
         attributes: [
-          { key: "electionId", type: "string", size: 255, required: true },
-          { key: "title", type: "string", size: 255, required: true }
+          { key: "electionId", type: "string", size: 255, required: false },
+          { key: "title", type: "string", size: 255, required: false },
+          { key: "name", type: "string", size: 255, required: false }
         ]
       },
       {
         id: "candidates",
         name: "Candidates",
         attributes: [
-          { key: "fullName", type: "string", size: 255, required: true },
-          { key: "positionId", type: "string", size: 255, required: true },
-          { key: "electionId", type: "string", size: 255, required: true },
+          { key: "fullName", type: "string", size: 255, required: false },
+          { key: "positionId", type: "string", size: 255, required: false },
+          { key: "electionId", type: "string", size: 255, required: false },
+          { key: "userId", type: "string", size: 255, required: false },
           { key: "party", type: "string", size: 255, required: false },
+          { key: "partyListId", type: "string", size: 255, required: false },
+          { key: "partyListName", type: "string", size: 255, required: false },
           { key: "manifesto", type: "string", size: 10000, required: false },
           { key: "photoUrl", type: "string", size: 1000, required: false },
+          { key: "yearLevel", type: "integer", required: false },
           { key: "voteCount", type: "integer", required: false, defaultValue: 0 }
         ]
       },
@@ -104,28 +174,33 @@ async function ensureCollectionsExist() {
         id: "votes",
         name: "Votes",
         attributes: [
-          { key: "userId", type: "string", size: 255, required: true },
-          { key: "electionId", type: "string", size: 255, required: true },
-          { key: "positionId", type: "string", size: 255, required: true },
-          { key: "candidateId", type: "string", size: 255, required: true },
-          { key: "timestamp", type: "string", size: 255, required: true }
+          { key: "userId", type: "string", size: 255, required: false },
+          { key: "voterId", type: "string", size: 255, required: false },
+          { key: "electionId", type: "string", size: 255, required: false },
+          { key: "positionId", type: "string", size: 255, required: false },
+          { key: "candidateId", type: "string", size: 255, required: false },
+          { key: "timestamp", type: "string", size: 255, required: false },
+          { key: "isOfflineImport", type: "boolean", required: false }
         ]
       }
     ];
 
     for (const col of requiredCollections) {
+      let existingAttributes: string[] = [];
       try {
         await databases.getCollection(APPWRITE_DB, col.id);
         console.log(`Collection '${col.id}' verified.`);
+        const attrRes = await databases.listAttributes(APPWRITE_DB, col.id);
+        existingAttributes = (attrRes.attributes || []).map((a: any) => a.key);
       } catch (e: any) {
         console.log(`Collection '${col.id}' not found. Creating...`);
         await databases.createCollection(APPWRITE_DB, col.id, col.name);
-        
-        // Wait a brief moment for collection creation to settle
         await new Promise(resolve => setTimeout(resolve, 1000));
+      }
 
-        // Create attributes
-        for (const attr of col.attributes) {
+      // Check and create missing attributes
+      for (const attr of col.attributes) {
+        if (!existingAttributes.includes(attr.key)) {
           try {
             if (attr.type === "string") {
               await databases.createStringAttribute(
@@ -133,7 +208,7 @@ async function ensureCollectionsExist() {
                 col.id,
                 attr.key,
                 attr.size || 255,
-                attr.required,
+                attr.required || false,
                 undefined,
                 false
               );
@@ -142,16 +217,25 @@ async function ensureCollectionsExist() {
                 APPWRITE_DB,
                 col.id,
                 attr.key,
-                attr.required,
+                attr.required || false,
                 undefined,
                 undefined,
                 attr.defaultValue !== undefined ? attr.defaultValue : undefined,
                 false
               );
+            } else if (attr.type === "boolean") {
+              await databases.createBooleanAttribute(
+                APPWRITE_DB,
+                col.id,
+                attr.key,
+                attr.required || false,
+                undefined,
+                false
+              );
             }
             console.log(`Created attribute '${attr.key}' in collection '${col.id}'`);
           } catch (attrErr: any) {
-            console.error(`Failed to create attribute '${attr.key}' in '${col.id}':`, attrErr.message);
+            console.error(`Failed/skipped attribute '${attr.key}' in '${col.id}':`, attrErr.message);
           }
         }
       }
@@ -161,6 +245,55 @@ async function ensureCollectionsExist() {
   }
 }
 ensureCollectionsExist();
+
+async function createMissingAttributeOnTheFly(col: string, key: string, val: any) {
+  try {
+    if (typeof val === "boolean") {
+      await databases.createBooleanAttribute(APPWRITE_DB, col, key, false);
+    } else if (typeof val === "number") {
+      await databases.createIntegerAttribute(APPWRITE_DB, col, key, false);
+    } else {
+      await databases.createStringAttribute(APPWRITE_DB, col, key, 255, false);
+    }
+    console.log(`Triggered on-the-fly attribute creation for '${key}' in collection '${col}'`);
+  } catch (e: any) {
+    console.warn(`Could not create attribute '${key}' on the fly:`, e.message);
+  }
+}
+
+async function saveAppwriteDoc(col: string, id: string, data: any, isUpdate = false): Promise<void> {
+  const cleanData = { ...data };
+  delete cleanData.id;
+  for (let key in cleanData) {
+    if (cleanData[key] === undefined) cleanData[key] = null;
+  }
+
+  try {
+    if (isUpdate) {
+      await databases.updateDocument(APPWRITE_DB, col, id, cleanData);
+    } else {
+      await databases.createDocument(APPWRITE_DB, col, id, cleanData);
+    }
+  } catch (e: any) {
+    if (!isUpdate && e.code === 409) {
+      return await saveAppwriteDoc(col, id, cleanData, true);
+    }
+
+    const errMsg = e.message || "";
+    if (errMsg.includes("Unknown attribute:") || errMsg.includes("Invalid document structure")) {
+      const match = errMsg.match(/Unknown attribute:\s*"([^"]+)"/i) || errMsg.match(/Unknown attribute:\s*([a-zA-Z0-9_]+)/i);
+      if (match && match[1]) {
+        const unknownKey = match[1];
+        console.warn(`Appwrite collection '${col}' missing attribute '${unknownKey}'. Creating attribute & stripping key for current write...`);
+        createMissingAttributeOnTheFly(col, unknownKey, data[unknownKey]);
+        delete cleanData[unknownKey];
+        return await saveAppwriteDoc(col, id, cleanData, isUpdate);
+      }
+    }
+
+    throw e;
+  }
+}
 
 // APPWRITE ADAPTER
 class DocRef {
@@ -183,28 +316,10 @@ class DocRef {
     }
   }
   async set(data) { 
-    const cleanData = { ...data };
-    delete cleanData.id;
-    for (let key in cleanData) {
-      if (cleanData[key] === undefined) cleanData[key] = null;
-    }
-    try {
-      await databases.createDocument(APPWRITE_DB, this.col, this.id, cleanData);
-    } catch(e) {
-      if (e.code === 409) {
-        await databases.updateDocument(APPWRITE_DB, this.col, this.id, cleanData);
-      } else {
-        throw e;
-      }
-    }
+    await saveAppwriteDoc(this.col, this.id, data, false);
   }
   async update(data) { 
-    const cleanData = { ...data };
-    delete cleanData.id;
-    for (let key in cleanData) {
-      if (cleanData[key] === undefined) cleanData[key] = null;
-    }
-    await databases.updateDocument(APPWRITE_DB, this.col, this.id, cleanData); 
+    await saveAppwriteDoc(this.col, this.id, data, true);
   }
   async delete() { 
     try {
@@ -371,10 +486,14 @@ async function startServer() {
     }
     return {
       id: user.id,
-      username: user.username,
+      studentNumber: user.studentNumber || user.username,
+      username: user.username || user.studentNumber,
       fullName: user.fullName,
       role: user.role,
       yearLevel: user.yearLevel,
+      section: user.section || null,
+      room: user.room || null,
+      hasSetPassword: user.hasSetPassword !== false,
       photoUrl: user.photoUrl,
     };
   }
@@ -434,55 +553,122 @@ async function startServer() {
 
   // --- Auth API ---
   app.post("/api/auth/login", async (req: Request, res: Response) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      res.status(400).json({ error: "Username and password are required" });
+    // Accepts studentNumber or username
+    const identifier = (req.body.studentNumber || req.body.username || "").toString().trim();
+    const password = (req.body.password || "").toString();
+
+    if (!identifier) {
+      res.status(400).json({ error: "Student Number or Username is required" });
       return;
     }
 
     try {
-      // Direct username query
-      const snapshot = await db.collection("users")
-        .where("username", "==", username)
-        .get();
-      
-      let user: any = null;
-      snapshot.forEach((doc) => {
-        const d = doc.data();
-        if (d.password === password) {
-          user = { id: doc.id, ...d };
-        }
+      const allUsers = await getAll("users");
+      const user = allUsers.find((u) => {
+        const uStudent = u.studentNumber ? u.studentNumber.toLowerCase() : "";
+        const uUser = u.username ? u.username.toLowerCase() : "";
+        const target = identifier.toLowerCase();
+        return uStudent === target || uUser === target;
       });
 
-      // Case-insensitive username fallback if direct exact query missed
       if (!user) {
-        const allSnapshot = await db.collection("users").get();
-        allSnapshot.forEach((doc) => {
-          const d = doc.data();
-          if (d.username.toLowerCase() === username.toLowerCase() && d.password === password) {
-            user = { id: doc.id, ...d };
-          }
-        });
-      }
-
-      if (!user) {
-        res.status(401).json({ error: "Invalid username or password" });
+        res.status(401).json({ error: "No account found matching this Student Number or Username" });
         return;
       }
+
+      // Detect first-time login: if no password set yet or explicitly flagged hasSetPassword === false
+      if (user.hasSetPassword === false || !user.password || user.password.trim() === "") {
+        res.json({
+          needsPasswordSetup: true,
+          user: {
+            id: user.id,
+            studentNumber: user.studentNumber || user.username,
+            username: user.username || user.studentNumber,
+            fullName: user.fullName,
+            role: user.role,
+            yearLevel: user.yearLevel,
+            section: user.section || null,
+            room: user.room || null,
+          }
+        });
+        return;
+      }
+
+      // Check password
+      if (user.password !== password) {
+        res.status(401).json({ error: "Invalid password for this account" });
+        return;
+      }
+
+      logAuditEvent("LOGIN_SUCCESS", user.fullName, user.role, `Logged in via student number ${user.studentNumber || user.username}`);
 
       res.json({
         user: {
           id: user.id,
-          username: user.username,
+          studentNumber: user.studentNumber || user.username,
+          username: user.username || user.studentNumber,
           fullName: user.fullName,
           role: user.role,
           yearLevel: user.yearLevel,
+          section: user.section || null,
+          room: user.room || null,
+          hasSetPassword: true,
           photoUrl: user.photoUrl,
         },
         token: `mock-token-${user.id}`,
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to log in" });
+    }
+  });
+
+  // First time login password creation endpoint
+  app.post("/api/auth/setup-password", async (req: Request, res: Response) => {
+    const { userId, newPassword } = req.body;
+    if (!userId || !newPassword || newPassword.length < 4) {
+      res.status(400).json({ error: "Valid User ID and new password (min 4 characters) are required" });
+      return;
+    }
+
+    try {
+      const userRef = db.collection("users").doc(userId);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        res.status(404).json({ error: "User account not found" });
+        return;
+      }
+
+      await userRef.update({
+        password: newPassword,
+        hasSetPassword: true
+      });
+
+      const updatedUser = {
+        ...userDoc.data(),
+        id: userId,
+        hasSetPassword: true
+      };
+
+      logAuditEvent("FIRST_TIME_PASSWORD_SET", updatedUser.fullName, updatedUser.role, `Set account password for student ${updatedUser.studentNumber || updatedUser.username}`);
+
+      res.json({
+        message: "Password configured successfully! Account ready.",
+        user: {
+          id: updatedUser.id,
+          studentNumber: updatedUser.studentNumber || updatedUser.username,
+          username: updatedUser.username || updatedUser.studentNumber,
+          fullName: updatedUser.fullName,
+          role: updatedUser.role,
+          yearLevel: updatedUser.yearLevel,
+          section: updatedUser.section || null,
+          room: updatedUser.room || null,
+          hasSetPassword: true,
+          photoUrl: updatedUser.photoUrl,
+        },
+        token: `mock-token-${updatedUser.id}`,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to set account password" });
     }
   });
 
@@ -507,7 +693,8 @@ async function startServer() {
         return;
       }
 
-      await userRef.update({ password: newPassword });
+      await userRef.update({ password: newPassword, hasSetPassword: true });
+      logAuditEvent("CHANGE_PASSWORD", user.fullName, user.role, "Updated account password");
       res.json({ message: "Password updated successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update password" });
@@ -587,10 +774,14 @@ async function startServer() {
       const users = await getAll("users");
       const list = users.map((u: any) => ({
         id: u.id,
-        username: u.username,
+        studentNumber: u.studentNumber || u.username,
+        username: u.username || u.studentNumber,
         fullName: u.fullName,
         role: u.role,
         yearLevel: u.yearLevel !== undefined ? u.yearLevel : null,
+        section: u.section || null,
+        room: u.room || null,
+        hasSetPassword: u.hasSetPassword !== false,
         photoUrl: u.photoUrl !== undefined ? u.photoUrl : null,
       }));
       res.json(list);
@@ -599,10 +790,44 @@ async function startServer() {
     }
   });
 
+  // Fast Student Search for Candidate Nomination
+  app.get("/api/students/search", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    const query = (req.query.q || "").toString().toLowerCase().trim();
+    try {
+      const users = await getAll("users");
+      const students = users
+        .filter((u: any) => u.role === "student")
+        .filter((u: any) => {
+          if (!query) return true;
+          const sNum = (u.studentNumber || u.username || "").toLowerCase();
+          const name = (u.fullName || "").toLowerCase();
+          const sec = (u.section || "").toLowerCase();
+          const rm = (u.room || "").toLowerCase();
+          return sNum.includes(query) || name.includes(query) || sec.includes(query) || rm.includes(query);
+        })
+        .map((u: any) => ({
+          id: u.id,
+          studentNumber: u.studentNumber || u.username,
+          username: u.username || u.studentNumber,
+          fullName: u.fullName,
+          role: u.role,
+          yearLevel: u.yearLevel || null,
+          section: u.section || null,
+          room: u.room || null,
+          photoUrl: u.photoUrl || null,
+        }));
+      res.json(students);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to search students" });
+    }
+  });
+
   app.post("/api/users", requireAdminOrTeacher, async (req: Request, res: Response) => {
-    const { username, fullName, password, role } = req.body;
-    if (!username || !fullName || !password || !role) {
-      res.status(400).json({ error: "All fields are required" });
+    const { studentNumber, username, fullName, password, role, yearLevel, section, room } = req.body;
+    const finalStudentNumber = (studentNumber || username || "").toString().trim();
+
+    if (!finalStudentNumber || !fullName || !role) {
+      res.status(400).json({ error: "Student Number/Username, Full Name, and Role are required" });
       return;
     }
     if (role !== "student" && role !== "teacher") {
@@ -611,34 +836,49 @@ async function startServer() {
     }
 
     try {
-      const existingQuery = await db.collection("users")
-        .where("username", "==", username)
-        .get();
+      const allUsers = await getAll("users");
+      const duplicate = allUsers.find((u) => {
+        const existingStudent = u.studentNumber ? u.studentNumber.toLowerCase() : "";
+        const existingUser = u.username ? u.username.toLowerCase() : "";
+        const target = finalStudentNumber.toLowerCase();
+        return existingStudent === target || existingUser === target;
+      });
 
-      if (!existingQuery.empty) {
-        res.status(400).json({ error: "Username already exists" });
+      if (duplicate) {
+        res.status(400).json({ error: `An account with Student Number / Username "${finalStudentNumber}" already exists!` });
         return;
       }
 
       const finalPhotoUrl = await ensureHostedPhotoUrl(req.body.photoUrl);
+      const hasPassword = password && password.trim().length > 0;
 
       const newUser = {
         id: "u-" + Math.random().toString(36).substring(2, 9),
-        username,
-        fullName,
-        password,
+        studentNumber: finalStudentNumber,
+        username: finalStudentNumber,
+        fullName: fullName.trim(),
+        password: hasPassword ? password.trim() : "",
+        hasSetPassword: hasPassword,
         role,
-        yearLevel: req.body.yearLevel || null,
+        yearLevel: yearLevel ? parseInt(yearLevel) : null,
+        section: section ? section.trim() : null,
+        room: room ? room.trim() : null,
         photoUrl: finalPhotoUrl,
       };
 
       await db.collection("users").doc(newUser.id).set(newUser);
+      logAuditEvent("CREATE_USER", (req as any).user?.fullName || "Admin", (req as any).user?.role || "admin", `Created ${role} account for ${fullName} (${finalStudentNumber})`);
+
       res.status(201).json({
         id: newUser.id,
+        studentNumber: newUser.studentNumber,
         username: newUser.username,
         fullName: newUser.fullName,
         role: newUser.role,
         yearLevel: newUser.yearLevel,
+        section: newUser.section,
+        room: newUser.room,
+        hasSetPassword: newUser.hasSetPassword,
         photoUrl: newUser.photoUrl,
       });
     } catch (err: any) {
@@ -655,7 +895,13 @@ async function startServer() {
 
     try {
       const existingUsers = await getAll("users");
-      const existingUsernames = new Set(existingUsers.map((u: any) => u.username ? u.username.toLowerCase() : ""));
+      const existingStudentNumbers = new Set(
+        existingUsers.map((u: any) => {
+          if (u.studentNumber) return u.studentNumber.toLowerCase();
+          if (u.username) return u.username.toLowerCase();
+          return "";
+        })
+      );
 
       const created: any[] = [];
       const errors: string[] = [];
@@ -663,45 +909,58 @@ async function startServer() {
       for (let i = 0; i < users.length; i++) {
         const u = users[i];
         const rowNum = i + 1;
+        const studentNum = (u.studentNumber || u.username || "").toString().trim();
 
-        if (!u.username || !u.fullName || !u.password || !u.role) {
-          errors.push(`Row ${rowNum}: Missing required fields (username, fullName, password, role).`);
+        if (!studentNum || !u.fullName) {
+          errors.push(`Row ${rowNum}: Missing Student Number/Username or Full Name.`);
           continue;
         }
 
-        const trimmedRole = u.role.toString().toLowerCase().trim();
-        if (trimmedRole !== "student" && trimmedRole !== "teacher") {
+        const role = (u.role || "student").toString().toLowerCase().trim();
+        if (role !== "student" && role !== "teacher") {
           errors.push(`Row ${rowNum}: Invalid role "${u.role}". Must be "student" or "teacher".`);
           continue;
         }
 
-        const trimmedUsername = u.username.toString().trim();
-        if (existingUsernames.has(trimmedUsername.toLowerCase())) {
-          errors.push(`Row ${rowNum}: Username "${trimmedUsername}" already exists.`);
+        if (existingStudentNumbers.has(studentNum.toLowerCase())) {
+          errors.push(`Row ${rowNum}: Student Number "${studentNum}" already exists. Duplicate skipped.`);
           continue;
         }
 
+        const passStr = u.password ? u.password.toString().trim() : "";
+        const hasSetPassword = passStr.length > 0;
+
         const newUser = {
           id: "u-" + Math.random().toString(36).substring(2, 9),
-          username: trimmedUsername,
+          studentNumber: studentNum,
+          username: studentNum,
           fullName: u.fullName.toString().trim(),
-          password: u.password.toString(),
-          role: trimmedRole,
-          yearLevel: u.yearLevel ? parseInt(u.yearLevel) : null,
+          password: passStr,
+          hasSetPassword: hasSetPassword,
+          role,
+          yearLevel: u.yearLevel ? parseInt(u.yearLevel) : (u.gradeLevel ? parseInt(u.gradeLevel) : null),
+          section: u.section ? u.section.toString().trim() : null,
+          room: u.room ? u.room.toString().trim() : null,
           photoUrl: u.photoUrl || null,
         };
 
         await db.collection("users").doc(newUser.id).set(newUser);
-        existingUsernames.add(trimmedUsername.toLowerCase());
+        existingStudentNumbers.add(studentNum.toLowerCase());
         created.push({
           id: newUser.id,
+          studentNumber: newUser.studentNumber,
           username: newUser.username,
           fullName: newUser.fullName,
           role: newUser.role,
           yearLevel: newUser.yearLevel,
+          section: newUser.section,
+          room: newUser.room,
+          hasSetPassword: newUser.hasSetPassword,
           photoUrl: newUser.photoUrl,
         });
       }
+
+      logAuditEvent("BULK_USER_IMPORT", (req as any).user?.fullName || "Admin", (req as any).user?.role || "admin", `Bulk imported ${created.length} student records (${errors.length} skipped/errors).`);
 
       res.status(201).json({
         success: true,
@@ -729,14 +988,16 @@ async function startServer() {
         return;
       }
 
+      const userData = userDoc.data()!;
       await userRef.delete();
 
-      // Clean up cascading candidates associated with deleted user using standard getDocs
+      // Clean up cascading candidates associated with deleted user
       const candidatesSnapshot = await db.collection("candidates").where("userId", "==", id).get();
-
       const batch = db.batch();
       candidatesSnapshot.forEach((d) => { batch.delete(db.collection("candidates").doc(d.id)); });
       await batch.commit();
+
+      logAuditEvent("DELETE_USER", (req as any).user?.fullName || "Admin", (req as any).user?.role || "admin", `Deleted user account ${userData.fullName} (${userData.studentNumber || userData.username})`);
 
       res.json({ message: "User deleted successfully" });
     } catch (err: any) {
@@ -786,29 +1047,53 @@ async function startServer() {
   app.get("/api/elections", requireAuth, async (req: Request, res: Response) => {
     try {
       const list = await getAll("elections");
-      res.json(list);
+      const mapped = list.map((e: any) => ({
+        id: e.id,
+        title: e.title,
+        description: e.description || "",
+        startsAt: e.startsAt,
+        endsAt: e.endsAt,
+        scope: e.scope || "all",
+        scopeValue: e.scopeValue || e.targetRoom || e.targetSection || (e.targetGradeLevel ? String(e.targetGradeLevel) : "") || "",
+        hasPartyList: e.hasPartyList !== undefined ? e.hasPartyList : (e.hasPartyListSupport !== false),
+        targetGradeLevel: e.targetGradeLevel !== undefined ? e.targetGradeLevel : null,
+        targetSection: e.targetSection || null,
+        targetRoom: e.targetRoom || e.scopeValue || null,
+        hasPartyListSupport: e.hasPartyListSupport !== false,
+      }));
+      res.json(mapped);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch elections" });
     }
   });
 
   app.post("/api/elections", requireAdmin, async (req: Request, res: Response) => {
-    const { title, description, startsAt, endsAt } = req.body;
+    const { title, description, startsAt, endsAt, scope, scopeValue, hasPartyList, targetGradeLevel, targetSection, targetRoom, hasPartyListSupport } = req.body;
     if (!title || !startsAt || !endsAt) {
       res.status(400).json({ error: "Title, start date, and end date are required" });
       return;
     }
 
     try {
+      const finalScopeValue = (scopeValue || targetRoom || targetSection || (targetGradeLevel ? String(targetGradeLevel) : "") || "").toString().trim();
       const newElection = {
         id: "e-" + Math.random().toString(36).substring(2, 9),
         title,
         description: description || "",
         startsAt,
         endsAt,
+        scope: scope || "all",
+        scopeValue: finalScopeValue,
+        hasPartyList: hasPartyList !== undefined ? hasPartyList : (hasPartyListSupport !== false),
+        targetGradeLevel: targetGradeLevel ? parseInt(targetGradeLevel) : null,
+        targetSection: targetSection ? targetSection.trim() : null,
+        targetRoom: targetRoom ? targetRoom.trim() : (scope === "room" ? finalScopeValue : null),
+        hasPartyListSupport: hasPartyListSupport !== false,
       };
 
       await db.collection("elections").doc(newElection.id).set(newElection);
+      logAuditEvent("CREATE_ELECTION", (req as any).user?.fullName || "Admin", "admin", `Created election: ${title} (Scope: ${newElection.scope}, Room/Value: ${finalScopeValue})`);
+
       res.status(201).json(newElection);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to create election" });
@@ -817,7 +1102,7 @@ async function startServer() {
 
   app.put("/api/elections/:id", requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { title, description, startsAt, endsAt } = req.body;
+    const { title, description, startsAt, endsAt, scope, scopeValue, hasPartyList, targetGradeLevel, targetSection, targetRoom, hasPartyListSupport } = req.body;
     if (!title || !startsAt || !endsAt) {
       res.status(400).json({ error: "Title, start date, and end date are required" });
       return;
@@ -831,15 +1116,25 @@ async function startServer() {
         return;
       }
 
+      const finalScopeValue = (scopeValue || targetRoom || targetSection || (targetGradeLevel ? String(targetGradeLevel) : "") || "").toString().trim();
       const updatedElection = {
         id,
         title,
         description: description || "",
         startsAt,
         endsAt,
+        scope: scope || "all",
+        scopeValue: finalScopeValue,
+        hasPartyList: hasPartyList !== undefined ? hasPartyList : (hasPartyListSupport !== false),
+        targetGradeLevel: targetGradeLevel ? parseInt(targetGradeLevel) : null,
+        targetSection: targetSection ? targetSection.trim() : null,
+        targetRoom: targetRoom ? targetRoom.trim() : (scope === "room" ? finalScopeValue : null),
+        hasPartyListSupport: hasPartyListSupport !== false,
       };
 
       await electionRef.set(updatedElection);
+      logAuditEvent("UPDATE_ELECTION", (req as any).user?.fullName || "Admin", "admin", `Updated election: ${title} (Room/Value: ${finalScopeValue})`);
+
       res.json(updatedElection);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update election" });
@@ -857,6 +1152,7 @@ async function startServer() {
         return;
       }
 
+      const elTitle = electionDoc.data()?.title || id;
       await electionRef.delete();
 
       // Cascade delete positions, candidates, and votes inside a batch
@@ -872,9 +1168,65 @@ async function startServer() {
       votes.forEach((doc) => batch.delete(db.collection("votes").doc(doc.id)));
 
       await batch.commit();
+
+      // Clean party-lists
+      inMemoryPartyLists = inMemoryPartyLists.filter((pl) => pl.electionId !== id);
+
+      logAuditEvent("DELETE_ELECTION", (req as any).user?.fullName || "Admin", "admin", `Deleted election: ${elTitle} and all associated records`);
+
       res.json({ message: "Election deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete election" });
+    }
+  });
+
+  // --- Party Lists API ---
+  app.get("/api/partylists", requireAuth, async (req: Request, res: Response) => {
+    const { electionId } = req.query;
+    try {
+      let lists = inMemoryPartyLists;
+      if (electionId) {
+        lists = lists.filter((p) => p.electionId === electionId);
+      }
+      res.json(lists);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to fetch party-lists" });
+    }
+  });
+
+  app.post("/api/partylists", requireAdmin, async (req: Request, res: Response) => {
+    const { electionId, name, acronym, logoUrl, advocacy } = req.body;
+    if (!electionId || !name) {
+      res.status(400).json({ error: "Election ID and Party-List name are required" });
+      return;
+    }
+
+    try {
+      const newParty = {
+        id: "pl-" + Math.random().toString(36).substring(2, 9),
+        electionId,
+        name: name.trim(),
+        acronym: acronym ? acronym.trim().toUpperCase() : "",
+        logoUrl: logoUrl || "",
+        advocacy: advocacy || "",
+      };
+
+      inMemoryPartyLists.push(newParty);
+      logAuditEvent("CREATE_PARTY_LIST", (req as any).user?.fullName || "Admin", "admin", `Registered Party-List "${newParty.name}" (${newParty.acronym})`);
+
+      res.status(201).json(newParty);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to create party-list" });
+    }
+  });
+
+  app.delete("/api/partylists/:id", requireAdmin, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+      inMemoryPartyLists = inMemoryPartyLists.filter((pl) => pl.id !== id);
+      res.json({ message: "Party-List removed successfully" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to delete party-list" });
     }
   });
 
@@ -929,9 +1281,7 @@ async function startServer() {
 
       await positionRef.delete();
 
-      // Cascade delete candidates and votes of this position
       const batch = db.batch();
-      
       const candidates = await db.collection("candidates").where("positionId", "==", id).get();
       candidates.forEach((doc) => batch.delete(db.collection("candidates").doc(doc.id)));
 
@@ -945,7 +1295,7 @@ async function startServer() {
     }
   });
 
-    app.put("/api/positions/:id", requireAdmin, async (req: Request, res: Response) => {
+  app.put("/api/positions/:id", requireAdmin, async (req: Request, res: Response) => {
     const { id } = req.params;
     const { name } = req.body;
     if (!name) {
@@ -974,8 +1324,7 @@ async function startServer() {
       let list = await queryCandidates(electionId as string, positionId as string);
       const user = (req as any).user;
 
-      // Sealed result rule: regular voters cannot see voteCounts until election completes
-      if (user.role !== "admin") {
+      if (user.role !== "admin" && user.role !== "teacher") {
         const now = new Date();
         const elections = await getAll("elections");
         list = list.map((c: any) => {
@@ -994,7 +1343,7 @@ async function startServer() {
   });
 
   app.post("/api/candidates", requireAdmin, async (req: Request, res: Response) => {
-    const { electionId, positionId, userId, manifesto, party, photoUrl, targetYearLevel } = req.body;
+    const { electionId, positionId, userId, manifesto, party, partyListId, partyListName, photoUrl, targetYearLevel } = req.body;
     if (!electionId || !positionId || !userId) {
       res.status(400).json({ error: "Election, position, and user are required" });
       return;
@@ -1003,7 +1352,7 @@ async function startServer() {
     try {
       const userDoc = await db.collection("users").doc(userId).get();
       if (!userDoc.exists) {
-        res.status(400).json({ error: "Invalid student/teacher selected" });
+        res.status(400).json({ error: "Invalid student selected" });
         return;
       }
       const user = userDoc.data()!;
@@ -1013,7 +1362,6 @@ async function startServer() {
         return;
       }
 
-      // Check duplicate candidates
       const duplicateQuery = await db.collection("candidates")
         .where("positionId", "==", positionId)
         .where("userId", "==", userId)
@@ -1022,6 +1370,12 @@ async function startServer() {
       if (!duplicateQuery.empty) {
         res.status(400).json({ error: "Candidate already nominated for this position" });
         return;
+      }
+
+      let pName = party || partyListName || "";
+      if (partyListId && !pName) {
+        const foundPl = inMemoryPartyLists.find((pl) => pl.id === partyListId);
+        if (foundPl) pName = foundPl.name;
       }
 
       const newCandidate = {
@@ -1033,11 +1387,15 @@ async function startServer() {
         manifesto: manifesto || "",
         voteCount: 0,
         yearLevel: targetYearLevel !== undefined ? targetYearLevel : (user.yearLevel || null),
-        party: party || null,
+        party: pName || null,
+        partyListId: partyListId || null,
+        partyListName: pName || null,
         photoUrl: user.photoUrl || photoUrl || null,
       };
 
       await db.collection("candidates").doc(newCandidate.id).set(newCandidate);
+      logAuditEvent("NOMINATE_CANDIDATE", (req as any).user?.fullName || "Admin", "admin", `Nominated ${user.fullName} for candidate ballot`);
+
       res.status(201).json(newCandidate);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to nominate candidate" });
@@ -1057,9 +1415,7 @@ async function startServer() {
       const candidate = candidateDoc.data()!;
       await candidateRef.delete();
 
-      // Cascade delete votes registered for this candidate using standard getDocs
       const votesSnapshot = await db.collection("votes").where("positionId", "==", candidate.positionId).where("candidateId", "==", id).get();
-
       const batch = db.batch();
       votesSnapshot.forEach((d) => { batch.delete(db.collection("votes").doc(d.id)); });
       await batch.commit();
@@ -1070,7 +1426,7 @@ async function startServer() {
     }
   });
 
-  // --- Votes API ---
+  // --- Votes API & Offline Import ---
   app.get("/api/votes", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
       const list = await getAll("votes");
@@ -1096,6 +1452,7 @@ async function startServer() {
     }
   });
 
+  // SINGLE EFFECTIVE VOTE REPLACEMENT & SCOPE ELIGIBILITY CHECK (ONLINE)
   app.post("/api/votes", requireAuth, async (req: Request, res: Response) => {
     const { electionId, positionId, candidateId } = req.body;
     if (!electionId || !positionId || !candidateId) {
@@ -1105,7 +1462,6 @@ async function startServer() {
 
     try {
       const user = (req as any).user;
-      
       if (user.role !== "student") {
         res.status(403).json({ error: "Only students are authorized to vote" });
         return;
@@ -1125,6 +1481,24 @@ async function startServer() {
         return;
       }
 
+      // Enforce Election Scope Restrictions
+      if (election.scope === "grade" && election.targetGradeLevel) {
+        if (user.yearLevel !== election.targetGradeLevel) {
+          res.status(403).json({ error: `Ineligible: This election is restricted to Grade ${election.targetGradeLevel} students only.` });
+          return;
+        }
+      } else if (election.scope === "section" && election.targetSection) {
+        if (!user.section || user.section.toLowerCase() !== election.targetSection.toLowerCase()) {
+          res.status(403).json({ error: `Ineligible: This election is restricted to Section "${election.targetSection}" students.` });
+          return;
+        }
+      } else if (election.scope === "room" && election.targetRoom) {
+        if (!user.room || user.room.toLowerCase() !== election.targetRoom.toLowerCase()) {
+          res.status(403).json({ error: `Ineligible: This election is restricted to Room "${election.targetRoom}" voters.` });
+          return;
+        }
+      }
+
       const candidateRef = db.collection("candidates").doc(candidateId);
       const candidateDoc = await candidateRef.get();
       if (!candidateDoc.exists || candidateDoc.data()?.positionId !== positionId) {
@@ -1132,45 +1506,263 @@ async function startServer() {
         return;
       }
 
-      const candData = candidateDoc.data()!;
-      // Enforce the constraint that the student's yearLevel must match candidate's target yearLevel if configured
-      if (candData.yearLevel && candData.yearLevel !== user.yearLevel) {
-        res.status(403).json({ error: `This candidate is only eligible for year level ${candData.yearLevel} voters.` });
-        return;
-      }
-
-      // Check double voting
-      const alreadyVotedQuery = await db.collection("votes")
+      // Check existing vote for this election, position, and student
+      const existingVotes = await db.collection("votes")
         .where("electionId", "==", electionId)
         .where("positionId", "==", positionId)
         .where("voterId", "==", user.id)
         .get();
 
-      if (!alreadyVotedQuery.empty) {
-        res.status(409).json({ error: "You have already voted for this position" });
-        return;
+      let resultVote: any = null;
+
+      if (!existingVotes.empty) {
+        // REPLACE existing vote (Single Effective Vote Rule)
+        let oldVoteDoc: any = null;
+        existingVotes.forEach((doc) => { oldVoteDoc = { id: doc.id, ...doc.data() }; });
+
+        if (oldVoteDoc.candidateId !== candidateId) {
+          // Decrement old candidate count
+          const oldCandRef = db.collection("candidates").doc(oldVoteDoc.candidateId);
+          const oldCandDoc = await oldCandRef.get();
+          if (oldCandDoc.exists) {
+            const currentOldCount = oldCandDoc.data()?.voteCount || 0;
+            await oldCandRef.update({ voteCount: Math.max(0, currentOldCount - 1) });
+          }
+
+          // Increment new candidate count
+          const newCandData = candidateDoc.data()!;
+          await candidateRef.update({ voteCount: (newCandData.voteCount || 0) + 1 });
+
+          // Update vote document
+          await db.collection("votes").doc(oldVoteDoc.id).update({
+            candidateId,
+            timestamp: new Date().toISOString()
+          });
+
+          resultVote = { ...oldVoteDoc, candidateId, timestamp: new Date().toISOString() };
+          logAuditEvent("VOTE_REVISED", user.fullName, user.role, `Revised ballot vote for position in election "${election.title}"`);
+        } else {
+          resultVote = oldVoteDoc;
+        }
+      } else {
+        // Create new vote doc
+        const newVote = {
+          id: "v-" + Math.random().toString(36).substring(2, 9),
+          electionId,
+          positionId,
+          voterId: user.id,
+          candidateId,
+          timestamp: new Date().toISOString()
+        };
+
+        const candData = candidateDoc.data()!;
+        await candidateRef.update({ voteCount: (candData.voteCount || 0) + 1 });
+        await db.collection("votes").doc(newVote.id).set(newVote);
+
+        resultVote = newVote;
+        logAuditEvent("VOTE_CAST", user.fullName, user.role, `Cast ballot vote for election "${election.title}"`);
       }
 
-      const newVote = {
-        id: "v-" + Math.random().toString(36).substring(2, 9),
-        electionId,
-        positionId,
-        voterId: user.id,
-        candidateId,
-      };
-
-      // Perform transaction to securely update vote count and write ballot
-      await db.runTransaction(async (transaction) => {
-        const freshCandDoc = await transaction.get(db.collection("candidates").doc(candidateId));
-        const currentCount = freshCandDoc.data()?.voteCount || 0;
-        transaction.set(db.collection("votes").doc(newVote.id), newVote);
-        transaction.update(db.collection("candidates").doc(candidateId), { voteCount: currentCount + 1 });
-      });
-
-      res.status(201).json(newVote);
+      res.status(201).json(resultVote);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to submit vote" });
     }
+  });
+
+  // TEACHER IMPORT OF ENCRYPTED/SIGNED OFFLINE BALLOT FILES
+  app.post("/api/votes/import-offline", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    const { ballot } = req.body;
+    if (!ballot || !ballot.voterId || !ballot.electionId || !Array.isArray(ballot.votes) || !ballot.signature) {
+      res.status(400).json({ error: "Invalid offline ballot package format or missing signature." });
+      return;
+    }
+
+    try {
+      // 1. Reconstruct signature payload string
+      const payloadObj = {
+        voterId: ballot.voterId,
+        studentNumber: ballot.studentNumber,
+        electionId: ballot.electionId,
+        votes: ballot.votes,
+        timestamp: ballot.timestamp,
+        nonce: ballot.nonce
+      };
+      const payloadStr = JSON.stringify(payloadObj);
+
+      // 2. Verify signature
+      const isValid = verifyBallotSignature(payloadStr, ballot.signature);
+      if (!isValid) {
+        res.status(400).json({ error: "TAMPER DETECTED: Offline vote file signature verification failed! File may have been altered." });
+        return;
+      }
+
+      // 3. Verify student account
+      const studentUser = await getOne("users", ballot.voterId);
+      if (!studentUser) {
+        res.status(400).json({ error: `Student account ID "${ballot.voterId}" not found in database.` });
+        return;
+      }
+
+      // 4. Verify election
+      const electionDoc = await db.collection("elections").doc(ballot.electionId).get();
+      if (!electionDoc.exists) {
+        res.status(404).json({ error: "Target election for this offline ballot was not found." });
+        return;
+      }
+
+      const teacherUser = (req as any).user;
+      let importedCount = 0;
+      let revisedCount = 0;
+
+      // 5. Process each vote item cleanly applying Single Effective Vote Rule
+      for (const item of ballot.votes) {
+        const { positionId, candidateId } = item;
+        if (!positionId || !candidateId) continue;
+
+        const candidateRef = db.collection("candidates").doc(candidateId);
+        const candidateDoc = await candidateRef.get();
+        if (!candidateDoc.exists) continue;
+
+        const existingVotes = await db.collection("votes")
+          .where("electionId", "==", ballot.electionId)
+          .where("positionId", "==", positionId)
+          .where("voterId", "==", ballot.voterId)
+          .get();
+
+        if (!existingVotes.empty) {
+          let oldVoteDoc: any = null;
+          existingVotes.forEach((d) => { oldVoteDoc = { id: d.id, ...d.data() }; });
+
+          if (oldVoteDoc.candidateId !== candidateId) {
+            const oldCandRef = db.collection("candidates").doc(oldVoteDoc.candidateId);
+            const oldCandDoc = await oldCandRef.get();
+            if (oldCandDoc.exists) {
+              const count = oldCandDoc.data()?.voteCount || 0;
+              await oldCandRef.update({ voteCount: Math.max(0, count - 1) });
+            }
+
+            const newCandData = candidateDoc.data()!;
+            await candidateRef.update({ voteCount: (newCandData.voteCount || 0) + 1 });
+            await db.collection("votes").doc(oldVoteDoc.id).update({
+              candidateId,
+              timestamp: ballot.timestamp || new Date().toISOString(),
+              isOfflineImport: true
+            });
+            revisedCount++;
+          }
+        } else {
+          const newVote = {
+            id: "v-" + Math.random().toString(36).substring(2, 9),
+            electionId: ballot.electionId,
+            positionId,
+            voterId: ballot.voterId,
+            candidateId,
+            timestamp: ballot.timestamp || new Date().toISOString(),
+            isOfflineImport: true
+          };
+
+          const candData = candidateDoc.data()!;
+          await candidateRef.update({ voteCount: (candData.voteCount || 0) + 1 });
+          await db.collection("votes").doc(newVote.id).set(newVote);
+          importedCount++;
+        }
+      }
+
+      logAuditEvent("OFFLINE_BALLOT_IMPORTED", teacherUser.fullName, teacherUser.role, `Imported verified offline vote file for student ${studentUser.fullName} (${studentUser.studentNumber || studentUser.username})`);
+
+      res.json({
+        success: true,
+        message: `Offline ballot imported successfully! (${importedCount} new vote records, ${revisedCount} vote replacements executed).`,
+        studentName: studentUser.fullName,
+        importedCount,
+        revisedCount
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to process offline ballot import" });
+    }
+  });
+
+  // --- School Branding Settings API ---
+  app.get("/api/branding", async (req: Request, res: Response) => {
+    res.json(inMemoryBranding);
+  });
+
+  app.put("/api/branding", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      inMemoryBranding = {
+        ...inMemoryBranding,
+        ...req.body,
+        attributionText: "Developed by students of Golden West Colleges, Inc." // Permanently enforced attribution
+      };
+      logAuditEvent("UPDATE_BRANDING", (req as any).user?.fullName || "Admin", "admin", "Updated school branding settings");
+      res.json(inMemoryBranding);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to update branding settings" });
+    }
+  });
+
+  // --- Audit Logs API ---
+  app.get("/api/audit-logs", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    res.json(inMemoryAuditLogs);
+  });
+
+  // --- Diagnostic & Automated Test Suite API ---
+  app.get("/api/diagnostics/run-tests", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    const results: any[] = [];
+
+    // Test 1: HMAC Signature verification test
+    try {
+      const testObj = { test: "ballot", timestamp: Date.now() };
+      const testStr = JSON.stringify(testObj);
+      const sig = generateBallotSignature(testStr);
+      const verified = verifyBallotSignature(testStr, sig);
+      const tamperedVerified = verifyBallotSignature(testStr + "X", sig);
+
+      results.push({
+        test: "HMAC Cryptographic Tamper Shield",
+        passed: verified === true && tamperedVerified === false,
+        details: verified ? "Signature generated & verified correctly; tampering rejected." : "Signature verification failed."
+      });
+    } catch (e: any) {
+      results.push({ test: "HMAC Cryptographic Tamper Shield", passed: false, details: e.message });
+    }
+
+    // Test 2: Student Number Uniqueness Logic
+    try {
+      const users = await getAll("users");
+      const numMap = new Map();
+      let duplicateFound = false;
+
+      for (const u of users) {
+        const num = (u.studentNumber || u.username || "").toLowerCase();
+        if (numMap.has(num)) {
+          duplicateFound = true;
+          break;
+        }
+        numMap.set(num, u.id);
+      }
+
+      results.push({
+        test: "Student Number Account Uniqueness",
+        passed: !duplicateFound,
+        details: !duplicateFound ? `All ${users.length} user records have unique student numbers.` : "Duplicate student numbers detected!"
+      });
+    } catch (e: any) {
+      results.push({ test: "Student Number Account Uniqueness", passed: false, details: e.message });
+    }
+
+    // Test 3: System Attribution Check
+    results.push({
+      test: "Permanent Golden West Colleges Attribution",
+      passed: inMemoryBranding.attributionText.includes("Golden West Colleges"),
+      details: `Active attribution string: "${inMemoryBranding.attributionText}"`
+    });
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      allPassed: results.every((r) => r.passed),
+      results
+    });
   });
 
   // --- AI Polish API ---

@@ -95,22 +95,35 @@ export default function App() {
       return;
     }
 
-    const verifyToken = async () => {
+    const verifyToken = async (attempts = 3) => {
       try {
-        const response = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${savedToken}` },
-        });
-        const data = await response.json();
-        if (response.ok && data.user) {
-          setUser(data.user);
-          setToken(savedToken);
-          setActiveTab(data.user.role === "admin" ? "dashboard" : data.user.role === "teacher" ? "users" : "vote");
-          await fetchGlobalData(savedToken, data.user.role === "admin" || data.user.role === "teacher");
-        } else {
-          localStorage.removeItem("civicflow_token");
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const response = await fetch("/api/auth/me", {
+              headers: { Authorization: `Bearer ${savedToken}` },
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.user) {
+                setUser(data.user);
+                setToken(savedToken);
+                setActiveTab(data.user.role === "admin" ? "dashboard" : data.user.role === "teacher" ? "users" : "vote");
+                await fetchGlobalData(savedToken, data.user.role === "admin" || data.user.role === "teacher");
+                return;
+              }
+            }
+            // If server responded with non-200 (e.g. 401 Unauthorized)
+            localStorage.removeItem("civicflow_token");
+            return;
+          } catch (err) {
+            if (i < attempts - 1) {
+              await new Promise((res) => setTimeout(res, 600));
+            } else {
+              console.warn("Auth token check unavailable after retries, clearing saved session.");
+              localStorage.removeItem("civicflow_token");
+            }
+          }
         }
-      } catch (err) {
-        console.error("Token verification failed", err);
       } finally {
         setAuthLoading(false);
       }
