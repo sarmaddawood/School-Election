@@ -37,14 +37,26 @@ const BOOTSTRAP_ADMIN_PASSWORD = "password123";
 const BOOTSTRAP_ADMIN_NAME = "System Administrator";
 
 const DEFAULT_BRANDING: any = {
-  schoolName: "Golden West Colleges, Inc.",
-  tagline: "Golden West Colleges Student E-Voting Portal",
+  schoolName: "Bolinao School of Fisheries",
+  tagline: "Bolinao School of Fisheries Student E-Voting Portal",
   logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
   primaryColor: "#0284c7",
-  attributionText: "Developed by students of Golden West Colleges, Inc.",
-  contactEmail: "admin@goldenwest.edu.ph",
-  address: "Golden West Colleges Campus, Philippines"
+  attributionText: "Developed by students of Bolinao School of Fisheries.",
+  contactEmail: "admin@bsf.edu.ph",
+  address: "Bolinao, Pangasinan, Philippines"
 };
+
+function normalizeBranding(branding: any) {
+  const value = branding || DEFAULT_BRANDING;
+  const hasLegacyBranding = /golden\s+west\s+colleges/i.test([
+    value.schoolName,
+    value.tagline,
+    value.attributionText,
+    value.address,
+  ].join(" "));
+
+  return hasLegacyBranding ? { ...value, ...DEFAULT_BRANDING } : value;
+}
 
 async function logAuditEvent(action: string, performedBy: string, role: string, details: string) {
   const entry = {
@@ -1013,8 +1025,8 @@ export function createElectionApp() {
 
       if (!user) {
         recordFailedLogin(attemptKey);
-        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Student Number was not found");
-        res.status(401).json({ error: "No account found matching this Student Number" });
+        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: username was not found");
+        res.status(401).json({ error: "No account found matching this username" });
         return;
       }
 
@@ -2372,7 +2384,7 @@ export function createElectionApp() {
   // --- School Branding Settings API ---
   app.get("/api/branding", async (req: Request, res: Response) => {
     try {
-      res.json((await getOne("branding", "school")) || DEFAULT_BRANDING);
+      res.json(normalizeBranding(await getOne("branding", "school")));
     } catch {
       res.json(DEFAULT_BRANDING);
     }
@@ -2380,7 +2392,7 @@ export function createElectionApp() {
 
   app.put("/api/branding", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const existing = (await getOne("branding", "school")) || DEFAULT_BRANDING;
+      const existing = normalizeBranding(await getOne("branding", "school"));
       const primaryColor = String(req.body.primaryColor || existing.primaryColor);
       if (!/^#[0-9a-f]{6}$/i.test(primaryColor)) {
         res.status(400).json({ error: "Primary color must be a six-digit hexadecimal color" });
@@ -2393,15 +2405,15 @@ export function createElectionApp() {
       }
       const requestedLogo = String(req.body.logoUrl ?? existing.logoUrl).trim();
       const logoUrl = requestedLogo ? await ensureHostedPhotoUrl(requestedLogo) : "";
-      const branding = {
+      const branding = normalizeBranding({
         schoolName: String(req.body.schoolName || existing.schoolName).trim().slice(0, 255),
         tagline: String(req.body.tagline ?? existing.tagline).trim().slice(0, 500),
         logoUrl,
         primaryColor,
-        attributionText: "Developed by students of Golden West Colleges, Inc.",
+        attributionText: "Developed by students of Bolinao School of Fisheries.",
         contactEmail,
         address: String(req.body.address ?? existing.address ?? "").trim().slice(0, 1000),
-      };
+      });
       if (!branding.schoolName) {
         res.status(400).json({ error: "School name is required" });
         return;
@@ -2478,10 +2490,10 @@ export function createElectionApp() {
     }
 
     // Test 3: System Attribution Check
-    const activeBranding = (await getOne("branding", "school")) || DEFAULT_BRANDING;
+    const activeBranding = normalizeBranding(await getOne("branding", "school"));
     results.push({
-      test: "Permanent Golden West Colleges Attribution",
-      passed: activeBranding.attributionText === "Developed by students of Golden West Colleges, Inc.",
+      test: "Permanent Bolinao School of Fisheries Attribution",
+      passed: activeBranding.attributionText === "Developed by students of Bolinao School of Fisheries.",
       details: `Active attribution string: "${activeBranding.attributionText}"`
     });
 

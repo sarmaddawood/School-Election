@@ -50,7 +50,7 @@ export default function LoginPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentNumber.trim()) {
-      setErrorNotification("Please enter your Student Number");
+      setErrorNotification("Please enter your username");
       return;
     }
     setLoading(true);
@@ -140,12 +140,12 @@ export default function LoginPage({
   };
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-hidden flex items-center justify-center p-4 sm:p-6 md:p-10 font-sans selection:bg-sky-500/20 bg-[#0f172a]">
+    <div className="relative min-h-[100dvh] w-full overflow-x-hidden overflow-y-auto flex items-center justify-center p-3 sm:p-6 md:p-10 font-sans selection:bg-sky-500/20 bg-[#0f172a]">
       {/* Full Screen Logo Background */}
       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none select-none">
         <img 
           src={brandingLogo}
-          alt="Golden West Colleges Logo Background" 
+          alt={`${branding?.schoolName || "Bolinao School of Fisheries"} logo background`} 
           className="w-full h-full object-cover opacity-20 filter brightness-110 scale-105" 
         />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-sky-950/80 to-slate-900/95 backdrop-blur-[3px]" />
@@ -159,33 +159,34 @@ export default function LoginPage({
       >
         <motion.div 
           variants={itemVariants}
-          className="bg-slate-800/90 rounded-[28px] p-7 sm:p-9 shadow-2xl border border-white/20 text-white backdrop-blur-md"
+          className="bg-slate-800/90 rounded-2xl sm:rounded-[28px] p-5 sm:p-9 shadow-2xl border border-white/20 text-white backdrop-blur-md"
         >
           <div className="text-center mb-6 flex flex-col items-center">
             <img 
               src={brandingLogo}
-              alt="Golden West Colleges Logo" 
-              className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-3 drop-shadow-md" 
+              alt={`${branding?.schoolName || "Bolinao School of Fisheries"} logo`} 
+              className="w-16 h-16 sm:w-24 sm:h-24 object-contain mb-3 drop-shadow-md" 
             />
             <span className="inline-block bg-sky-500/20 text-sky-200 font-mono text-[0.7rem] uppercase tracking-wider px-3.5 py-1 rounded-full font-bold mb-2 border border-sky-400/30">
-              {branding?.tagline || "Golden West Colleges E-Voting Portal"}
+              {branding?.tagline || "Bolinao School of Fisheries Student E-Voting Portal"}
             </span>
             <h1 className="font-display font-extrabold text-2xl sm:text-3xl text-white tracking-tight leading-tight mb-1.5">
-              Welcome Student!
+              Welcome!
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
-              Log in with your official <strong className="text-white">Student Number</strong> and password to access active elections.
+              Log in with your official <strong className="text-white">username</strong> and password to access active elections.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                STUDENT NUMBER
+                USERNAME
               </label>
               <input
                 type="text"
-                placeholder="e.g. 2026-0001"
+                placeholder="Enter your username"
+                autoComplete="username"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value)}
                 className="w-full p-3.5 px-4 border border-slate-600 rounded-xl text-base bg-slate-900/90 text-white outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 transition-all placeholder:text-slate-500 font-mono shadow-inner"
@@ -198,6 +199,7 @@ export default function LoginPage({
               </label>
               <input
                 type="password"
+                autoComplete="current-password"
                 placeholder="Enter password (leave blank if first time)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -224,7 +226,7 @@ export default function LoginPage({
             </button>
           </form>
 
-          <div className="mt-5 text-center flex items-center justify-center gap-3 text-xs text-slate-400">
+          <div className="mt-5 text-center flex flex-col min-[380px]:flex-row items-center justify-center gap-1.5 min-[380px]:gap-3 text-xs text-slate-400">
             <button
               type="button"
               onClick={() => setShowHowToVote(true)}
@@ -240,11 +242,11 @@ export default function LoginPage({
 
       {/* First Time Password Creation Modal */}
       {passwordSetupData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/80 backdrop-blur-md p-3 sm:p-4">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-slate-900 border border-sky-500/40 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-white"
+            className="bg-slate-900 border border-sky-500/40 rounded-2xl p-5 sm:p-8 max-w-md w-full my-auto shadow-2xl text-white"
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center border border-sky-500/30">
@@ -252,7 +254,7 @@ export default function LoginPage({
               </div>
               <div>
                 <h3 className="font-bold text-lg text-white">First-Time Account Setup</h3>
-                <p className="text-xs text-slate-400">Student Number: <span className="font-mono text-sky-300">{passwordSetupData.studentNumber}</span></p>
+                <p className="text-xs text-slate-400">Username: <span className="font-mono text-sky-300">{passwordSetupData.studentNumber}</span></p>
               </div>
             </div>
 
@@ -289,7 +291,7 @@ export default function LoginPage({
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col-reverse min-[380px]:flex-row min-[380px]:justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setPasswordSetupData(null)}

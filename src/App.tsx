@@ -19,11 +19,11 @@ import { DashboardSkeletonPage } from "./components/Skeleton";
 import BrandingTab from "./components/BrandingTab";
 
 const defaultBranding: SchoolBranding = {
-  schoolName: "Golden West Colleges, Inc.",
-  tagline: "Golden West Colleges Student E-Voting Portal",
+  schoolName: "Bolinao School of Fisheries",
+  tagline: "Bolinao School of Fisheries Student E-Voting Portal",
   logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
   primaryColor: "#0284c7",
-  attributionText: "Developed by students of Golden West Colleges, Inc.",
+  attributionText: "Developed by students of Bolinao School of Fisheries.",
 };
 
 export default function App() {

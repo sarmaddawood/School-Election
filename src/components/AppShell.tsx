@@ -50,7 +50,7 @@ export default function AppShell({
   branding,
 }: AppShellProps) {
   const brandingLogo = branding.logoUrl && !branding.logoUrl.startsWith("/src/") ? branding.logoUrl : bolinaoLogo;
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 880);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -58,7 +58,7 @@ export default function AppShell({
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 880);
+      setIsMobile(window.innerWidth < 768);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -139,16 +139,16 @@ export default function AppShell({
         ];
 
   return (
-    <div className="h-[100dvh] w-screen overflow-hidden grid md:grid-cols-[280px_1fr] md:grid-rows-[1fr_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
+    <div className="h-[100dvh] w-full min-w-0 overflow-hidden grid grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-[#3498DB] text-white border-b border-white/20 shrink-0 relative z-30">
-        <div className="flex items-center gap-3">
+      <div className="md:hidden flex justify-between items-center gap-2 px-3 py-2.5 bg-[#3498DB] text-white border-b border-white/20 shrink-0 relative z-30 safe-area-top">
+        <div className="flex items-center gap-2 min-w-0">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1 -ml-1 text-white">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-12 h-12 rounded-xl bg-white p-1 object-contain shadow-sm" />
-          <div className="font-display text-sm font-bold uppercase text-white truncate max-w-44">{branding.schoolName}</div>
+          <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-10 h-10 rounded-lg bg-white p-1 object-contain shadow-sm shrink-0" />
+          <div className="font-display text-xs min-[380px]:text-sm font-bold uppercase text-white truncate">{branding.schoolName}</div>
         </div>
         <div className="relative">
           <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-xs border border-white/30 overflow-hidden">
@@ -210,7 +210,7 @@ export default function AppShell({
         )}
       </AnimatePresence>
 
-      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] bg-[#3498DB] text-white border-r border-white/20 flex-col p-6 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(52,152,219,0.2)]`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] max-w-[86vw] md:max-w-none bg-[#3498DB] text-white border-r border-white/20 flex-col p-5 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(52,152,219,0.2)] safe-area-y`}>
         <div className="mb-8 flex flex-col items-center text-center pb-6 border-b border-white/20">
             <div className="w-28 h-28 rounded-3xl bg-white p-3 mb-4 flex items-center justify-center border-2 border-white/30 shadow-lg shrink-0">
                 <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-full h-full object-contain mix-blend-multiply" />
@@ -306,7 +306,7 @@ export default function AppShell({
         </div>
       </aside>
 
-      <main className="p-4 md:p-10 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0">
+      <main className="min-w-0 p-3 min-[380px]:p-4 md:p-8 xl:p-10 overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0 safe-area-bottom">
         <header className="hidden md:flex justify-between items-end mb-12 shrink-0">
             <div>
                 <h2 className="font-display text-4xl uppercase leading-none tracking-tight">ADMINISTRATION<br/>TELEMETRY</h2>

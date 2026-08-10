@@ -171,35 +171,35 @@ export default function DashboardTab({
 
   return (
     <div className="w-full">
-        <section className="grid grid-cols-2 md:grid-cols-5 gap-[1px] bg-[var(--border)] border border-[var(--border)] mb-12">
-            <div className="bg-[var(--surface)] p-6">
+        <section className="grid grid-cols-1 min-[360px]:grid-cols-2 md:grid-cols-5 gap-[1px] bg-[var(--border)] border border-[var(--border)] mb-8 md:mb-12">
+            <div className="bg-[var(--surface)] p-4 sm:p-6">
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-40 block mb-4">Registered Users</span>
                 <span className="font-display text-3xl font-bold leading-none text-[var(--ink)]">{totalUsers}</span>
                 <p className="text-[0.65rem] opacity-40 mt-2">{studentsCount} Students • {teachersCount} Teachers</p>
             </div>
-            <div className="bg-[var(--surface)] p-6">
+            <div className="bg-[var(--surface)] p-4 sm:p-6">
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-40 block mb-4">Voter Turnout</span>
                 <span className="font-display text-3xl font-bold leading-none text-[var(--ink)]">{turnoutPercent}%</span>
                 <p className="text-[0.65rem] opacity-40 mt-2">{votedStudentsCount} of {studentsCount} active</p>
             </div>
-            <div className="bg-[var(--surface)] p-6">
+            <div className="bg-[var(--surface)] p-4 sm:p-6">
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-40 block mb-4">Total Elections</span>
                 <span className="font-display text-3xl font-bold leading-none text-[var(--ink)]">{totalElectionsCount}</span>
                 <p className="text-[0.65rem] opacity-40 mt-2">{liveElections.length} Live • {upcomingElections.length} Upcoming</p>
             </div>
-            <div className="bg-[var(--surface)] p-6">
+            <div className="bg-[var(--surface)] p-4 sm:p-6">
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-40 block mb-4">Polling Positions</span>
                 <span className="font-display text-3xl font-bold leading-none text-[var(--ink)]">{totalPositionsCount}</span>
                 <p className="text-[0.65rem] opacity-40 mt-2">{nominatedCount} Candidates nominated</p>
             </div>
-            <div className="bg-[var(--surface)] p-6">
+            <div className="bg-[var(--surface)] p-4 sm:p-6">
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-40 block mb-4">Total Votes Cast</span>
                 <span className="font-display text-3xl font-bold leading-none text-[var(--ink)]">{totalVotesCount}</span>
                 <p className="text-[0.65rem] opacity-40 mt-2">Secure encrypted ballots</p>
             </div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
             <section>
                 <div className="border-b border-[var(--border)] pb-4 mb-6 flex justify-between items-center">
                     <h3 className="font-mono text-[0.75rem] uppercase tracking-widest text-[var(--ink)]">ACTIVE BALLOT MONITOR</h3>

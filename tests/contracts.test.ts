@@ -125,13 +125,12 @@ test("public user responses never expose password or legacy username fields", ()
   assert.match(mapper, /studentNumber/);
 });
 
-test("frontend keeps the permanent attribution and Student Number login terminology", () => {
+test("frontend keeps the permanent attribution and username login terminology", () => {
   const login = fs.readFileSync(path.join(workspace, "src", "components", "LoginPage.tsx"), "utf8");
   const shell = fs.readFileSync(path.join(workspace, "src", "components", "AppShell.tsx"), "utf8");
   const votePage = fs.readFileSync(path.join(workspace, "src", "components", "VotePage.tsx"), "utf8");
   const votingGuide = fs.readFileSync(path.join(workspace, "src", "components", "HowToVoteModal.tsx"), "utf8");
-  assert.match(login, /Student Number/i);
-  assert.doesNotMatch(login, /Username/i);
+  assert.match(login, /Username/i);
   assert.match(shell, /branding\.attributionText/);
   assert.doesNotMatch(votePage, /c\.yearLevel\s*===\s*user\.yearLevel/, "School-wide candidates must not be hidden by candidate grade");
   assert.match(votingGuide, /replaces your earlier one/i);
@@ -156,7 +155,8 @@ test("Vercel deploys the Vite frontend and Express API from one Git push", () =>
   assert.equal(packageJson.scripts["vercel-build"], "npm run build:client");
   assert.match(apiEntry, /from ["']\.\.\/server\.ts["']/);
   assert.match(apiEntry, /createElectionApp\(\)/);
-  assert.match(apiEntry, /export default app/);
+  assert.match(apiEntry, /export default function handler/);
+  assert.match(apiEntry, /return app\(req, res\)/);
   assert.match(serverSource, /from ["']\.\/server\/domain\.ts["']/);
   assert.match(serverSource, /process\.env\.VERCEL/);
 });

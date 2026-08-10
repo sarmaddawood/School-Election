@@ -20,11 +20,11 @@ declare global {
 
 const now = Date.now();
 const branding: SchoolBranding = {
-  schoolName: "Golden West Colleges QA School",
-  tagline: "Student E-Voting Portal",
+  schoolName: "Bolinao School of Fisheries",
+  tagline: "Bolinao School of Fisheries Student E-Voting Portal",
   logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
   primaryColor: "#0284c7",
-  attributionText: "Developed by students of Golden West Colleges, Inc.",
+  attributionText: "Developed by students of Bolinao School of Fisheries.",
   contactEmail: "school@example.edu",
   address: "QA Campus",
 };

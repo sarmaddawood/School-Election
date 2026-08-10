@@ -54,7 +54,7 @@ export default function BrandingTab({
         <p className="text-xs text-slate-500">Update the school identity used in navigation, headers, and portal information.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">School Name</span><input required value={form.schoolName} onChange={(e) => update("schoolName", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Portal Tagline</span><input value={form.tagline} onChange={(e) => update("tagline", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
@@ -66,7 +66,7 @@ export default function BrandingTab({
 
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
           <ShieldCheck size={17} className="shrink-0" />
-          <span>The permanent attribution is protected by the backend and cannot be changed: <strong>Developed by students of Golden West Colleges, Inc.</strong></span>
+          <span>The permanent attribution is protected by the backend and cannot be changed: <strong>Developed by students of Bolinao School of Fisheries.</strong></span>
         </div>
 
         <div className="flex justify-end border-t border-slate-100 pt-4">
