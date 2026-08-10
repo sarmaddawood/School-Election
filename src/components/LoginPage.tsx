@@ -50,7 +50,7 @@ export default function LoginPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentNumber.trim()) {
-      setErrorNotification("Please enter your username");
+      setErrorNotification("Please enter your Student Number");
       return;
     }
     setLoading(true);
@@ -174,18 +174,18 @@ export default function LoginPage({
               Welcome!
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
-              Log in with your official <strong className="text-white">username</strong> and password to access active elections.
+              Log in with your official <strong className="text-white">Student Number</strong> and password to access active elections.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                USERNAME
+                STUDENT NUMBER
               </label>
               <input
                 type="text"
-                placeholder="Enter your username"
+                placeholder="Enter your Student Number"
                 autoComplete="username"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value)}

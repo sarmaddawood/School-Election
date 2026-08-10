@@ -66,7 +66,7 @@ export default function BrandingTab({
 
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
           <ShieldCheck size={17} className="shrink-0" />
-          <span>The permanent attribution is protected by the backend and cannot be changed: <strong>Developed by students of Bolinao School of Fisheries.</strong></span>
+          <span>The permanent trademark and copyright credit is protected by the backend and cannot be changed: <strong>GWC Student-Built Election System\u2122 \u2022 \u00a9 2026 Golden West Colleges, Inc. student developers.</strong></span>
         </div>
 
         <div className="flex justify-end border-t border-slate-100 pt-4">

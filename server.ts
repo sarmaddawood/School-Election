@@ -29,33 +29,36 @@ import {
   verifySignedToken,
 } from "./server/domain.ts";
 
-// Test-project configuration is intentionally embedded so the repository can
-// run without a separate environment file.
-const APP_SECURITY_SECRET = "GWC_BOLINAO_ELECTION_HMAC_SECRET_2026";
+// The production secret must stay outside the repository. It protects session
+// tokens, offline-ballot permits, and the server-side ballot decryption key.
+const APP_SECURITY_SECRET = process.env.APP_SECURITY_SECRET || (process.env.NODE_ENV !== "production"
+  ? "development-only-election-secret-change-before-deploying"
+  : "");
+if (!APP_SECURITY_SECRET) {
+  throw new Error("APP_SECURITY_SECRET is required in production");
+}
 const BOOTSTRAP_ADMIN_STUDENT_NUMBER = "ADMIN";
 const BOOTSTRAP_ADMIN_PASSWORD = "password123";
 const BOOTSTRAP_ADMIN_NAME = "System Administrator";
+
+const PERMANENT_ATTRIBUTION = "GWC Student-Built Election System\u2122 \u2022 \u00a9 2026 Golden West Colleges, Inc. student developers.";
 
 const DEFAULT_BRANDING: any = {
   schoolName: "Bolinao School of Fisheries",
   tagline: "Bolinao School of Fisheries Student E-Voting Portal",
   logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
   primaryColor: "#0284c7",
-  attributionText: "Developed by students of Bolinao School of Fisheries.",
+  attributionText: PERMANENT_ATTRIBUTION,
   contactEmail: "admin@bsf.edu.ph",
   address: "Bolinao, Pangasinan, Philippines"
 };
 
 function normalizeBranding(branding: any) {
-  const value = branding || DEFAULT_BRANDING;
-  const hasLegacyBranding = /golden\s+west\s+colleges/i.test([
-    value.schoolName,
-    value.tagline,
-    value.attributionText,
-    value.address,
-  ].join(" "));
-
-  return hasLegacyBranding ? { ...value, ...DEFAULT_BRANDING } : value;
+  return {
+    ...DEFAULT_BRANDING,
+    ...(branding || {}),
+    attributionText: PERMANENT_ATTRIBUTION,
+  };
 }
 
 async function logAuditEvent(action: string, performedBy: string, role: string, details: string) {
@@ -1025,8 +1028,8 @@ export function createElectionApp() {
 
       if (!user) {
         recordFailedLogin(attemptKey);
-        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: username was not found");
-        res.status(401).json({ error: "No account found matching this username" });
+        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Student Number was not found");
+        res.status(401).json({ error: "No account found matching this Student Number" });
         return;
       }
 
@@ -2410,7 +2413,7 @@ export function createElectionApp() {
         tagline: String(req.body.tagline ?? existing.tagline).trim().slice(0, 500),
         logoUrl,
         primaryColor,
-        attributionText: "Developed by students of Bolinao School of Fisheries.",
+        attributionText: PERMANENT_ATTRIBUTION,
         contactEmail,
         address: String(req.body.address ?? existing.address ?? "").trim().slice(0, 1000),
       });
@@ -2492,8 +2495,8 @@ export function createElectionApp() {
     // Test 3: System Attribution Check
     const activeBranding = normalizeBranding(await getOne("branding", "school"));
     results.push({
-      test: "Permanent Bolinao School of Fisheries Attribution",
-      passed: activeBranding.attributionText === "Developed by students of Bolinao School of Fisheries.",
+      test: "Permanent Golden West Colleges Student Attribution",
+      passed: activeBranding.attributionText === PERMANENT_ATTRIBUTION,
       details: `Active attribution string: "${activeBranding.attributionText}"`
     });
 

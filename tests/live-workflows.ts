@@ -211,7 +211,7 @@ try {
     body: { ...originalBranding, schoolName: `QA School ${suffix}`, primaryColor: "#2563eb", attributionText: "Attempted replacement" },
   }), 200, "Admin updates reusable school branding");
   assert.equal(branded.schoolName, `QA School ${suffix}`);
-  assert.equal(branded.attributionText, "Developed by students of Bolinao School of Fisheries.");
+  assert.equal(branded.attributionText, "GWC Student-Built Election System\u2122 \u2022 \u00a9 2026 Golden West Colleges, Inc. student developers.");
 
   const logs = expect(await api("/api/audit-logs", { token: teacherToken }), 200, "Teacher views audit logs");
   assert.ok(logs.some((entry: any) => entry.action === "VOTE_REVISED"));

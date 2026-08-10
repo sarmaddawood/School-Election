@@ -328,7 +328,7 @@ export default function AppShell({
         </AnimatePresence>
       </main>
 
-      <footer className="hidden md:flex md:col-start-2 px-10 py-4 border-t border-[var(--border)] font-mono text-[0.6rem] opacity-40 justify-between shrink-0 bg-[var(--bg)]">
+      <footer className="flex md:col-start-2 px-4 md:px-10 py-2.5 md:py-4 border-t border-[var(--border)] font-mono text-[0.55rem] md:text-[0.6rem] opacity-50 justify-between gap-3 shrink-0 bg-[var(--bg)]">
         <span>{branding.attributionText}</span>
         <span>SECURITY PROTOCOL: v5.0 ENCRYPTED OFFLINE BALLOTS</span>
       </footer>

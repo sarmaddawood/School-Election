@@ -125,13 +125,15 @@ test("public user responses never expose password or legacy username fields", ()
   assert.match(mapper, /studentNumber/);
 });
 
-test("frontend keeps the permanent attribution and username login terminology", () => {
+test("frontend keeps the permanent GWC attribution and Student Number login terminology", () => {
   const login = fs.readFileSync(path.join(workspace, "src", "components", "LoginPage.tsx"), "utf8");
   const shell = fs.readFileSync(path.join(workspace, "src", "components", "AppShell.tsx"), "utf8");
   const votePage = fs.readFileSync(path.join(workspace, "src", "components", "VotePage.tsx"), "utf8");
   const votingGuide = fs.readFileSync(path.join(workspace, "src", "components", "HowToVoteModal.tsx"), "utf8");
-  assert.match(login, /Username/i);
+  assert.match(login, /Student Number/i);
+  assert.doesNotMatch(login, />\s*USERNAME\s*</i);
   assert.match(shell, /branding\.attributionText/);
+  assert.match(serverSource, /GWC Student-Built Election System/);
   assert.doesNotMatch(votePage, /c\.yearLevel\s*===\s*user\.yearLevel/, "School-wide candidates must not be hidden by candidate grade");
   assert.match(votingGuide, /replaces your earlier one/i);
   assert.doesNotMatch(votingGuide, /cannot be changed once submitted/i);

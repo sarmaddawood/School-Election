@@ -24,7 +24,7 @@ const branding: SchoolBranding = {
   tagline: "Bolinao School of Fisheries Student E-Voting Portal",
   logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
   primaryColor: "#0284c7",
-  attributionText: "Developed by students of Bolinao School of Fisheries.",
+  attributionText: "GWC Student-Built Election System\u2122 \u2022 \u00a9 2026 Golden West Colleges, Inc. student developers.",
   contactEmail: "school@example.edu",
   address: "QA Campus",
 };
