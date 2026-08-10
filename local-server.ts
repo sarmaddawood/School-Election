@@ -1,11 +1,12 @@
 import "dotenv/config";
-import express, { Request, Response } from "express";
+import express from "express";
+import type { Request, Response } from "express";
 import path from "node:path";
 import { createServer as createViteServer } from "vite";
-import { createElectionApp } from "./server";
+import { createElectionApp } from "./server.ts";
 
 async function startLocalServer() {
-  const app = await createElectionApp();
+  const app = createElectionApp();
 
   if (process.env.NODE_ENV === "production") {
     const distPath = path.join(process.cwd(), "dist");

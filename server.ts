@@ -1,7 +1,8 @@
 // @ts-nocheck
 
 import "dotenv/config";
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
 import { Client, Databases, Query, ID, Storage, Permission, Role } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
@@ -26,7 +27,7 @@ import {
   verifyOfflinePermit,
   verifyPassword,
   verifySignedToken,
-} from "./server/domain";
+} from "./server/domain.ts";
 
 // Test-project configuration is intentionally embedded so the repository can
 // run without a separate environment file.
@@ -844,7 +845,7 @@ async function queryMyVotes(electionId: string, voterId: string): Promise<any[]>
   return list;
 }
 
-export async function createElectionApp() {
+export function createElectionApp() {
   const app = express();
 
   app.disable("x-powered-by");

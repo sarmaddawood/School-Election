@@ -12,6 +12,19 @@ interface LoginPageProps {
   branding?: SchoolBranding;
 }
 
+async function readApiResponse(response: Response): Promise<any> {
+  const contentType = response.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return response.json();
+  }
+
+  const message = (await response.text()).trim();
+  if (!response.ok) {
+    throw new Error(message || `The login service returned HTTP ${response.status}. Please try again.`);
+  }
+  throw new Error("The login service returned an invalid response. Please try again.");
+}
+
 export default function LoginPage({
   onLoginSuccess,
   setErrorNotification,
@@ -47,7 +60,7 @@ export default function LoginPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ studentNumber: studentNumber.trim(), password }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok) {
         throw new Error(data.error || "Authentication failed");
       }
@@ -91,7 +104,7 @@ export default function LoginPage({
           newPassword,
         }),
       });
-      const data = await response.json();
+      const data = await readApiResponse(response);
       if (!response.ok) {
         throw new Error(data.error || "Failed to set password");
       }
