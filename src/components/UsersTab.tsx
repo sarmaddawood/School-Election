@@ -362,15 +362,15 @@ export default function UsersTab({
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                Student Number
+                {role === "teacher" ? "DepEd Email" : "Student Number (LRN)"}
               </label>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
-                type="text"
+                type={role === "teacher" ? "email" : "text"}
                 required
-                placeholder={role === "teacher" ? "e.g. FACULTY-001" : "e.g. 2026-0001"}
+                placeholder={role === "teacher" ? "e.g. teacher@deped.gov.ph" : "e.g. 101338190001 (LRN)"}
                 value={studentNumber}
-                onChange={(e) => setStudentNumber(e.target.value.toUpperCase().replace(/\s+/g, ""))}
+                onChange={(e) => setStudentNumber(role === "teacher" ? e.target.value.trim() : e.target.value.toUpperCase().replace(/\s+/g, ""))}
                 className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>

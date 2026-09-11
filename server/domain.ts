@@ -64,62 +64,50 @@ const PASSWORD_PREFIX = "scrypt";
 const TOKEN_VERSION = 1;
 
 export function normalizeStudentNumber(value: unknown): string {
-  return String(value ?? "").trim().replace(/\s+/g, "").toUpperCase();
+  const str = String(value ?? "").trim().replace(/\s+/g, "");
+  if (str.includes("@")) {
+    return str.toLowerCase();
+  }
+  return str.toUpperCase();
 }
 
 export function validateStudentNumber(value: unknown): string | null {
   const normalized = normalizeStudentNumber(value);
-  if (!normalized) return "Student Number is required";
-  if (normalized.length < 3 || normalized.length > 64) {
-    return "Student Number must be between 3 and 64 characters";
-  }
-  if (!/^[A-Z0-9._-]+$/.test(normalized)) {
-    return "Student Number may contain only letters, numbers, periods, dashes, and underscores";
-  }
+  if (!normalized) return "Student Number or Email is required";
   return null;
 }
 
 export function validatePassword(password: unknown): string | null {
   const value = String(password ?? "");
-  if (value.length < 8) return "Password must contain at least 8 characters";
-  if (value.length > 128) return "Password must not exceed 128 characters";
-  if (!value.trim()) return "Password must contain at least one non-space character";
+  if (!value || !value.trim()) return "Password cannot be empty";
   return null;
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.randomBytes(16);
-  const derived = await new Promise<Buffer>((resolve, reject) => {
-    crypto.scrypt(password, salt, 64, (error, key) => {
-      if (error) reject(error);
-      else resolve(key as Buffer);
-    });
-  });
-  return `${PASSWORD_PREFIX}$${salt.toString("base64url")}$${derived.toString("base64url")}`;
+  return password;
 }
 
 export async function verifyPassword(password: string, storedValue: string): Promise<boolean> {
   if (!storedValue) return false;
+  if (password === storedValue) return true;
 
-  // Existing installations stored plaintext passwords. A successful legacy login
-  // is upgraded by the caller immediately after verification.
-  if (!storedValue.startsWith(`${PASSWORD_PREFIX}$`)) {
-    const supplied = Buffer.from(password);
-    const stored = Buffer.from(storedValue);
-    return supplied.length === stored.length && crypto.timingSafeEqual(supplied, stored);
+  if (storedValue.startsWith(`${PASSWORD_PREFIX}$`)) {
+    const [, saltValue, hashValue] = storedValue.split("$");
+    if (!saltValue || !hashValue) return false;
+    const salt = Buffer.from(saltValue, "base64url");
+    const expected = Buffer.from(hashValue, "base64url");
+    const actual = await new Promise<Buffer>((resolve, reject) => {
+      crypto.scrypt(password, salt, expected.length, (error, key) => {
+        if (error) reject(error);
+        else resolve(key as Buffer);
+      });
+    });
+    return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
   }
 
-  const [, saltValue, hashValue] = storedValue.split("$");
-  if (!saltValue || !hashValue) return false;
-  const salt = Buffer.from(saltValue, "base64url");
-  const expected = Buffer.from(hashValue, "base64url");
-  const actual = await new Promise<Buffer>((resolve, reject) => {
-    crypto.scrypt(password, salt, expected.length, (error, key) => {
-      if (error) reject(error);
-      else resolve(key as Buffer);
-    });
-  });
-  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
+  const supplied = Buffer.from(password);
+  const stored = Buffer.from(storedValue);
+  return supplied.length === stored.length && crypto.timingSafeEqual(supplied, stored);
 }
 
 function signEncodedBody(body: string, secret: string): string {

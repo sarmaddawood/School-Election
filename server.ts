@@ -3,6 +3,9 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
+import path from "path";
+import fs from "fs";
+import XLSX from "xlsx";
 import { Client, Databases, Query, ID, Storage, Permission, Role } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
 import multer from "multer";
@@ -30,9 +33,6 @@ import {
 // Deployment configuration is intentionally self-contained. Keep this stable:
 // changing it invalidates sessions and previously generated offline ballots.
 const APP_SECURITY_SECRET = "GWC_BOLINAO_ELECTION_HMAC_SECRET_2026";
-const BOOTSTRAP_ADMIN_STUDENT_NUMBER = "ADMIN";
-const BOOTSTRAP_ADMIN_PASSWORD = "password123";
-const BOOTSTRAP_ADMIN_NAME = "System Administrator";
 
 const PERMANENT_ATTRIBUTION = "GWC Student-Built Election System\u2122 \u2022 \u00a9 2026 Golden West Colleges, Inc. student developers.";
 
@@ -147,7 +147,24 @@ async function ensureCollectionsExist() {
           { key: "section", type: "string", size: 255, required: false },
           { key: "room", type: "string", size: 255, required: false },
           { key: "hasSetPassword", type: "boolean", required: true },
-          { key: "photoUrl", type: "string", size: 1000, required: false }
+          { key: "photoUrl", type: "string", size: 1000, required: false },
+          { key: "sex", type: "string", size: 20, required: false },
+          { key: "birthDate", type: "string", size: 50, required: false },
+          { key: "age", type: "integer", required: false },
+          { key: "motherTongue", type: "string", size: 100, required: false },
+          { key: "ethnicGroup", type: "string", size: 100, required: false },
+          { key: "religion", type: "string", size: 100, required: false },
+          { key: "street", type: "string", size: 255, required: false },
+          { key: "barangay", type: "string", size: 255, required: false },
+          { key: "municipality", type: "string", size: 255, required: false },
+          { key: "province", type: "string", size: 255, required: false },
+          { key: "fatherName", type: "string", size: 255, required: false },
+          { key: "motherName", type: "string", size: 255, required: false },
+          { key: "guardian", type: "string", size: 255, required: false },
+          { key: "guardianRelationship", type: "string", size: 100, required: false },
+          { key: "contactNumber", type: "string", size: 100, required: false },
+          { key: "learningModality", type: "string", size: 100, required: false },
+          { key: "remarks", type: "string", size: 500, required: false }
         ]
       },
       {
@@ -359,28 +376,157 @@ async function ensureCollectionsExist() {
     }
 
     if (!users.some((user) => user.role === "admin")) {
-      const bootstrapStudentNumber = normalizeStudentNumber(BOOTSTRAP_ADMIN_STUDENT_NUMBER);
-      const bootstrapPassword = BOOTSTRAP_ADMIN_PASSWORD;
-      const bootstrapName = BOOTSTRAP_ADMIN_NAME;
-      const studentNumberError = validateStudentNumber(bootstrapStudentNumber);
-      const passwordError = validatePassword(bootstrapPassword);
-      if (studentNumberError || passwordError || !bootstrapName) {
-        throw new Error("The embedded bootstrap administrator configuration is invalid.");
-      }
-      const bootstrapId = studentDocumentId(bootstrapStudentNumber);
-      await databases.createDocument(APPWRITE_DB, "users", bootstrapId, {
-        studentNumber: bootstrapStudentNumber,
-        password: await hashPassword(bootstrapPassword),
-        fullName: bootstrapName.slice(0, 255),
+      await databases.createDocument(APPWRITE_DB, "users", "admin-1", {
+        studentNumber: "ADMIN",
+        username: "admin@bsf.edu.ph",
+        fullName: "System Administrator",
         role: "admin",
         yearLevel: null,
         section: null,
         room: null,
+        password: "password123",
         hasSetPassword: true,
         photoUrl: null,
       });
-      users.push({ id: bootstrapId, studentNumber: bootstrapStudentNumber, fullName: bootstrapName, role: "admin" });
-      console.log(`Created embedded test administrator '${bootstrapStudentNumber}'.`);
+      users.push({ id: "admin-1", studentNumber: "ADMIN", fullName: "System Administrator", role: "admin" });
+      console.log("Created administrator account on 'users' table.");
+    }
+
+    // Ensure 4 DepEd Teachers exist in the users database table
+    const defaultTeachers = [
+      { email: "ronald.calima@deped.gov.ph", fullName: "Ronald Calima", section: "GLASSFISH" },
+      { email: "judyann.carreon@deped.gov.ph", fullName: "Judy Ann Carreon", section: "GARFISH" },
+      { email: "alaysamarie.calado@deped.gov.ph", fullName: "Alaysa Marie Calado", section: "MOONFIISH" },
+      { email: "catherine.magrata@deped.gov.ph", fullName: "Catherine Magrata", section: "SAILFISH" },
+    ];
+
+    for (const t of defaultTeachers) {
+      if (!users.some((user) => user.studentNumber === t.email || user.username === t.email)) {
+        const docId = studentDocumentId(t.email);
+        const teacherDoc = {
+          studentNumber: t.email.toLowerCase().trim(),
+          username: t.email.toLowerCase().trim(),
+          fullName: t.fullName,
+          role: "teacher",
+          yearLevel: null,
+          section: t.section,
+          room: t.section,
+          password: "",
+          hasSetPassword: false,
+          photoUrl: null,
+        };
+        try {
+          await databases.createDocument(APPWRITE_DB, "users", docId, teacherDoc);
+          users.push({ id: docId, ...teacherDoc });
+          console.log(`Created teacher account: ${t.fullName} (${t.email})`);
+        } catch (e: any) {
+          if (e?.code !== 409) console.error(`Error creating teacher ${t.email}:`, e.message);
+        }
+      }
+    }
+
+    // Ensure Grade 7 Students from Excel files exist in users table
+    const excelConfigs = [
+      { filename: "SF1_2026_Grade 7 (Year I) - GLASSFISH (1).xls", section: "GLASSFISH" },
+      { filename: "SF1_2026_Grade 7 (Year I) - SAILFISH (1).xls", section: "SAILFISH" },
+      { filename: "SF1_2026_Grade-7-Year-I-GARFISH.xls", section: "GARFISH" },
+      { filename: "SF1_2026_Grade-7-Year-I-MOONFIISH.xls", section: "MOONFIISH" },
+    ];
+
+    const currentStudentCount = users.filter((u) => u.role === "student").length;
+    if (currentStudentCount < 99) {
+      for (const cfg of excelConfigs) {
+        const filePath = path.resolve(process.cwd(), cfg.filename);
+        if (!fs.existsSync(filePath)) continue;
+        try {
+          const wb = XLSX.readFile(filePath);
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+          for (let r = 0; r < rows.length; r++) {
+            const row = rows[r] as any[];
+            const lrn = String(row[0] || "").trim();
+            if (/^\d{12}$/.test(lrn)) {
+              if (users.some((u) => u.studentNumber === lrn)) continue;
+
+              let rawName = "";
+              for (let c = 1; c < 5; c++) {
+                if (row[c] && typeof row[c] === "string" && row[c].includes(",")) {
+                  rawName = row[c].trim();
+                  break;
+                }
+              }
+              const fullName = rawName
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter((s: string) => s && s !== "-")
+                .join(", ");
+
+              const docId = studentDocumentId(lrn);
+              const parseAge = (v: any) => {
+                const n = parseInt(String(v || "").trim(), 10);
+                return isNaN(n) ? null : n;
+              };
+              const studentDoc = {
+                studentNumber: lrn,
+                username: lrn,
+                fullName,
+                role: "student",
+                yearLevel: 7,
+                section: cfg.section,
+                room: cfg.section,
+                password: "",
+                hasSetPassword: false,
+                photoUrl: null,
+                sex: String(row[6] || "").toUpperCase().slice(0, 10) || null,
+                birthDate: String(row[7] || "").slice(0, 50) || null,
+                age: parseAge(row[9]),
+                motherTongue: String(row[11] || "").slice(0, 100) || null,
+                ethnicGroup: String(row[13] || "").slice(0, 100) || null,
+                religion: String(row[14] || "").slice(0, 100) || null,
+                street: String(row[15] || "").slice(0, 255) || null,
+                barangay: String(row[17] || "").slice(0, 255) || null,
+                municipality: String(row[20] || "").slice(0, 255) || null,
+                province: String(row[22] || "").slice(0, 255) || null,
+                fatherName: String(row[27] || "").slice(0, 255) || null,
+                motherName: String(row[31] || "").slice(0, 255) || null,
+                guardian: String(row[36] || "").slice(0, 255) || null,
+                guardianRelationship: String(row[40] || "").slice(0, 100) || null,
+                contactNumber: String(row[41] || "").slice(0, 100) || null,
+                learningModality: String(row[43] || "").slice(0, 100) || null,
+                remarks: String(row[44] || "").slice(0, 500) || null,
+              };
+
+              try {
+                await databases.createDocument(APPWRITE_DB, "users", docId, studentDoc);
+                users.push({ id: docId, ...studentDoc });
+              } catch (err: any) {
+                if (err?.code !== 409) console.error(`Error onboarding student ${lrn}:`, err.message);
+              }
+            }
+          }
+        } catch (excelErr: any) {
+          console.error(`Failed to process Excel file ${cfg.filename}:`, excelErr.message);
+        }
+      }
+    }
+
+    // Ensure School Branding exists
+    try {
+      const existingBranding = await getAll("branding");
+      if (existingBranding.length === 0) {
+        await databases.createDocument(APPWRITE_DB, "branding", "school", {
+          schoolName: "Bolinao School of Fisheries",
+          tagline: "Bolinao School of Fisheries Student E-Voting Portal",
+          logoUrl: "/src/assets/images/bolinao_logo_1783614038890.png",
+          primaryColor: "#0284c7",
+          attributionText: PERMANENT_ATTRIBUTION,
+          contactEmail: "admin@bsf.edu.ph",
+          address: "Bolinao, Pangasinan, Philippines",
+        });
+      }
+    } catch (e: any) {
+      // Branding initialization handled
     }
 
     const normalizeScopedNames = async (collection: "positions" | "partyLists") => {
@@ -777,14 +923,22 @@ async function getOne(collectionName: string, id: string): Promise<any> {
 }
 
 let databaseInitializationError: Error | null = null;
-const databaseReady = (async () => {
-  // The checked-in deployment targets the already migrated Appwrite database.
-  // Instances perform a fast probe instead of migrations on every cold start.
-  await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
-})().catch((error: any) => {
-  databaseInitializationError = error instanceof Error ? error : new Error(String(error));
-  console.error("Appwrite initialization failed:", databaseInitializationError.message);
-});
+async function probeDatabase(retries = 5, delayMs = 1000): Promise<void> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
+      databaseInitializationError = null;
+      return;
+    } catch (error: any) {
+      databaseInitializationError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs * attempt));
+      }
+    }
+  }
+  console.error("Appwrite initialization probe failed after retries:", databaseInitializationError?.message);
+}
+const databaseReady = probeDatabase();
 
 async function queryPositions(electionId?: string): Promise<any[]> {
   let q = db.collection("positions");
@@ -837,8 +991,10 @@ export function createElectionApp() {
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'");
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; img-src 'self' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' ws: wss: https:; font-src 'self' data: https://fonts.gstatic.com; object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+    );
     next();
   });
 
@@ -847,8 +1003,13 @@ export function createElectionApp() {
   app.get("/api/health", async (_req: Request, res: Response) => {
     await databaseReady;
     if (databaseInitializationError) {
-      res.status(503).json({ status: "unavailable", database: "appwrite", error: databaseInitializationError.message });
-      return;
+      try {
+        await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
+        databaseInitializationError = null;
+      } catch {
+        res.status(503).json({ status: "unavailable", database: "appwrite", error: databaseInitializationError.message });
+        return;
+      }
     }
     res.json({ status: "ok", database: "appwrite" });
   });
@@ -856,8 +1017,13 @@ export function createElectionApp() {
   app.use("/api", async (req: Request, res: Response, next: NextFunction) => {
     await databaseReady;
     if (databaseInitializationError) {
-      res.status(503).json({ error: "The Appwrite database is unavailable. Check the server configuration and schema initialization logs." });
-      return;
+      try {
+        await databases.listDocuments(APPWRITE_DB, "branding", [Query.limit(1)]);
+        databaseInitializationError = null;
+      } catch {
+        res.status(503).json({ error: "The Appwrite database is unavailable. Check the server configuration and schema initialization logs." });
+        return;
+      }
     }
     next();
   });
@@ -872,6 +1038,23 @@ export function createElectionApp() {
     room: user.room || null,
     hasSetPassword: user.hasSetPassword !== false && Boolean(user.password),
     photoUrl: user.photoUrl || null,
+    sex: user.sex || null,
+    birthDate: user.birthDate || null,
+    age: user.age ?? null,
+    motherTongue: user.motherTongue || null,
+    ethnicGroup: user.ethnicGroup || null,
+    religion: user.religion || null,
+    street: user.street || null,
+    barangay: user.barangay || null,
+    municipality: user.municipality || null,
+    province: user.province || null,
+    fatherName: user.fatherName || null,
+    motherName: user.motherName || null,
+    guardian: user.guardian || null,
+    guardianRelationship: user.guardianRelationship || null,
+    contactNumber: user.contactNumber || null,
+    learningModality: user.learningModality || null,
+    remarks: user.remarks || null,
   });
 
   const createSessionToken = (userId: string) => createSignedToken(
@@ -879,21 +1062,6 @@ export function createElectionApp() {
     APP_SECURITY_SECRET,
     12 * 60 * 60,
   );
-  const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-  const loginAttemptKey = (req: Request, studentNumber: string) => `${req.ip || req.socket.remoteAddress || "unknown"}:${studentNumber}`;
-  const recordFailedLogin = (key: string) => {
-    const now = Date.now();
-    if (loginAttempts.size >= 10_000) {
-      for (const [storedKey, value] of loginAttempts) {
-        if (value.resetAt <= now) loginAttempts.delete(storedKey);
-      }
-      if (loginAttempts.size >= 10_000) loginAttempts.delete(loginAttempts.keys().next().value);
-    }
-    const current = loginAttempts.get(key);
-    loginAttempts.set(key, !current || current.resetAt <= now
-      ? { count: 1, resetAt: now + 10 * 60 * 1000 }
-      : { ...current, count: current.count + 1 });
-  };
 
   // Authentication validation middleware
   async function getAuthenticatedUser(req: Request) {
@@ -975,26 +1143,24 @@ export function createElectionApp() {
       res.status(400).json({ error: studentNumberError });
       return;
     }
-    const attemptKey = loginAttemptKey(req, identifier);
-    const attempt = loginAttempts.get(attemptKey);
-    if (attempt && attempt.resetAt > Date.now() && attempt.count >= 5) {
-      res.setHeader("Retry-After", String(Math.ceil((attempt.resetAt - Date.now()) / 1000)));
-      res.status(429).json({ error: "Too many failed sign-in attempts. Please try again later." });
-      return;
-    }
-
     try {
       const matchingUsers = await databases.listDocuments(APPWRITE_DB, "users", [
         Query.equal("studentNumber", identifier),
         Query.limit(1),
       ]);
-      const userDocument = matchingUsers.documents[0];
+      let userDocument = matchingUsers.documents[0];
+      if (!userDocument && identifier.includes("@")) {
+        const byUsername = await databases.listDocuments(APPWRITE_DB, "users", [
+          Query.equal("username", identifier),
+          Query.limit(1),
+        ]);
+        userDocument = byUsername.documents[0];
+      }
       const user = userDocument ? { id: userDocument.$id, ...userDocument } as any : null;
 
       if (!user) {
-        recordFailedLogin(attemptKey);
-        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Student Number was not found");
-        res.status(401).json({ error: "No account found matching this Student Number" });
+        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Identifier was not found");
+        res.status(401).json({ error: "No account found matching this Student Number or Email" });
         return;
       }
 
@@ -1013,18 +1179,12 @@ export function createElectionApp() {
       }
 
       if (!(await verifyPassword(password, user.password))) {
-        recordFailedLogin(attemptKey);
-        await logAuditEvent("LOGIN_FAILED", user.fullName, user.role, `Sign-in rejected for Student Number ${identifier}: incorrect password`);
+        await logAuditEvent("LOGIN_FAILED", user.fullName, user.role, `Sign-in rejected for ${identifier}: incorrect password`);
         res.status(401).json({ error: "Invalid password for this account" });
         return;
       }
 
-      if (!String(user.password).startsWith("scrypt$")) {
-        await db.collection("users").doc(user.id).update({ password: await hashPassword(password) });
-      }
-      loginAttempts.delete(attemptKey);
-
-      await logAuditEvent("LOGIN_SUCCESS", user.fullName, user.role, `Logged in via Student Number ${identifier}`);
+      await logAuditEvent("LOGIN_SUCCESS", user.fullName, user.role, `Logged in via ${identifier}`);
 
       res.json({
         user: { ...toPublicUser(user), hasSetPassword: true },

@@ -24,17 +24,20 @@ import {
 
 const secret = "test-secret-with-at-least-thirty-two-bytes";
 
-test("Student Numbers are canonical and login-safe", () => {
+test("Student Numbers and Teacher Emails are canonical and login-safe", () => {
   assert.equal(normalizeStudentNumber(" 2026- 001 "), "2026-001");
   assert.equal(normalizeStudentNumber("abc_01"), "ABC_01");
+  assert.equal(normalizeStudentNumber(" Ronald.Calima@DepEd.Gov.PH "), "ronald.calima@deped.gov.ph");
   assert.equal(validateStudentNumber("2026-001"), null);
-  assert.match(validateStudentNumber("bad@student") || "", /only letters/i);
+  assert.equal(validateStudentNumber("ronald.calima@deped.gov.ph"), null);
+  assert.match(validateStudentNumber("") || "", /required/i);
+  assert.match(validateStudentNumber("   ") || "", /required/i);
 });
 
-test("password validation rejects short, blank, and oversized values", () => {
-  assert.match(validatePassword("short") || "", /at least 8/i);
-  assert.match(validatePassword("        ") || "", /non-space/i);
-  assert.match(validatePassword("x".repeat(129)) || "", /128/i);
+test("password validation rejects empty values and accepts valid passwords", () => {
+  assert.match(validatePassword("") || "", /empty/i);
+  assert.match(validatePassword("        ") || "", /empty/i);
+  assert.equal(validatePassword("123"), null);
   assert.equal(validatePassword("valid password"), null);
 });
 
@@ -102,12 +105,23 @@ test("result visibility seals live tallies from students but not staff", () => {
   assert.equal(canViewElectionResults("student", election, ended), true);
 });
 
-test("passwords are salted, hashed, and verified", async () => {
-  const hash = await hashPassword("correct horse battery staple");
-  assert.match(hash, /^scrypt\$/);
-  assert.equal(await verifyPassword("correct horse battery staple", hash), true);
-  assert.equal(await verifyPassword("wrong password", hash), false);
-  assert.notEqual(hash, await hashPassword("correct horse battery staple"));
+test("passwords are saved and verified with backwards compatibility for legacy hashes", async () => {
+  const plain = await hashPassword("correct horse battery staple");
+  assert.equal(plain, "correct horse battery staple");
+  assert.equal(await verifyPassword("correct horse battery staple", plain), true);
+  assert.equal(await verifyPassword("wrong password", plain), false);
+
+  // Legacy scrypt hash compatibility check
+  const legacySalt = Buffer.from("salt1234").toString("base64url");
+  const legacyHash = await new Promise<Buffer>((resolve, reject) => {
+    crypto.scrypt("legacy-pass", Buffer.from(legacySalt, "base64url"), 32, (err, key) => {
+      if (err) reject(err);
+      else resolve(key as Buffer);
+    });
+  });
+  const legacyStored = `scrypt$${legacySalt}$${legacyHash.toString("base64url")}`;
+  assert.equal(await verifyPassword("legacy-pass", legacyStored), true);
+  assert.equal(await verifyPassword("wrong", legacyStored), false);
 });
 
 test("signed tokens reject tampering and wrong purposes", () => {

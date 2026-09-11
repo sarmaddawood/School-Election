@@ -50,7 +50,7 @@ export default function LoginPage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentNumber.trim()) {
-      setErrorNotification("Please enter your Student Number");
+      setErrorNotification("Please enter your Student Number (LRN) or Email");
       return;
     }
     setLoading(true);
@@ -85,8 +85,8 @@ export default function LoginPage({
 
   const handlePasswordSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 8) {
-      setErrorNotification("Password must be at least 8 characters long.");
+    if (!newPassword.trim()) {
+      setErrorNotification("Please enter a password.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -174,18 +174,18 @@ export default function LoginPage({
               Welcome!
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
-              Log in with your official <strong className="text-white">Student Number</strong> and password to access active elections.
+              Log in with your official <strong className="text-white">Student Number (LRN)</strong> or <strong className="text-white">Teacher Email</strong> and password to access active elections.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                STUDENT NUMBER
+                STUDENT NUMBER (LRN) / TEACHER EMAIL
               </label>
               <input
                 type="text"
-                placeholder="Enter your Student Number"
+                placeholder="Enter Student Number (LRN) or Teacher Email"
                 autoComplete="username"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value)}
@@ -254,7 +254,7 @@ export default function LoginPage({
               </div>
               <div>
                 <h3 className="font-bold text-lg text-white">First-Time Account Setup</h3>
-                <p className="text-xs text-slate-400">Username: <span className="font-mono text-sky-300">{passwordSetupData.studentNumber}</span></p>
+                <p className="text-xs text-slate-400">Account: <span className="font-mono text-sky-300">{passwordSetupData.studentNumber}</span></p>
               </div>
             </div>
 
@@ -269,7 +269,7 @@ export default function LoginPage({
                 </label>
                 <input
                   type="password"
-                  placeholder="At least 8 characters"
+                  placeholder="Enter new password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-sm"

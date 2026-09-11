@@ -12,6 +12,7 @@ export default defineConfig(() => {
       },
     },
     build: {
+      emptyOutDir: false,
       target: 'es2020',
       cssCodeSplit: true,
       minify: 'esbuild',

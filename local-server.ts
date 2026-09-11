@@ -1,5 +1,6 @@
 import express from "express";
 import type { Request, Response } from "express";
+import fs from "node:fs";
 import path from "node:path";
 import { createServer as createViteServer } from "vite";
 import { createElectionApp } from "./server.ts";
@@ -35,6 +36,20 @@ async function startLocalServer() {
       appType: "spa",
     });
     app.use(vite.middlewares);
+    app.use("*", async (req: Request, res: Response, next) => {
+      if (req.originalUrl.startsWith("/api")) {
+        return next();
+      }
+      try {
+        const url = req.originalUrl;
+        const indexPath = path.resolve(process.cwd(), "index.html");
+        let template = fs.readFileSync(indexPath, "utf-8");
+        template = await vite.transformIndexHtml(url, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (e) {
+        next(e);
+      }
+    });
   }
 
   app.listen(SERVER_PORT, "0.0.0.0", () => {
