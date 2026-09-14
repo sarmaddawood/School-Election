@@ -182,7 +182,7 @@ export default function UserDetailModal({
             </div>
 
             {/* Core Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
+            <div className={`grid grid-cols-1 ${user.role === "student" ? "md:grid-cols-2" : ""} gap-6 py-6`}>
               <div className="space-y-4">
                 <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase border-b border-[var(--border)] pb-1.5 flex items-center gap-1.5">
                   <Shield size={12} className="text-[var(--accent)]" /> REGISTRY SECURITY METADATA
@@ -197,136 +197,144 @@ export default function UserDetailModal({
                     <span className="text-zinc-500">ROLE CLASS:</span>
                     <span className="font-bold text-[var(--ink)] uppercase">{user.role}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">YEAR LEVEL:</span>
-                    <span className="font-bold text-[var(--accent)]">
-                      {user.role === "student" ? `Year ${user.yearLevel || "Not Configured"}` : "N/A (Faculty)"}
-                    </span>
-                  </div>
+                  {user.role === "student" && (
+                    <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                      <span className="text-zinc-500">YEAR LEVEL:</span>
+                      <span className="font-bold text-[var(--accent)]">
+                        Year {user.yearLevel || "Not Configured"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase border-b border-[var(--border)] pb-1.5 flex items-center gap-1.5">
-                  <Vote size={12} className="text-[var(--accent)]" /> ACTIVITY TELEMETRY
-                </h4>
+              {user.role === "student" && (
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase border-b border-[var(--border)] pb-1.5 flex items-center gap-1.5">
+                    <Vote size={12} className="text-[var(--accent)]" /> ACTIVITY TELEMETRY
+                  </h4>
 
-                <div className="space-y-3 text-xs">
-                  <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">TOTAL BALLOTS CAST:</span>
-                    <span className="font-bold text-[var(--accent)]">{userVotes.length}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">NOMINATION COUNT:</span>
-                    <span className="font-bold text-[var(--accent)]">{userNominations.length}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                    <span className="text-zinc-500">VOTER STATUS:</span>
-                    <span className={`font-bold ${userVotes.length > 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                      {userVotes.length > 0 ? "ACTIVE PARTICIPANT" : "PENDING PARTICIPATION"}
-                    </span>
+                  <div className="space-y-3 text-xs">
+                    <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                      <span className="text-zinc-500">TOTAL BALLOTS CAST:</span>
+                      <span className="font-bold text-[var(--accent)]">{userVotes.length}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                      <span className="text-zinc-500">NOMINATION COUNT:</span>
+                      <span className="font-bold text-[var(--accent)]">{userNominations.length}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                      <span className="text-zinc-500">VOTER STATUS:</span>
+                      <span className={`font-bold ${userVotes.length > 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                        {userVotes.length > 0 ? "ACTIVE PARTICIPANT" : "PENDING PARTICIPATION"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
-            {/* Nominations & Manifesto Panel */}
-            <div className="space-y-4 border-t border-[var(--border)] pt-6">
-              <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
-                <Award size={13} className="text-[var(--accent)]" /> CANDIDACY BALLOT STATUS
-              </h4>
+            {user.role === "student" && (
+              <>
+                {/* Nominations & Manifesto Panel */}
+                <div className="space-y-4 border-t border-[var(--border)] pt-6">
+                  <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
+                    <Award size={13} className="text-[var(--accent)]" /> CANDIDACY BALLOT STATUS
+                  </h4>
 
-              {userNominations.length > 0 ? (
-                <div className="space-y-4">
-                  {userNominations.map((nom) => {
-                    const position = positions.find((p) => p.id === nom.positionId);
-                    const election = elections.find((e) => e.id === nom.electionId);
-                    return (
-                      <div
-                        key={nom.id}
-                        className="p-4 bg-[var(--bg)] border border-[var(--accent)]/20 space-y-2"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
-                          <div>
-                            <p className="text-xs font-bold text-[var(--ink)] uppercase">
-                              Candidate for:{" "}
-                              <span className="text-[var(--accent)]">{position?.name || "Unknown Position"}</span>
-                            </p>
-                            <p className="text-[9px] text-zinc-500 uppercase mt-0.5">
-                              Election: {election?.title || "Unknown Election"}
-                            </p>
+                  {userNominations.length > 0 ? (
+                    <div className="space-y-4">
+                      {userNominations.map((nom) => {
+                        const position = positions.find((p) => p.id === nom.positionId);
+                        const election = elections.find((e) => e.id === nom.electionId);
+                        return (
+                          <div
+                            key={nom.id}
+                            className="p-4 bg-[var(--bg)] border border-[var(--accent)]/20 space-y-2"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
+                              <div>
+                                <p className="text-xs font-bold text-[var(--ink)] uppercase">
+                                  Candidate for:{" "}
+                                  <span className="text-[var(--accent)]">{position?.name || "Unknown Position"}</span>
+                                </p>
+                                <p className="text-[9px] text-zinc-500 uppercase mt-0.5">
+                                  Election: {election?.title || "Unknown Election"}
+                                </p>
+                              </div>
+                              <div className="text-left sm:text-right">
+                                <span className="text-[8px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 border border-[var(--accent)]/20">
+                                  {nom.voteCount} VOTES RECEIVED
+                                </span>
+                              </div>
+                            </div>
+
+                            {nom.party && (
+                              <p className="text-[9px] text-zinc-500">
+                                PARTY AFFILIATION: <span className="text-[var(--ink)] font-bold">{nom.party}</span>
+                              </p>
+                            )}
+
+                            <div className="text-xs italic bg-[var(--surface)] p-3 border-l-2 border-[var(--accent)]/50 text-[var(--ink)]">
+                              "{nom.manifesto}"
+                            </div>
                           </div>
-                          <div className="text-left sm:text-right">
-                            <span className="text-[8px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 border border-[var(--accent)]/20">
-                              {nom.voteCount} VOTES RECEIVED
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-[var(--bg)] border border-[var(--border)] text-center">
+                      <p className="text-[10px] text-zinc-500">
+                        This user is not currently nominated as a candidate for any active ballot.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cast Ballots / Auditing Log */}
+                <div className="space-y-4 border-t border-[var(--border)] pt-6 mt-6">
+                  <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
+                    <CheckCircle size={13} className="text-[var(--accent)]" /> CRYPTOGRAPHIC BALLOT AUDIT LOG (NON-IDENTIFYING)
+                  </h4>
+
+                  {userVotes.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {userVotes.map((vote) => {
+                        const election = elections.find((e) => e.id === vote.electionId);
+                        const position = positions.find((p) => p.id === vote.positionId);
+                        return (
+                          <div
+                            key={vote.id}
+                            className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] text-[11px]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={12} className="text-emerald-500 shrink-0" />
+                              <div>
+                                <p className="font-bold text-[var(--ink)] uppercase">
+                                  Ballot Registered: {position?.name || "Unknown Position"}
+                                </p>
+                                <p className="text-[8px] text-zinc-500 mt-0.5">
+                                  Election: {election?.title || "Unknown Election"}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-[8px] font-mono text-zinc-500 font-bold bg-[var(--surface)] px-1.5 py-0.5 border border-[var(--border)]">
+                              SECURE REF: {vote.id}
                             </span>
                           </div>
-                        </div>
-
-                        {nom.party && (
-                          <p className="text-[9px] text-zinc-500">
-                            PARTY AFFILIATION: <span className="text-[var(--ink)] font-bold">{nom.party}</span>
-                          </p>
-                        )}
-
-                        <div className="text-xs italic bg-[var(--surface)] p-3 border-l-2 border-[var(--accent)]/50 text-[var(--ink)]">
-                          "{nom.manifesto}"
-                        </div>
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-[var(--bg)] border border-[var(--border)] text-center">
+                      <p className="text-[10px] text-zinc-500">
+                        No ballots have been cryptographically cast by this profile yet.
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="p-4 bg-[var(--bg)] border border-[var(--border)] text-center">
-                  <p className="text-[10px] text-zinc-500">
-                    This user is not currently nominated as a candidate for any active ballot.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Cast Ballots / Auditing Log */}
-            <div className="space-y-4 border-t border-[var(--border)] pt-6 mt-6">
-              <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
-                <CheckCircle size={13} className="text-[var(--accent)]" /> CRYPTOGRAPHIC BALLOT AUDIT LOG (NON-IDENTIFYING)
-              </h4>
-
-              {userVotes.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {userVotes.map((vote) => {
-                    const election = elections.find((e) => e.id === vote.electionId);
-                    const position = positions.find((p) => p.id === vote.positionId);
-                    return (
-                      <div
-                        key={vote.id}
-                        className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] text-[11px]"
-                      >
-                        <div className="flex items-center gap-2">
-                          <CheckCircle size={12} className="text-emerald-500 shrink-0" />
-                          <div>
-                            <p className="font-bold text-[var(--ink)] uppercase">
-                              Ballot Registered: {position?.name || "Unknown Position"}
-                            </p>
-                            <p className="text-[8px] text-zinc-500 mt-0.5">
-                              Election: {election?.title || "Unknown Election"}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-[8px] font-mono text-zinc-500 font-bold bg-[var(--surface)] px-1.5 py-0.5 border border-[var(--border)]">
-                          SECURE REF: {vote.id}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="p-4 bg-[var(--bg)] border border-[var(--border)] text-center">
-                  <p className="text-[10px] text-zinc-500">
-                    No ballots have been cryptographically cast by this profile yet.
-                  </p>
-                </div>
-              )}
-            </div>
+              </>
+            )}
 
             {/* Footer buttons */}
             <div className="flex justify-end pt-6 border-t border-[var(--border)] mt-6">

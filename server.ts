@@ -11,12 +11,9 @@ import { InputFile } from "node-appwrite/file";
 import multer from "multer";
 import {
   canViewElectionResults,
-  createOfflinePermit,
   createSignedToken,
-  decryptOfflineBallot,
   effectiveVoteDocumentId,
   getElectionPhase,
-  getOfflineEncryptionPublicKey,
   hashPassword,
   isEligibleForElection,
   normalizeStudentNumber,
@@ -25,7 +22,6 @@ import {
   validateDatabaseSnapshot,
   validatePassword,
   validateStudentNumber,
-  verifyOfflinePermit,
   verifyPassword,
   verifySignedToken,
 } from "./server/domain.ts";
@@ -220,8 +216,7 @@ async function ensureCollectionsExist() {
           { key: "electionId", type: "string", size: 255, required: true },
           { key: "positionId", type: "string", size: 255, required: true },
           { key: "candidateId", type: "string", size: 255, required: true },
-          { key: "timestamp", type: "string", size: 255, required: true },
-          { key: "isOfflineImport", type: "boolean", required: true }
+          { key: "timestamp", type: "string", size: 255, required: true }
         ]
       },
       {
@@ -259,18 +254,8 @@ async function ensureCollectionsExist() {
           { key: "timestamp", type: "string", size: 255, required: true },
           { key: "details", type: "string", size: 5000, required: true }
         ]
-      },
-      {
-        id: "offlineBallots",
-        name: "Imported Offline Ballots",
-        attributes: [
-          { key: "nonce", type: "string", size: 255, required: true },
-          { key: "voterId", type: "string", size: 255, required: true },
-          { key: "electionId", type: "string", size: 255, required: true },
-          { key: "importedAt", type: "string", size: 255, required: true },
-          { key: "importedBy", type: "string", size: 255, required: true }
-        ]
       }
+
     ];
 
     for (const col of requiredCollections) {
@@ -600,7 +585,7 @@ async function ensureCollectionsExist() {
 
     // Collapse legacy duplicate votes before creating the composite unique
     // index. The newest record remains effective, matching the replacement
-    // semantics used by both online and imported offline ballots.
+    // semantics used by ballots.
     const migratedElections = new Map((await getAll("elections")).map((record) => [record.id, record]));
     const migratedUsers = new Map((await getAll("users")).map((record) => [record.id, record]));
     const migratedPositions = new Map((await getAll("positions")).map((record) => [record.id, record]));
@@ -646,7 +631,7 @@ async function ensureCollectionsExist() {
         else if (recordedTime > endsAt) update.timestamp = new Date(endsAt).toISOString();
       }
       if (!effective.userId && effective.voterId) update.userId = effective.voterId;
-      if (typeof effective.isOfflineImport !== "boolean") update.isOfflineImport = false;
+
       if (Object.keys(update).length > 0) {
         await databases.updateDocument(APPWRITE_DB, "votes", effective.id, update);
       }
@@ -686,7 +671,6 @@ async function ensureCollectionsExist() {
       { collection: "votes", id: "votes_candidate", type: "key", attributes: ["candidateId"] },
       { collection: "partyLists", id: "party_election_normalized_name", type: "unique", attributes: ["electionId", "normalizedName"] },
       { collection: "auditLogs", id: "audit_timestamp", type: "key", attributes: ["timestamp"], orders: ["desc"] },
-      { collection: "offlineBallots", id: "offline_nonce_unique", type: "unique", attributes: ["nonce"] },
     ];
 
     const indexedCollections = Array.from(new Set(requiredIndexes.map((index) => index.collection)));
@@ -2133,14 +2117,13 @@ export function createElectionApp() {
     }
   });
 
-  // --- Votes API & Offline Import ---
+  // --- Votes API ---
   async function saveEffectiveVote({
     student,
     electionId,
     positionId,
     candidateId,
     timestamp = new Date().toISOString(),
-    isOfflineImport = false,
   }: any) {
     if (student.role !== "student") throw Object.assign(new Error("Only students are authorized to vote"), { status: 403 });
     const [election, position, candidate] = await Promise.all([
@@ -2157,11 +2140,7 @@ export function createElectionApp() {
 
     const ballotTime = new Date(timestamp);
     if (!Number.isFinite(ballotTime.getTime())) throw Object.assign(new Error("Invalid ballot timestamp"), { status: 400 });
-    if (isOfflineImport) {
-      if (ballotTime < new Date(election.startsAt) || ballotTime > new Date(election.endsAt)) {
-        throw Object.assign(new Error("Offline ballot was not created during the election window"), { status: 400 });
-      }
-    } else if (getElectionPhase(election) !== "live") {
+    if (getElectionPhase(election) !== "live") {
       throw Object.assign(new Error("Voting window is not active"), { status: 400 });
     }
 
@@ -2181,7 +2160,6 @@ export function createElectionApp() {
       userId: student.id,
       candidateId,
       timestamp: ballotTime.toISOString(),
-      isOfflineImport,
     };
 
     // A deterministic document ID and unique composite index are the final
@@ -2271,201 +2249,6 @@ export function createElectionApp() {
     }
   });
 
-  app.get("/api/offline/credentials", requireAuth, async (req: Request, res: Response) => {
-    const electionId = String(req.query.electionId || "");
-    const user = (req as any).user;
-    try {
-      const election = await getOne("elections", electionId);
-      if (!election) {
-        res.status(404).json({ error: "Election not found" });
-        return;
-      }
-      if (user.role !== "student" || !isEligibleForElection(user, election)) {
-        res.status(403).json({ error: "You are not eligible for this election" });
-        return;
-      }
-      if (getElectionPhase(election) !== "live") {
-        res.status(400).json({ error: "Offline ballot credentials are issued only while an election is live" });
-        return;
-      }
-      const now = new Date();
-      const nonce = crypto.randomBytes(24).toString("base64url");
-      const permit = {
-        voterId: user.id,
-        studentNumber: user.studentNumber,
-        electionId,
-        issuedAt: now.toISOString(),
-        expiresAt: new Date(new Date(election.endsAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        nonce,
-      };
-      res.json({
-        permit: createOfflinePermit(permit, APP_SECURITY_SECRET),
-        publicKey: getOfflineEncryptionPublicKey(APP_SECURITY_SECRET),
-        nonce,
-        issuedAt: permit.issuedAt,
-        electionEndsAt: election.endsAt,
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "Could not prepare offline voting" });
-    }
-  });
-
-  app.post("/api/votes/import-offline", requireAdminOrTeacher, async (req: Request, res: Response) => {
-    const envelope = req.body?.ballot || req.body;
-    let offlineTransactionId = "";
-    let transactionCommitted = false;
-    try {
-      const ballot = decryptOfflineBallot(envelope, APP_SECURITY_SECRET);
-      const permit = verifyOfflinePermit(ballot.permit, APP_SECURITY_SECRET);
-      if (!permit) throw Object.assign(new Error("TAMPER DETECTED: the offline ballot permit is invalid or expired"), { status: 400 });
-      if (
-        permit.voterId !== ballot.voterId ||
-        permit.electionId !== ballot.electionId ||
-        permit.nonce !== ballot.nonce ||
-        normalizeStudentNumber(permit.studentNumber) !== normalizeStudentNumber(ballot.studentNumber)
-      ) throw Object.assign(new Error("TAMPER DETECTED: ballot identity does not match its signed permit"), { status: 400 });
-      if (!Array.isArray(ballot.votes) || ballot.votes.length === 0 || ballot.votes.length > 50) {
-        throw Object.assign(new Error("Offline ballot must contain between 1 and 50 selections"), { status: 400 });
-      }
-      const positionIds = ballot.votes.map((vote) => String(vote.positionId || ""));
-      if (positionIds.some((id) => !id) || new Set(positionIds).size !== positionIds.length) {
-        throw Object.assign(new Error("Offline ballot contains invalid or duplicate positions"), { status: 400 });
-      }
-      const ballotTime = new Date(ballot.timestamp);
-      const issuedAt = new Date(permit.issuedAt);
-      const allowedClockSkewMs = 5 * 60 * 1000;
-      if (
-        !Number.isFinite(ballotTime.getTime()) ||
-        !Number.isFinite(issuedAt.getTime()) ||
-        ballotTime.getTime() < issuedAt.getTime() - allowedClockSkewMs
-      ) {
-        throw Object.assign(new Error("Offline ballot timestamp is invalid"), { status: 400 });
-      }
-
-      const student = await getOne("users", ballot.voterId);
-      if (!student || student.role !== "student" || normalizeStudentNumber(student.studentNumber || student.username) !== normalizeStudentNumber(ballot.studentNumber)) {
-        throw Object.assign(new Error("Student account in the offline ballot was not found"), { status: 400 });
-      }
-
-      // Validate every selection before reserving the nonce and writing any vote.
-      const election = await getOne("elections", ballot.electionId);
-      if (!election || !isEligibleForElection({ id: student.id, ...student }, election)) {
-        throw Object.assign(new Error("Student is not eligible for the offline ballot election"), { status: 403 });
-      }
-      if (ballotTime < new Date(election.startsAt) || ballotTime > new Date(election.endsAt)) {
-        throw Object.assign(new Error("Offline ballot was not created during the election window"), { status: 400 });
-      }
-      for (const selection of ballot.votes) {
-        const [position, candidate] = await Promise.all([
-          getOne("positions", selection.positionId),
-          getOne("candidates", selection.candidateId),
-        ]);
-        if (!position || position.electionId !== ballot.electionId || !candidate || candidate.positionId !== selection.positionId || candidate.electionId !== ballot.electionId) {
-          throw Object.assign(new Error("Offline ballot contains a candidate or position that is not valid for the election"), { status: 400 });
-        }
-      }
-
-      const replayMarkerId = `ob_${crypto.createHash("sha256").update(ballot.nonce).digest("hex").slice(0, 30)}`;
-      let importedCount = 0;
-      let revisedCount = 0;
-      const stagedVotes: Array<{ vote: any; legacyIds: string[] }> = [];
-      for (const selection of ballot.votes) {
-        const existing = await db.collection("votes")
-          .where("electionId", "==", ballot.electionId)
-          .where("positionId", "==", selection.positionId)
-          .where("voterId", "==", student.id)
-          .get();
-        const previous: any[] = [];
-        existing.forEach((document: any) => previous.push({ id: document.id, ...document.data() }));
-        if (previous.length === 0) importedCount += 1;
-        else if (previous.some((vote) => vote.candidateId !== selection.candidateId)) revisedCount += 1;
-        const voteId = effectiveVoteDocumentId(ballot.electionId, selection.positionId, student.id);
-        stagedVotes.push({
-          vote: {
-            id: voteId,
-            electionId: ballot.electionId,
-            positionId: selection.positionId,
-            voterId: student.id,
-            userId: student.id,
-            candidateId: selection.candidateId,
-            timestamp: ballotTime.toISOString(),
-            isOfflineImport: true,
-          },
-          legacyIds: previous.filter((vote) => vote.id !== voteId).map((vote) => vote.id),
-        });
-      }
-
-      const transaction = await databases.createTransaction({ ttl: 60 });
-      offlineTransactionId = transaction.$id;
-      try {
-        await databases.createDocument({
-          databaseId: APPWRITE_DB,
-          collectionId: "offlineBallots",
-          documentId: replayMarkerId,
-          data: {
-          nonce: ballot.nonce,
-          voterId: ballot.voterId,
-          electionId: ballot.electionId,
-          importedAt: new Date().toISOString(),
-          importedBy: (req as any).user.id,
-          },
-          transactionId: offlineTransactionId,
-        });
-        for (const staged of stagedVotes) {
-          for (const legacyId of staged.legacyIds) {
-            await databases.deleteDocument({
-              databaseId: APPWRITE_DB,
-              collectionId: "votes",
-              documentId: legacyId,
-              transactionId: offlineTransactionId,
-            });
-          }
-          const { id: voteId, ...voteData } = staged.vote;
-          await databases.upsertDocument({
-            databaseId: APPWRITE_DB,
-            collectionId: "votes",
-            documentId: voteId,
-            data: voteData,
-            transactionId: offlineTransactionId,
-          });
-        }
-        await databases.updateTransaction({ transactionId: offlineTransactionId, commit: true });
-        transactionCommitted = true;
-      } catch (transactionError: any) {
-        try {
-          await databases.updateTransaction({ transactionId: offlineTransactionId, rollback: true });
-        } catch {
-          // The server may have already rolled back the failed transaction.
-        }
-        if (transactionError?.code === 409) {
-          throw Object.assign(new Error("This offline ballot has already been imported"), { status: 409 });
-        }
-        throw transactionError;
-      }
-
-      const importer = (req as any).user;
-      await logAuditEvent("OFFLINE_BALLOT_IMPORTED", importer.fullName, importer.role, `Imported encrypted offline ballot for ${student.fullName} (${normalizeStudentNumber(student.studentNumber || student.username)})`);
-      res.json({
-        success: true,
-        message: `Offline ballot imported: ${importedCount} new selection(s), ${revisedCount} replacement(s).`,
-        studentName: student.fullName,
-        importedCount,
-        revisedCount,
-      });
-    } catch (err: any) {
-      if (offlineTransactionId && !transactionCommitted) {
-        try {
-          await databases.updateTransaction({ transactionId: offlineTransactionId, rollback: true });
-        } catch {
-          // The transaction is already rolled back or expired.
-        }
-      }
-      const tamper = /tamper|decrypt|authenticate|cipher|permit/i.test(String(err.message || ""));
-      const importer = (req as any).user;
-      await logAuditEvent("OFFLINE_BALLOT_REJECTED", importer.fullName, importer.role, `Rejected offline ballot import: ${tamper ? "cryptographic verification failed" : String(err.message || "validation failed").slice(0, 300)}`);
-      res.status(err.status || (tamper ? 400 : 500)).json({ error: tamper ? "TAMPER DETECTED: encrypted offline ballot verification failed" : (err.message || "Failed to process offline ballot import") });
-    }
-  });
 
   app.get("/api/elections/:id/turnout", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {

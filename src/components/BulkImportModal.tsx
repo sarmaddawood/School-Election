@@ -510,7 +510,7 @@ export default function BulkImportModal({
                     </div>
                   </div>
 
-                  <div className="max-h-60 overflow-y-auto border border-slate-700 rounded-xl bg-[#132238]">
+                  <div className="max-h-60 overflow-y-auto overflow-x-auto border border-slate-700 rounded-xl bg-[#132238]">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead className="sticky top-0 bg-[#0f1b2d] border-b border-slate-700 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
                         <tr>

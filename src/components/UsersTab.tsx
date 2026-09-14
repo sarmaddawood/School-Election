@@ -6,7 +6,7 @@ import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
 import BulkImportModal from "./BulkImportModal";
 import ImageCropModal from "./ImageCropModal";
-import OfflineBallotImportModal from "./OfflineBallotImportModal";
+
 
 interface UsersTabProps {
   users: UserType[];
@@ -52,7 +52,7 @@ export default function UsersTab({
   const [selectedDetailUser, setSelectedDetailUser] = useState<UserType | null>(null);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isAddUserCropOpen, setIsAddUserCropOpen] = useState(false);
-  const [isOfflineImportOpen, setIsOfflineImportOpen] = useState(false);
+
 
   const handleExportCSV = () => {
     if (!users || users.length === 0) {
@@ -296,14 +296,6 @@ export default function UsersTab({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 pt-2 md:pt-0">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setIsOfflineImportOpen(true)}
-            className="px-3.5 py-2.5 bg-amber-600 text-white hover:bg-amber-700 rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
-          >
-            <FileLock2 size={14} /> Import Offline Ballot
-          </motion.button>
 
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -677,15 +669,6 @@ export default function UsersTab({
         token={token}
         existingUsers={users}
         onSuccess={onRefreshData}
-        setErrorNotification={setErrorNotification}
-        setSuccessNotification={setSuccessNotification}
-      />
-
-      <OfflineBallotImportModal
-        isOpen={isOfflineImportOpen}
-        onClose={() => setIsOfflineImportOpen(false)}
-        token={token}
-        onImported={onRefreshData}
         setErrorNotification={setErrorNotification}
         setSuccessNotification={setSuccessNotification}
       />

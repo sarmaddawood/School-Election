@@ -19,6 +19,7 @@ export default function BrandingTab({
 }: BrandingTabProps) {
   const [form, setForm] = useState(branding);
   const [saving, setSaving] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
 
   useEffect(() => setForm(branding), [branding]);
 
@@ -30,15 +31,38 @@ export default function BrandingTab({
     event.preventDefault();
     setSaving(true);
     try {
+      let finalLogoUrl = form.logoUrl;
+
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          if (uploadData.url) {
+            finalLogoUrl = uploadData.url;
+          }
+        } else {
+          throw new Error("Failed to upload logo image");
+        }
+      }
+
+      const payload = { ...form, logoUrl: finalLogoUrl };
+
       const response = await fetch("/api/branding", {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not save school branding");
       onUpdated(data);
       setSuccessNotification("School branding saved and applied across the portal.");
+      setLogoFile(null);
     } catch (error: any) {
       setErrorNotification(error.message || "Could not save school branding");
     } finally {
@@ -58,7 +82,14 @@ export default function BrandingTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">School Name</span><input required value={form.schoolName} onChange={(e) => update("schoolName", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Portal Tagline</span><input value={form.tagline} onChange={(e) => update("tagline", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
-          <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold uppercase text-slate-600">Logo URL</span><input value={form.logoUrl} onChange={(e) => update("logoUrl", e.target.value)} placeholder="https://... or /assets/logo.png" className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
+          <label className="space-y-1.5 md:col-span-2">
+            <span className="text-xs font-bold uppercase text-slate-600">Logo Image</span>
+            <div className="flex items-center gap-4">
+              {form.logoUrl && !logoFile && <img src={form.logoUrl} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
+              {logoFile && <img src={URL.createObjectURL(logoFile)} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
+              <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} className="flex-1 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100" />
+            </div>
+          </label>
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Primary Color</span><div className="flex gap-2"><input type="color" value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} className="w-12 h-10 p-1 bg-white border border-slate-200 rounded-lg cursor-pointer" /><input value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} pattern="#[0-9A-Fa-f]{6}" className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-sky-500" /></div></label>
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Contact Email</span><input type="email" value={form.contactEmail || ""} onChange={(e) => update("contactEmail", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
           <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold uppercase text-slate-600">School Address</span><textarea rows={2} value={form.address || ""} onChange={(e) => update("address", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500 resize-none" /></label>

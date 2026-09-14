@@ -67,24 +67,6 @@ export interface Vote {
   voterId: string;
   candidateId: string;
   timestamp?: string;
-  isOfflineImport?: boolean;
-}
-
-export interface OfflineBallot {
-  version: 1;
-  algorithm: "ECDH-P256/HKDF-SHA256/AES-256-GCM";
-  ephemeralPublicKey: string;
-  salt: string;
-  iv: string;
-  ciphertext: string;
-}
-
-export interface OfflineBallotCredential {
-  permit: string;
-  publicKey: string;
-  nonce: string;
-  issuedAt: string;
-  electionEndsAt: string;
 }
 
 export interface SchoolBranding {

@@ -124,7 +124,6 @@ export default function AppShell({
           { id: "results", label: "Results Board", icon: BarChart3 },
           { id: "calendar", label: "Election Calendar", icon: CalendarDays },
           { id: "branding", label: "School Branding", icon: Settings },
-          { id: "diagnostics", label: "System Diagnostics", icon: Activity },
         ]
       : user.role === "teacher"
       ? [
@@ -139,7 +138,7 @@ export default function AppShell({
         ];
 
   return (
-    <div className="h-[100dvh] w-full min-w-0 overflow-hidden grid grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
+    <div className="h-[100dvh] w-full min-w-0 overflow-hidden grid grid-rows-[auto_minmax(0,1fr)_auto] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
       <div className="md:hidden flex justify-between items-center gap-2 px-3 py-2.5 bg-[#3498DB] text-white border-b border-white/20 shrink-0 relative z-30 safe-area-top">
@@ -147,7 +146,7 @@ export default function AppShell({
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1 -ml-1 text-white">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-10 h-10 rounded-lg bg-white p-1 object-contain shadow-sm shrink-0" />
+          <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-8 h-8 object-contain shrink-0 drop-shadow-md" />
           <div className="font-display text-xs min-[380px]:text-sm font-bold uppercase text-white truncate">{branding.schoolName}</div>
         </div>
         <div className="relative">
@@ -212,8 +211,8 @@ export default function AppShell({
 
       <aside className={`fixed inset-y-0 left-0 z-40 transform ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 md:flex w-[280px] max-w-[86vw] md:max-w-none bg-[#3498DB] text-white border-r border-white/20 flex-col p-5 md:p-8 transition-transform duration-300 flex md:row-span-2 shadow-[4px_0_24px_rgba(52,152,219,0.2)] safe-area-y`}>
         <div className="mb-8 flex flex-col items-center text-center pb-6 border-b border-white/20">
-            <div className="w-28 h-28 rounded-3xl bg-white p-3 mb-4 flex items-center justify-center border-2 border-white/30 shadow-lg shrink-0">
-                <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-full h-full object-contain mix-blend-multiply" />
+            <div className="mb-4 flex items-center justify-center shrink-0">
+                <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-24 h-24 object-contain drop-shadow-md" />
             </div>
             <div className="font-display font-bold text-xl uppercase leading-tight tracking-tight text-white">
                 {branding.schoolName}
@@ -330,7 +329,6 @@ export default function AppShell({
 
       <footer className="flex md:col-start-2 px-4 md:px-10 py-2.5 md:py-4 border-t border-[var(--border)] font-mono text-[0.55rem] md:text-[0.6rem] opacity-50 justify-between gap-3 shrink-0 bg-[var(--bg)]">
         <span>{branding.attributionText}</span>
-        <span>SECURITY PROTOCOL: v5.0 ENCRYPTED OFFLINE BALLOTS</span>
       </footer>
 
       <ConfirmModal

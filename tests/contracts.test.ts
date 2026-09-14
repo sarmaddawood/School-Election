@@ -40,8 +40,6 @@ test("every frontend API operation has a matching backend route", () => {
     ["GET", "/api/votes"],
     ["GET", "/api/votes/my"],
     ["POST", "/api/votes"],
-    ["GET", "/api/offline/credentials"],
-    ["POST", "/api/votes/import-offline"],
     ["GET", "/api/elections/:id/turnout"],
     ["PUT", "/api/branding"],
     ["GET", "/api/diagnostics/run-tests"],
@@ -59,11 +57,10 @@ test("Appwrite collections contain every field consumed by the frontend and serv
     elections: ["title", "description", "startsAt", "endsAt", "scope", "scopeValue", "hasPartyList", "targetGradeLevel", "targetSection", "targetRoom"],
     positions: ["electionId", "name", "normalizedName"],
     candidates: ["electionId", "positionId", "userId", "fullName", "manifesto", "partyListId", "partyListName", "photoUrl", "yearLevel"],
-    votes: ["electionId", "positionId", "voterId", "candidateId", "timestamp", "isOfflineImport"],
+    votes: ["electionId", "positionId", "voterId", "candidateId", "timestamp"],
     partyLists: ["electionId", "name", "normalizedName", "acronym", "logoUrl", "advocacy"],
     branding: ["schoolName", "tagline", "logoUrl", "primaryColor", "attributionText", "contactEmail", "address"],
     auditLogs: ["action", "performedBy", "performedByRole", "timestamp", "details"],
-    offlineBallots: ["nonce", "voterId", "electionId", "importedAt", "importedBy"],
   };
 
   for (const [collection, fields] of Object.entries(requiredFields)) {
@@ -87,19 +84,15 @@ test("critical Appwrite uniqueness and query indexes are declared", () => {
     "votes_effective_unique",
     "votes_election_voter",
     "party_election_normalized_name",
-    "offline_nonce_unique",
   ];
   for (const indexId of requiredIndexIds) {
     assert.match(serverSource, new RegExp(`id:\\s*[\"']${indexId}[\"']`), `Index ${indexId} is missing`);
   }
-  assert.match(serverSource, /createTransaction\(\{ ttl: 60 \}\)/, "Offline ballot imports must be transactional");
-  assert.match(serverSource, /offline_nonce_unique/, "Offline ballot replay nonces must be unique");
 });
 
 test("backend role middleware protects every privileged feature", () => {
   const protectedDeclarations = [
     `app.post("/api/users/bulk", requireAdminOrTeacher`,
-    `app.post("/api/votes/import-offline", requireAdminOrTeacher`,
     `app.get("/api/elections/:id/turnout", requireAdminOrTeacher`,
     `app.get("/api/votes", requireAdminOrTeacher`,
     `app.post("/api/elections", requireAdmin`,
@@ -108,7 +101,6 @@ test("backend role middleware protects every privileged feature", () => {
     `app.post("/api/partylists", requireAdmin`,
     `app.put("/api/branding", requireAdmin`,
     `app.post("/api/votes", requireAuth`,
-    `app.get("/api/offline/credentials", requireAuth`,
   ];
   for (const declaration of protectedDeclarations) {
     assert.ok(serverSource.includes(declaration), `Missing backend protection: ${declaration}`);

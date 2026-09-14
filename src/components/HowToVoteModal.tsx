@@ -89,20 +89,6 @@ export default function HowToVoteModal({ isOpen, onClose }: HowToVoteModalProps)
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 font-display font-bold">
-                  4
-                </div>
-                <div>
-                  <h4 className="text-zinc-900 font-medium text-sm flex items-center gap-2">
-                    <FileLock2 size={16} className="text-emerald-600" />
-                    Online or Encrypted Offline Ballot
-                  </h4>
-                  <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                    Online votes are recorded immediately. If your device goes offline, make your selections and download the encrypted JSON ballot, then send it to a Teacher or Admin for authenticated import.
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 

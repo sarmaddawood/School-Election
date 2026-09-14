@@ -82,7 +82,6 @@ window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
     });
   }
   if (url.startsWith("/api/votes/my")) return json(votes);
-  if (url.startsWith("/api/offline/credentials")) return json({ permit: "qa-permit", publicKey: "qa-public-key", nonce: "qa-nonce", issuedAt: new Date().toISOString(), electionEndsAt: elections[0].endsAt });
   if (url.startsWith("/api/partylists")) return json([
     { id: "party-unity", electionId: "school-live", name: "Unity", acronym: "UNITY" },
     { id: "party-forward", electionId: "school-live", name: "Forward", acronym: "FWD" },
