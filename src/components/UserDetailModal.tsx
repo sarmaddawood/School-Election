@@ -122,19 +122,19 @@ export default function UserDetailModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="relative w-full max-w-2xl bg-[var(--surface)] border border-[var(--border)] rounded-none p-6 md:p-8 overflow-y-auto max-h-[90vh] font-mono shadow-2xl"
+            className="relative w-full max-w-2xl bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-6 md:p-8 overflow-y-auto max-h-[88vh] font-mono shadow-2xl"
           >
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute right-4 top-4 p-2 text-zinc-500 hover:text-[var(--accent)] transition-colors cursor-pointer"
+              className="absolute right-4 top-4 p-2.5 text-zinc-400 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded-full transition-colors cursor-pointer"
               aria-label="Close modal"
             >
               <X size={18} />
             </button>
 
             {/* Header / Profile section */}
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-5 pb-6 border-b border-[var(--border)]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pb-6 border-b border-[var(--border)]">
               <div className="relative group shrink-0">
                 {photoToDisplay && photoToDisplay !== "null" && photoToDisplay !== "" && photoToDisplay !== "undefined" ? (
                   <img
@@ -144,7 +144,7 @@ export default function UserDetailModal({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-full bg-[var(--accent-soft)] border-2 border-[var(--accent)] flex items-center justify-center font-black text-2xl text-[var(--accent)] shadow-lg">
+                  <div className="w-16 h-16 rounded-full bg-[var(--accent-soft)] border-2 border-[var(--accent)] flex items-center justify-center font-black text-2xl text-[var(--accent)] shadow-md">
                     {user.fullName[0]}
                   </div>
                 )}
@@ -161,15 +161,15 @@ export default function UserDetailModal({
 
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase bg-[var(--accent-soft)] px-2 py-0.5 border border-[var(--accent)]/20">
+                  <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase bg-[var(--accent-soft)] px-2 py-0.5 rounded-md border border-[var(--accent)]/20">
                     {user.role} Profile
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsCropOpen(true)}
-                    className="text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 flex items-center gap-1 transition-colors cursor-pointer"
+                    className="text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer"
                   >
-                    <Camera size={10} /> CHANGE PHOTO
+                    <Camera size={11} /> CHANGE PHOTO
                   </button>
                 </div>
                 <h3 className="font-display font-black text-xl md:text-2xl text-[var(--ink)] uppercase tracking-wide mt-1">
@@ -250,7 +250,7 @@ export default function UserDetailModal({
                         return (
                           <div
                             key={nom.id}
-                            className="p-4 bg-[var(--bg)] border border-[var(--accent)]/20 space-y-2"
+                            className="p-4 bg-[var(--bg)] border border-[var(--accent)]/20 space-y-2 rounded-xl"
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
                               <div>
@@ -263,7 +263,7 @@ export default function UserDetailModal({
                                 </p>
                               </div>
                               <div className="text-left sm:text-right">
-                                <span className="text-[8px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 border border-[var(--accent)]/20">
+                                <span className="text-[8px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] px-2 py-0.5 rounded-md border border-[var(--accent)]/20">
                                   {nom.voteCount} VOTES RECEIVED
                                 </span>
                               </div>
@@ -275,7 +275,7 @@ export default function UserDetailModal({
                               </p>
                             )}
 
-                            <div className="text-xs italic bg-[var(--surface)] p-3 border-l-2 border-[var(--accent)]/50 text-[var(--ink)]">
+                            <div className="text-xs italic bg-[var(--surface)] p-3 rounded-lg border-l-2 border-[var(--accent)]/50 text-[var(--ink)]">
                               "{nom.manifesto}"
                             </div>
                           </div>
@@ -283,7 +283,7 @@ export default function UserDetailModal({
                       })}
                     </div>
                   ) : (
-                    <div className="p-4 bg-[var(--bg)] border border-[var(--border)] text-center">
+                    <div className="p-4 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-center">
                       <p className="text-[10px] text-zinc-500">
                         This user is not currently nominated as a candidate for any active ballot.
                       </p>
@@ -305,7 +305,7 @@ export default function UserDetailModal({
                         return (
                           <div
                             key={vote.id}
-                            className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] text-[11px]"
+                            className="flex items-center justify-between p-3 bg-[var(--bg)] border border-[var(--border)] text-[11px] rounded-xl"
                           >
                             <div className="flex items-center gap-2">
                               <CheckCircle size={12} className="text-emerald-500 shrink-0" />
@@ -318,15 +318,15 @@ export default function UserDetailModal({
                                 </p>
                               </div>
                             </div>
-                            <span className="text-[8px] font-mono text-zinc-500 font-bold bg-[var(--surface)] px-1.5 py-0.5 border border-[var(--border)]">
-                              SECURE REF: {vote.id}
+                            <span className="text-[8px] font-mono text-zinc-500 font-bold bg-[var(--surface)] px-2 py-0.5 rounded-md border border-[var(--border)]">
+                              REF: {vote.id}
                             </span>
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="p-4 bg-[var(--bg)] border border-[var(--border)] text-center">
+                    <div className="p-4 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-center">
                       <p className="text-[10px] text-zinc-500">
                         No ballots have been cryptographically cast by this profile yet.
                       </p>
@@ -340,7 +340,7 @@ export default function UserDetailModal({
             <div className="flex justify-end pt-6 border-t border-[var(--border)] mt-6">
               <button
                 onClick={onClose}
-                className="px-5 py-2 border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] text-[var(--ink)] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer bg-transparent"
+                className="px-5 py-2.5 rounded-xl border border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] text-[var(--ink)] text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer bg-[var(--surface)] shadow-xs"
               >
                 CLOSE PROFILE
               </button>

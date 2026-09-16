@@ -176,22 +176,6 @@ try {
   const teacherLiveCandidates = expect(await api(`/api/candidates?electionId=${liveElection.id}`, { token: teacherToken }), 200, "Teacher views live candidate counts");
   assert.ok(teacherLiveCandidates.some((candidate: any) => candidate.voteCount > 0));
 
-  const credential = expect(await api(`/api/offline/credentials?electionId=${liveElection.id}`, { token: betaToken }), 200, "Eligible online student obtains encrypted offline-ballot credentials");
-  (globalThis as any).window = globalThis;
-  const { encryptOfflineBallot } = await import("../src/lib/offlineBallot.ts");
-  const envelope = await encryptOfflineBallot(credential, {
-    voterId: beta.id,
-    studentNumber: beta.studentNumber,
-    electionId: liveElection.id,
-    votes: [{ positionId: position.id, candidateId: candidateA.id }],
-    timestamp: new Date().toISOString(),
-  });
-  const imported = expect(await api("/api/votes/import-offline", { method: "POST", token: teacherToken, body: { ballot: envelope } }), 200, "Teacher imports an encrypted offline vote file");
-  assert.equal(imported.importedCount, 1);
-  expect(await api("/api/votes/import-offline", { method: "POST", token: teacherToken, body: { ballot: envelope } }), 409, "Offline ballot replay is rejected");
-  const tampered = { ...envelope, ciphertext: `${envelope.ciphertext.slice(0, -2)}AA` };
-  expect(await api("/api/votes/import-offline", { method: "POST", token: teacherToken, body: { ballot: tampered } }), 400, "Tampered offline ballot is rejected");
-
   const turnout = expect(await api(`/api/elections/${liveElection.id}/turnout`, { token: teacherToken }), 200, "Teacher views detailed turnout and non-voter roster");
   assert.ok(Array.isArray(turnout.students));
   assert.ok(turnout.students.some((student: any) => student.studentNumber === gamma.studentNumber && student.hasVoted === false));

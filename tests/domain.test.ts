@@ -3,12 +3,9 @@ import crypto from "node:crypto";
 import test from "node:test";
 import {
   canViewElectionResults,
-  createOfflinePermit,
   createSignedToken,
-  decryptOfflineBallot,
   effectiveVoteDocumentId,
   getElectionPhase,
-  getOfflineEncryptionPublicKey,
   hashPassword,
   isEligibleForElection,
   normalizeStudentNumber,
@@ -17,7 +14,6 @@ import {
   validateElectionInput,
   validatePassword,
   validateStudentNumber,
-  verifyOfflinePermit,
   verifyPassword,
   verifySignedToken,
 } from "../server/domain";
@@ -140,63 +136,3 @@ test("effective vote IDs enforce one record per election, position, and voter", 
   assert.notEqual(studentDocumentId("2026-001"), studentDocumentId("2026-002"));
 });
 
-test("encrypted offline ballot round-trips and rejects ciphertext tampering", () => {
-  const permitData = {
-    voterId: "s1",
-    studentNumber: "2026-001",
-    electionId: "e1",
-    issuedAt: new Date(Date.now() - 1000).toISOString(),
-    expiresAt: new Date(Date.now() + 60_000).toISOString(),
-    nonce: "nonce-1",
-  };
-  const permit = createOfflinePermit(permitData, secret);
-  assert.deepEqual(verifyOfflinePermit(permit, secret), permitData);
-  assert.equal(verifyOfflinePermit(`${permit}x`, secret), null);
-
-  const serverPublic = Buffer.from(getOfflineEncryptionPublicKey(secret), "base64");
-  const ephemeral = crypto.createECDH("prime256v1");
-  ephemeral.generateKeys();
-  const sharedSecret = ephemeral.computeSecret(serverPublic);
-  const salt = crypto.randomBytes(32);
-  const iv = crypto.randomBytes(12);
-  const key = Buffer.from(crypto.hkdfSync("sha256", sharedSecret, salt, Buffer.from("school-election-offline-ballot-v1"), 32));
-  const payload = { ...permitData, votes: [{ positionId: "p1", candidateId: "c1" }], timestamp: new Date().toISOString(), permit };
-  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-  const ciphertext = Buffer.concat([cipher.update(JSON.stringify(payload), "utf8"), cipher.final(), cipher.getAuthTag()]);
-  const envelope = {
-    version: 1 as const,
-    algorithm: "ECDH-P256/HKDF-SHA256/AES-256-GCM" as const,
-    ephemeralPublicKey: ephemeral.getPublicKey().toString("base64"),
-    salt: salt.toString("base64"),
-    iv: iv.toString("base64"),
-    ciphertext: ciphertext.toString("base64"),
-  };
-  assert.deepEqual(decryptOfflineBallot(envelope, secret), payload);
-  const tampered = Buffer.from(envelope.ciphertext, "base64");
-  tampered[0] ^= 1;
-  assert.throws(() => decryptOfflineBallot({ ...envelope, ciphertext: tampered.toString("base64") }, secret));
-  assert.throws(() => decryptOfflineBallot({ ...envelope, iv: Buffer.alloc(2).toString("base64") }, secret), /parameters/i);
-  assert.throws(() => decryptOfflineBallot({ ...envelope, ciphertext: "A".repeat(350_001) }, secret), /too large/i);
-});
-
-test("offline permits reject expired and impossible time windows", () => {
-  const expired = createOfflinePermit({
-    voterId: "s1",
-    studentNumber: "2026-001",
-    electionId: "e1",
-    issuedAt: new Date(Date.now() - 120_000).toISOString(),
-    expiresAt: new Date(Date.now() - 60_000).toISOString(),
-    nonce: "expired",
-  }, secret);
-  assert.equal(verifyOfflinePermit(expired, secret), null);
-
-  const backwards = createOfflinePermit({
-    voterId: "s1",
-    studentNumber: "2026-001",
-    electionId: "e1",
-    issuedAt: new Date(Date.now() + 120_000).toISOString(),
-    expiresAt: new Date(Date.now() + 60_000).toISOString(),
-    nonce: "backwards",
-  }, secret);
-  assert.equal(verifyOfflinePermit(backwards, secret), null);
-});

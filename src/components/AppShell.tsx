@@ -141,16 +141,24 @@ export default function AppShell({
     <div className="h-[100dvh] w-full min-w-0 overflow-hidden grid grid-rows-[auto_minmax(0,1fr)_auto] md:grid-cols-[280px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] bg-[var(--bg)] text-[var(--ink)] font-sans">
       
       {/* Mobile Top Bar */}
-      <div className="md:hidden flex justify-between items-center gap-2 px-3 py-2.5 bg-[#3498DB] text-white border-b border-white/20 shrink-0 relative z-30 safe-area-top">
-        <div className="flex items-center gap-2 min-w-0">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-1 -ml-1 text-white">
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      <div className="md:hidden flex justify-between items-center gap-2 px-3.5 py-2.5 bg-[#3498DB] text-white border-b border-white/20 shrink-0 relative z-30 safe-area-top shadow-sm">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="w-10 h-10 -ml-1 rounded-xl flex items-center justify-center text-white hover:bg-white/15 active:bg-white/25 transition-colors cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
-          <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-8 h-8 object-contain shrink-0 drop-shadow-md" />
-          <div className="font-display text-xs min-[380px]:text-sm font-bold uppercase text-white truncate">{branding.schoolName}</div>
+          <img src={brandingLogo} alt={`${branding.schoolName} logo`} className="w-8 h-8 object-contain shrink-0 drop-shadow-sm" />
+          <div className="font-display text-xs min-[380px]:text-sm font-bold uppercase text-white truncate tracking-wide">{branding.schoolName}</div>
         </div>
         <div className="relative">
-          <button onClick={() => setShowProfileMenu(!showProfileMenu)} className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-xs border border-white/30 overflow-hidden">
+          <button
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center font-bold text-xs border border-white/30 overflow-hidden shadow-inner cursor-pointer hover:bg-white/30 transition-all"
+            aria-label="User profile options"
+          >
             {user.photoUrl && user.photoUrl !== "null" && user.photoUrl !== "" && user.photoUrl !== "undefined" ? (
               <img src={user.photoUrl} alt={user.fullName} className="w-full h-full object-cover" />
             ) : (
@@ -164,30 +172,41 @@ export default function AppShell({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -5 }}
                 transition={{ duration: 0.15 }}
-                className="absolute top-full right-0 mt-2 w-48 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-2 z-50 shadow-2xl text-[var(--ink)]"
+                className="absolute top-full right-0 mt-2 w-52 bg-[var(--surface)] border border-slate-200 rounded-2xl p-2 z-50 shadow-2xl text-[var(--ink)]"
               >
-                <div className="px-3 py-2 border-b border-[var(--border)] mb-2">
-                    <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)] text-[10px]">{user.fullName}</p>
-                    <p className="text-zinc-500 uppercase truncate tracking-wider text-[9px] mt-0.5">{user.role}</p>
+                <div className="px-3 py-2 border-b border-slate-100 mb-1.5">
+                  <p className="font-bold uppercase truncate tracking-wider text-[var(--ink)] text-xs">{user.fullName}</p>
+                  <p className="text-zinc-500 uppercase truncate tracking-wider text-[9px] mt-0.5 font-mono font-semibold">{user.role}</p>
                 </div>
+                <button
+                  onClick={() => {
+                    setIsCropModalOpen(true);
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full px-3 py-2.5 text-left text-xs font-semibold text-slate-700 hover:text-sky-700 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 cursor-pointer transition-colors"
+                >
+                  <Camera size={14} className="text-sky-600" />
+                  Change Profile Photo
+                </button>
                 <button
                   onClick={() => {
                     onTabChange("password");
                     setShowProfileMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-[var(--ink)] hover:bg-[var(--bg)] rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2.5 text-left text-xs font-semibold text-slate-700 hover:text-sky-700 hover:bg-sky-50 rounded-xl flex items-center gap-2.5 cursor-pointer transition-colors"
                 >
-                  <Key size={13} />
+                  <Key size={14} className="text-amber-600" />
                   Change Password
                 </button>
+                <div className="border-t border-slate-100 my-1" />
                 <button
                   onClick={() => {
                     setShowConfirmLogout(true);
                     setShowProfileMenu(false);
                   }}
-                  className="w-full px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-2.5 cursor-pointer transition-colors"
                 >
-                  <LogOut size={13} />
+                  <LogOut size={14} />
                   Sign Out
                 </button>
               </motion.div>
@@ -306,12 +325,21 @@ export default function AppShell({
       </aside>
 
       <main className="min-w-0 p-3 min-[380px]:p-4 md:p-8 xl:p-10 overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0 safe-area-bottom">
-        <header className="hidden md:flex justify-between items-end mb-12 shrink-0">
+        {activeTab === "dashboard" && user.role === "admin" && (
+          <header className="hidden md:flex justify-between items-end mb-8 shrink-0">
             <div>
-                <h2 className="font-display text-4xl uppercase leading-none tracking-tight">ADMINISTRATION<br/>TELEMETRY</h2>
-                <p className="text-sm opacity-50 max-w-[400px] mt-4">Real-time status updates, polling metrics, and registry logs across the centralized BSF system.</p>
+              <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">
+                SYSTEM TELEMETRY & OVERVIEW
+              </span>
+              <h2 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-slate-900 mt-2">
+                ADMINISTRATION<br/>TELEMETRY
+              </h2>
+              <p className="text-xs text-slate-500 max-w-[450px] mt-2 leading-relaxed">
+                Real-time status updates, polling metrics, and registry logs across the centralized school election system.
+              </p>
             </div>
-        </header>
+          </header>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div

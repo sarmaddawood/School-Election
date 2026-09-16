@@ -41,164 +41,130 @@ export default function VoteConfirmationModal({
           {/* Modal Container */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", duration: 0.4 }}
-              className="bg-[var(--surface)] max-w-lg w-full border border-[var(--border)] rounded-none p-6 md:p-8 space-y-6 relative text-[var(--ink)] font-mono shadow-2xl"
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: "spring", duration: 0.35 }}
+              className="bg-white max-w-md w-full border border-slate-200 rounded-3xl p-5 sm:p-7 space-y-5 relative text-slate-800 font-sans shadow-2xl max-h-[90vh] overflow-y-auto"
               id="vote-confirmation-modal-box"
             >
               {/* Close Button */}
               {!isSubmitting && (
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-[var(--accent)] transition-colors cursor-pointer"
+                  className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
                   aria-label="Close confirmation"
                   id="vote-confirmation-close-btn"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               )}
 
-              {/* Warning Header Accent */}
-              <div className="flex flex-col items-center text-center space-y-3 pb-2 border-b border-[var(--border)]">
-                <div className="h-14 w-14 bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30 flex items-center justify-center shadow-[0_0_15px_var(--accent-soft)] animate-pulse">
-                  <ShieldCheck size={28} />
+              {/* Header Accent */}
+              <div className="flex flex-col items-center text-center space-y-2 pb-2 border-b border-slate-100">
+                <div className="h-12 w-12 bg-sky-50 text-sky-600 rounded-2xl border border-sky-100 flex items-center justify-center shadow-sm">
+                  <ShieldCheck size={26} />
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase">BALLOT VALIDATION STATION</span>
-                  <h3 className="font-display font-black text-[var(--ink)] text-lg tracking-wider uppercase mt-1">
-                    Confirm Your Selection
+                  <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
+                    Ballot Confirmation
+                  </span>
+                  <h3 className="font-display font-black text-slate-900 text-xl tracking-tight mt-1.5 uppercase">
+                    Confirm Selection
                   </h3>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-wider mt-1">
-                    Audit election parameters and nominee credentials below.
+                  <p className="text-xs text-slate-500 mt-1">
+                    Review your choice carefully before casting your official vote.
                   </p>
                 </div>
               </div>
 
-              {/* Structured Ballot Sheet details */}
-              <div className="space-y-4">
-                {/* Election info */}
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
-                    <Calendar size={11} />
-                    ELECTION LEDGER
-                  </span>
-                  <div className="bg-[var(--bg)] border border-[var(--border)] p-3 text-xs font-bold text-[var(--ink)] uppercase tracking-wider">
+              {/* Ballot Sheet details */}
+              <div className="space-y-3.5">
+                {/* Election & Position Badges */}
+                <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <Calendar size={12} className="text-sky-600" />
+                    <span>Election</span>
+                  </div>
+                  <p className="font-display font-extrabold text-xs uppercase tracking-wide text-slate-800 truncate">
                     {election.title}
-                  </div>
-                </div>
-
-                {/* Position info */}
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
-                    <Award size={11} />
-                    TARGET OFFICE NOMINATED
-                  </span>
-                  <div className="bg-[var(--bg)] border border-[var(--border)] p-3 text-xs font-bold text-[var(--accent)] uppercase tracking-wider">
-                    {position.name}
-                  </div>
+                  </p>
                 </div>
 
                 {/* Candidate detailed info */}
-                <div className="space-y-1.5">
-                  <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
-                    <User size={11} />
-                    VERIFIED NOMINEE CREDENTIALS
-                  </span>
-                  
-                  <div className="bg-[var(--bg)] border border-[var(--border)] p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    {/* Proper profile picture / avatar */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                  <div className="flex items-center gap-3">
                     <div className="shrink-0">
                       {candidate.photoUrl && candidate.photoUrl !== "null" && candidate.photoUrl !== "" && candidate.photoUrl !== "undefined" ? (
                         <img
                           src={candidate.photoUrl}
                           alt={candidate.fullName}
-                          className="w-20 h-20 border border-[var(--border)] object-cover rounded-none bg-[var(--surface)]"
+                          className="w-14 h-14 border border-slate-200 object-cover rounded-2xl bg-white shadow-sm"
                           referrerPolicy="no-referrer"
                         />
                       ) : (
-                        <div className="w-20 h-20 border border-[var(--border)] bg-neutral-100 text-[var(--accent)] flex items-center justify-center font-display font-black text-2xl rounded-none">
+                        <div className="w-14 h-14 border border-sky-200 bg-sky-50 text-sky-600 flex items-center justify-center font-display font-black text-xl rounded-2xl shadow-sm">
                           {candidate.fullName[0]}
                         </div>
                       )}
                     </div>
 
-                    {/* Meta info */}
-                    <div className="space-y-1.5 flex-1 min-w-0">
-                      <p className="font-display font-black text-[var(--ink)] text-base tracking-wider uppercase truncate">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] font-bold text-sky-700 bg-sky-100/60 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        {position.name}
+                      </span>
+                      <h4 className="font-display font-extrabold text-slate-900 text-base tracking-tight uppercase truncate mt-1">
                         {candidate.fullName}
+                      </h4>
+                      <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                        {candidate.party ? candidate.party.toUpperCase() : "INDEPENDENT"} {candidate.yearLevel ? `• GRADE ${candidate.yearLevel}` : ""}
                       </p>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-[10px] uppercase tracking-wider text-zinc-500">
-                        <div>
-                          <span>Candidate Grade: </span>
-                          <span className="text-[var(--ink)] font-bold">{candidate.yearLevel ? `GRADE ${candidate.yearLevel}` : "NOT SPECIFIED"}</span>
-                        </div>
-                        <div>
-                          <span>Party: </span>
-                          <span className="text-[var(--ink)] font-bold">{candidate.party ? candidate.party.toUpperCase() : "INDEPENDENT"}</span>
-                        </div>
-                        <div className="sm:col-span-2 mt-1">
-                          <span>Nominated for: </span>
-                          <span className="text-[var(--accent)] font-bold">{position.name}</span>
-                        </div>
-                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Manifesto readout */}
-                <div className="space-y-1">
-                  <span className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-widest flex items-center gap-1.5">
-                    <Flag size={11} />
-                    CAMPAIGN PLATFORM MANIFESTO
-                  </span>
-                  <div className="bg-[var(--bg)] border border-[var(--border)] p-3 text-[11px] text-zinc-600 leading-relaxed italic max-h-24 overflow-y-auto">
-                    "{candidate.manifesto || "No campaign platform details provided."}"
-                  </div>
+                  {candidate.manifesto && (
+                    <div className="pt-2 border-t border-slate-200/60 text-xs text-slate-600 leading-relaxed italic line-clamp-3">
+                      "{candidate.manifesto}"
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Critical Notice */}
-              <div className="bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-2.5">
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2.5">
                 <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[10px] text-amber-700 leading-relaxed font-bold uppercase tracking-wide">
-                  CRITICAL WARNING: Secure session locks active. This ballot transaction is final and cannot be modified or reversed after submission.
+                <p className="text-[11px] text-amber-800 leading-relaxed font-semibold">
+                  Once submitted, this ballot is securely recorded and cannot be changed or recalled.
                 </p>
               </div>
 
               {/* Modal Actions */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="py-2.5 px-4 bg-transparent border border-[var(--border)] hover:border-[var(--ink)] text-[var(--ink)] text-xs font-bold uppercase tracking-wider rounded-none transition-all cursor-pointer text-center disabled:opacity-40"
+                  className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer text-center disabled:opacity-40"
                   id="vote-confirmation-cancel-btn"
                 >
-                  GO BACK
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  Go Back
+                </button>
+                <button
                   type="button"
                   onClick={onConfirm}
                   disabled={isSubmitting}
-                  className="py-2.5 px-4 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] text-xs font-bold uppercase tracking-wider rounded-none transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-lg disabled:opacity-55"
+                  className="py-3 px-4 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-sky-900/20 disabled:opacity-55"
                   id="vote-confirmation-submit-btn"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 size={12} className="animate-spin text-[var(--surface)]" />
-                      CASTING BALLOT...
+                      <Loader2 size={14} className="animate-spin text-white" />
+                      Casting...
                     </>
                   ) : (
-                    "SUBMIT BALLOT"
+                    "Submit Ballot"
                   )}
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </div>

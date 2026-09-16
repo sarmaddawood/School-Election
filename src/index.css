@@ -170,24 +170,17 @@ button {
   border-radius: 4px;
 }
 
-/* Light Theme Normalization Overrides */
-main .text-white, main .text-zinc-100 {
-  color: var(--ink) !important;
+/* Mobile Input Zoom Prevention (iOS zooms in if font-size < 16px) */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
 
-main input, main select, main textarea {
-  background-color: var(--surface) !important;
-  border-color: #E2E8F0 !important;
-  color: var(--ink) !important;
-}
-
-main input::placeholder {
-  color: rgba(26, 43, 72, 0.4) !important;
-}
-
-main select option {
-  background-color: var(--surface) !important;
-  color: var(--ink) !important;
+/* Smooth mobile interactions & touch target handling */
+button, [role="button"], a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .scrollbar-none {

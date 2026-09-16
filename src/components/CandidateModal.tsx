@@ -13,26 +13,8 @@ interface CandidateModalProps {
 export default function CandidateModal({ candidate, positionName, isOpen, onClose }: CandidateModalProps) {
   if (!candidate) return null;
 
-  // Generate a pseudo-random party color based on the candidate's ID
-  const hash = candidate.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const colors = [
-    "from-blue-500/20 to-indigo-500/20 border-blue-500/30 text-blue-600",
-    "from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-600",
-    "from-rose-500/20 to-pink-500/20 border-rose-500/30 text-rose-600",
-    "from-amber-500/20 to-orange-500/20 border-amber-500/30 text-amber-600",
-    "from-violet-500/20 to-purple-500/20 border-indigo-300 text-indigo-600",
-  ];
-  
-  const partyNames = [
-    "Progressive Student Union",
-    "Campus Reform Coalition",
-    "Future Leaders Initiative",
-    "United Students Alliance",
-    "Independent",
-  ];
-
-  const colorClass = colors[hash % colors.length];
-  const partyName = partyNames[hash % partyNames.length];
+  const displayParty = (candidate.partyListName || candidate.party || "Independent").toUpperCase();
+  const isIndependent = displayParty === "INDEPENDENT";
 
   return (
     <AnimatePresence>
@@ -43,61 +25,89 @@ export default function CandidateModal({ candidate, positionName, isOpen, onClos
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg z-50 p-4"
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md z-50 p-4"
           >
-            <div className="glass-panel rounded-3xl overflow-hidden shadow-2xl border border-zinc-200 relative flex flex-col max-h-[85vh]">
-              {/* Background Party Header */}
-              <div className={`h-32 w-full bg-gradient-to-br ${colorClass.split(" ")[0]} ${colorClass.split(" ")[1]} relative`}>
+            <div className="bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200 relative flex flex-col max-h-[85vh]">
+              {/* Header Banner */}
+              <div className="h-28 w-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 relative p-4 flex justify-between items-start">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-100 bg-white/15 px-2.5 py-1 rounded-full border border-white/20">
+                  Candidate Profile
+                </span>
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-zinc-900 rounded-full transition-colors backdrop-blur-md"
+                  className="w-8 h-8 rounded-full bg-black/20 hover:bg-black/35 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  aria-label="Close modal"
                 >
                   <X size={18} />
                 </button>
               </div>
 
-              {/* Photo Placeholder */}
+              {/* Photo & Identity */}
               <div className="px-6 pb-6 pt-0 relative flex-1 overflow-y-auto">
                 <div className="flex justify-between items-end -mt-12 mb-4 relative z-10">
                   <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white flex items-center justify-center shadow-xl overflow-hidden relative">
                     {candidate.photoUrl && candidate.photoUrl !== "null" && candidate.photoUrl !== "" && candidate.photoUrl !== "undefined" ? (
                       <img src={candidate.photoUrl} alt={candidate.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
-                      <div className="w-full h-full bg-neutral-100 flex items-center justify-center font-bold text-3xl text-[var(--accent)]">
+                      <div className="w-full h-full bg-sky-50 flex items-center justify-center font-black text-3xl text-sky-600">
                         {candidate.fullName[0]}
                       </div>
                     )}
                   </div>
-                  <div className={`px-3 py-1.5 rounded-lg border bg-black/40 backdrop-blur-md flex items-center gap-2 mb-2 ${colorClass.split(" ").slice(2).join(" ")}`}>
-                    <Flag size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{partyName}</span>
+                  <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 shadow-sm text-xs font-bold uppercase tracking-wider ${
+                    isIndependent
+                      ? "bg-slate-100 border-slate-200 text-slate-700"
+                      : "bg-indigo-50 border-indigo-200 text-indigo-700"
+                  }`}>
+                    <Flag size={13} className={isIndependent ? "text-slate-500" : "text-indigo-600"} />
+                    <span>{displayParty}</span>
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div>
-                    <h2 className="text-2xl font-display font-semibold text-zinc-900 tracking-tight leading-tight">
+                    <h2 className="text-2xl font-display font-extrabold text-slate-900 tracking-tight leading-tight uppercase">
                       {candidate.fullName}
                     </h2>
-                    <p className="text-sm font-medium text-indigo-600 mt-1 uppercase tracking-wider text-[11px]">
-                      Candidate for {positionName}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs font-bold text-sky-600 uppercase tracking-wider">
+                        Candidate for {positionName}
+                      </span>
+                      {candidate.yearLevel && (
+                        <>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-xs font-semibold text-slate-500">
+                            Grade {candidate.yearLevel}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest border-b border-zinc-200 pb-2">
+                  <div className="space-y-2">
+                    <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1.5">
                       Campaign Platform & Manifesto
                     </h3>
-                    <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">
-                      {candidate.manifesto || "No campaign platform details provided."}
-                    </p>
+                    <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                      <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap italic">
+                        "{candidate.manifesto || "No campaign platform details provided."}"
+                      </p>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer text-center"
+                  >
+                    Close Profile
+                  </button>
                 </div>
               </div>
             </div>

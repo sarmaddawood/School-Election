@@ -301,7 +301,7 @@ export default function UsersTab({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setIsBulkImportOpen(true)}
-            className="px-3.5 py-2.5 bg-[var(--accent)] text-[var(--surface)] hover:opacity-90 rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+            className="px-3.5 py-2.5 bg-[var(--accent)] text-[var(--surface)] hover:opacity-90 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
           >
             <Upload size={14} /> Bulk Import
           </motion.button>
@@ -310,7 +310,7 @@ export default function UsersTab({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleExportCSV}
-            className="px-3.5 py-2.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <Download size={14} className="text-emerald-600" /> Export CSV
           </motion.button>
@@ -319,7 +319,7 @@ export default function UsersTab({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleExportJSON}
-            className="px-3.5 py-2.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
           >
             <FileSpreadsheet size={14} className="text-blue-600" /> Export JSON
           </motion.button>
@@ -330,7 +330,7 @@ export default function UsersTab({
         {/* Register panel */}
         <motion.div
           variants={itemVariants}
-          className="lg:col-span-5 glass-panel p-5 md:p-6 space-y-4 bg-[var(--surface)] border-[var(--border)]"
+          className="lg:col-span-5 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 md:p-6 space-y-4 shadow-xs"
         >
           <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider border-b border-[var(--border)] pb-3">
             REGISTER NEW ACCOUNT
@@ -348,7 +348,7 @@ export default function UsersTab({
                 placeholder="e.g. Liam Henderson"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
+                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
@@ -363,7 +363,7 @@ export default function UsersTab({
                 placeholder={role === "teacher" ? "e.g. teacher@deped.gov.ph" : "e.g. 101338190001 (LRN)"}
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(role === "teacher" ? e.target.value.trim() : e.target.value.toUpperCase().replace(/\s+/g, ""))}
-                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
+                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
@@ -377,7 +377,7 @@ export default function UsersTab({
                 placeholder="•••••••• (Optional - user sets on 1st login)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
+                className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
               />
             </div>
 
@@ -389,9 +389,9 @@ export default function UsersTab({
                 <button
                   type="button"
                   onClick={() => setRole("student")}
-                  className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-none transition-all border cursor-pointer ${
+                  className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all border cursor-pointer ${
                     role === "student"
-                      ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)]"
+                      ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)] shadow-xs"
                       : "bg-[var(--surface)] border-[var(--border)] text-zinc-500 hover:border-[var(--accent)]"
                   }`}
                 >
@@ -401,9 +401,9 @@ export default function UsersTab({
                   <button
                     type="button"
                     onClick={() => setRole("teacher")}
-                    className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-none transition-all border cursor-pointer ${
+                    className={`py-2.5 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all border cursor-pointer ${
                       role === "teacher"
-                        ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)]"
+                        ? "bg-[var(--accent)] border-[var(--accent)] text-[var(--surface)] shadow-xs"
                         : "bg-[var(--surface)] border-[var(--border)] text-zinc-500 hover:border-[var(--accent)]"
                     }`}
                   >
@@ -424,15 +424,15 @@ export default function UsersTab({
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Grade Level</label>
-                      <motion.input whileFocus={{ scale: 1.01 }} type="number" min="1" max="12" required placeholder="10" value={yearLevel || ""} onChange={(e) => setYearLevel(e.target.value ? parseInt(e.target.value) : undefined)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                      <motion.input whileFocus={{ scale: 1.01 }} type="number" min="1" max="12" required placeholder="10" value={yearLevel || ""} onChange={(e) => setYearLevel(e.target.value ? parseInt(e.target.value) : undefined)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Section</label>
-                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Rizal" value={section} onChange={(e) => setSection(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Rizal" value={section} onChange={(e) => setSection(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Room</label>
-                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Room 204" value={room} onChange={(e) => setRoom(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Room 204" value={room} onChange={(e) => setRoom(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
                     </div>
                   </div>
                 </motion.div>
@@ -457,12 +457,12 @@ export default function UsersTab({
               />
 
               {photoPreview ? (
-                <div className="relative border border-[var(--border)] bg-[var(--surface)] p-3 flex items-center justify-between gap-3">
+                <div className="relative border border-[var(--border)] bg-[var(--surface)] rounded-xl p-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <img 
                       src={photoPreview} 
                       alt="Preview" 
-                      className="w-12 h-12 object-cover border border-[var(--border)]"
+                      className="w-12 h-12 object-cover rounded-lg border border-[var(--border)]"
                       referrerPolicy="no-referrer"
                     />
                     <div className="min-w-0">
@@ -478,7 +478,7 @@ export default function UsersTab({
                     <button
                       type="button"
                       onClick={() => setIsAddUserCropOpen(true)}
-                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 transition-all cursor-pointer rounded text-[9px] font-bold flex items-center gap-1"
+                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 transition-all cursor-pointer rounded-lg text-[9px] font-bold flex items-center gap-1"
                       title="Crop Photo"
                     >
                       <Camera size={11} /> CROP
@@ -486,7 +486,7 @@ export default function UsersTab({
                     <button
                       type="button"
                       onClick={() => handleFileChange(null)}
-                      className="p-1 hover:bg-rose-50 text-rose-500 border border-transparent hover:border-rose-200 transition-all cursor-pointer rounded"
+                      className="p-1 hover:bg-rose-50 text-rose-500 border border-transparent hover:border-rose-200 transition-all cursor-pointer rounded-lg"
                     >
                       <X size={14} />
                     </button>
@@ -498,7 +498,7 @@ export default function UsersTab({
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center min-h-[100px] ${
+                  className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all text-center min-h-[100px] ${
                     isDragging
                       ? "border-[var(--accent)] bg-[var(--accent-soft)]"
                       : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:bg-neutral-50"
@@ -522,10 +522,10 @@ export default function UsersTab({
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={submitting}
-              className="w-full py-3 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              className="w-full py-3 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
               <Plus size={14} />
-              {submitting ? "REGISTER ACCOUNTING..." : "REGISTER ACCOUNT"}
+              {submitting ? "REGISTERING ACCOUNT..." : "REGISTER ACCOUNT"}
             </motion.button>
           </form>
         </motion.div>
@@ -533,20 +533,20 @@ export default function UsersTab({
         {/* Directory Panel */}
         <motion.div
           variants={itemVariants}
-          className="lg:col-span-7 glass-panel p-5 md:p-6 space-y-4"
+          className="lg:col-span-7 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 md:p-6 space-y-4 shadow-xs"
         >
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-[var(--border)] pb-3">
             <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider">
-              VOTER DIRECTORY
+              VOTER DIRECTORY ({filteredUsers.length})
             </h3>
 
             <div className="relative max-w-xs w-full">
               <input
                 type="text"
-                placeholder="SEARCH REGISTRY LOGS..."
+                placeholder="SEARCH REGISTRY..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                className="w-full pl-9 pr-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
               />
               <Search
                 size={12}
@@ -555,7 +555,78 @@ export default function UsersTab({
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card View (renders on screens < md to prevent 604px table horizontal overflow) */}
+          <div className="block md:hidden space-y-2.5">
+            <AnimatePresence mode="popLayout">
+              {filteredUsers.map((u) => (
+                <motion.div
+                  key={u.id}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -5 }}
+                  transition={{ duration: 0.12 }}
+                  onClick={() => setSelectedDetailUser(u)}
+                  className="p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl flex items-center justify-between gap-3 active:scale-[0.99] transition-all cursor-pointer shadow-xs hover:border-[var(--accent)]"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-full overflow-hidden bg-[var(--surface)] text-[var(--accent)] flex items-center justify-center font-bold text-sm border border-[var(--border)] shrink-0">
+                      {u.photoUrl && u.photoUrl !== "null" && u.photoUrl !== "" && u.photoUrl !== "undefined" ? (
+                        <img src={u.photoUrl} alt={u.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        u.fullName[0]
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs text-[var(--ink)] truncate max-w-[150px]">{u.fullName}</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md font-bold uppercase text-[8px] border tracking-wider shrink-0 ${
+                            u.role === "admin"
+                              ? "bg-zinc-800 text-zinc-100 border-zinc-700"
+                              : u.role === "teacher"
+                              ? "bg-amber-50 text-amber-600 border-amber-200"
+                              : "bg-[var(--accent-soft)] text-[var(--accent)] border-[var(--accent)]/30"
+                          }`}
+                        >
+                          {u.role}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-0.5 truncate">
+                        {u.studentNumber} {u.yearLevel ? `• Gr. ${u.yearLevel}` : ""} {u.section ? `(${u.section})` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-1">
+                    {u.id !== "admin-1" ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(u.id, u.fullName);
+                        }}
+                        className="p-2 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                        aria-label={`Delete ${u.fullName}`}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    ) : (
+                      <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200" onClick={(e) => e.stopPropagation()}>LOCK</span>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-8 text-zinc-500 bg-[var(--bg)] rounded-xl border border-dashed border-[var(--border)]">
+                <Users size={24} className="mx-auto mb-2 text-[var(--accent)]" />
+                <p className="text-[10px] uppercase tracking-wider">No registry files found matching request query.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table View (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs">
               <thead>
                 <tr className="border-b border-[var(--border)] text-zinc-500 uppercase font-bold tracking-widest text-[9px]">
@@ -575,7 +646,7 @@ export default function UsersTab({
                       exit={{ opacity: 0, y: -5 }}
                       transition={{ duration: 0.12 }}
                       onClick={() => setSelectedDetailUser(u)}
-                      className="hover:bg-neutral-50 transition-colors cursor-pointer"
+                      className="hover:bg-[var(--bg)] transition-colors cursor-pointer"
                     >
                       <td className="py-3 px-2 font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2.5">
                         <div className="h-8 w-8 rounded-full overflow-hidden bg-[var(--surface)] text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
@@ -585,14 +656,14 @@ export default function UsersTab({
                             u.fullName[0]
                           )}
                         </div>
-                        <span className="truncate max-w-[120px] sm:max-w-none">{u.fullName}</span>
+                        <span className="truncate max-w-[160px]">{u.fullName}</span>
                       </td>
                       <td className="py-3 px-2 text-zinc-500 font-mono text-xs uppercase">
                         {u.studentNumber}
                       </td>
                       <td className="py-3 px-2">
                         <span
-                          className={`px-2 py-0.5 rounded-none font-bold uppercase text-[8px] border tracking-wider ${
+                          className={`px-2 py-0.5 rounded-md font-bold uppercase text-[8px] border tracking-wider ${
                             u.role === "admin"
                               ? "bg-zinc-800 text-zinc-100 border-zinc-700"
                               : u.role === "teacher"
@@ -612,7 +683,8 @@ export default function UsersTab({
                               e.stopPropagation();
                               handleDelete(u.id, u.fullName);
                             }}
-                            className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer"
+                            className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                            aria-label={`Delete ${u.fullName}`}
                           >
                             <Trash2 size={13} />
                           </motion.button>

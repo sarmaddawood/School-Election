@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Key, Info, Loader2, Lock, ShieldCheck, UserCheck } from "lucide-react";
+import { Key, Info, Loader2, Lock, ShieldCheck, UserCheck, Eye, EyeOff } from "lucide-react";
 import { SchoolBranding, User } from "../types";
 import HowToVoteModal from "./HowToVoteModal";
 import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.png";
@@ -34,6 +34,7 @@ export default function LoginPage({
   const brandingLogo = branding?.logoUrl && !branding.logoUrl.startsWith("/src/") ? branding.logoUrl : bolinaoLogo;
   const [studentNumber, setStudentNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showHowToVote, setShowHowToVote] = useState(false);
 
@@ -45,6 +46,8 @@ export default function LoginPage({
   } | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -185,7 +188,7 @@ export default function LoginPage({
               </label>
               <input
                 type="text"
-                placeholder="Enter Student Number (LRN) or Teacher Email"
+                placeholder="e.g. 2026-001 or teacher@deped.gov.ph"
                 autoComplete="username"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value)}
@@ -194,17 +197,30 @@ export default function LoginPage({
             </div>
 
             <div>
-              <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                PASSWORD
-              </label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                placeholder="Enter password (leave blank if first time)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3.5 px-4 border border-slate-600 rounded-xl text-base bg-slate-900/90 text-white outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 transition-all placeholder:text-slate-500 font-sans shadow-inner"
-              />
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-0">
+                  PASSWORD
+                </label>
+                <span className="text-[11px] text-slate-400 font-normal">First time? Leave blank</span>
+              </div>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="Enter password (or leave blank)"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3.5 pl-4 pr-12 border border-slate-600 rounded-xl text-base bg-slate-900/90 text-white outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 transition-all placeholder:text-slate-500 font-sans shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-2 rounded-lg transition-colors cursor-pointer"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -267,28 +283,48 @@ export default function LoginPage({
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">
                   NEW PASSWORD
                 </label>
-                <input
-                  type="password"
-                  placeholder="Enter new password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-sm"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full p-3 pr-11 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-base"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">
                   CONFIRM NEW PASSWORD
                 </label>
-                <input
-                  type="password"
-                  placeholder="Re-enter password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-sm"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Re-enter password to confirm"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full p-3 pr-11 bg-slate-800 border border-slate-700 rounded-xl text-white font-sans outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 text-base"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex flex-col-reverse min-[380px]:flex-row min-[380px]:justify-end gap-3 pt-2">

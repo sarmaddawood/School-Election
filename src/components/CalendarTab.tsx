@@ -172,6 +172,7 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                   type="button"
                   onClick={handlePrevMonth}
                   className="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-600 cursor-pointer transition-all"
+                  aria-label="Previous month"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -179,6 +180,7 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                   type="button"
                   onClick={handleNextMonth}
                   className="p-2 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-600 cursor-pointer transition-all"
+                  aria-label="Next month"
                 >
                   <ChevronRight size={16} />
                 </button>

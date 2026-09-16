@@ -87,10 +87,10 @@ export default function BrandingTab({
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Portal Tagline</span><input value={form.tagline} onChange={(e) => update("tagline", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
           <label className="space-y-1.5 md:col-span-2">
             <span className="text-xs font-bold uppercase text-slate-600">Logo Image</span>
-            <div className="flex items-center gap-4">
-              {displayLogo && !logoFile && <img src={displayLogo} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
-              {logoFile && <img src={URL.createObjectURL(logoFile)} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
-              <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} className="flex-1 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100" />
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              {displayLogo && !logoFile && <img src={displayLogo} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50 shrink-0" />}
+              {logoFile && <img src={URL.createObjectURL(logoFile)} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50 shrink-0" />}
+              <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} className="w-full max-w-full text-xs file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 cursor-pointer overflow-hidden" />
             </div>
           </label>
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Primary Color</span><div className="flex gap-2"><input type="color" value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} className="w-12 h-10 p-1 bg-white border border-slate-200 rounded-lg cursor-pointer" /><input value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} pattern="#[0-9A-Fa-f]{6}" className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-sky-500" /></div></label>

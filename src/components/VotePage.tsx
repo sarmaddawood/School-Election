@@ -495,23 +495,23 @@ export default function VotePage({
                               <div className="space-y-3">
                                 <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setModalCandidate(cand); setModalPosition(pos.name); }}>
                                   {cand.photoUrl && cand.photoUrl !== "null" && cand.photoUrl !== "" && cand.photoUrl !== "undefined" ? (
-                                    <img src={cand.photoUrl} alt={cand.fullName} className="h-10 w-10 rounded-sm object-cover border border-[var(--border)] shrink-0" referrerPolicy="no-referrer" />
+                                    <img src={cand.photoUrl} alt={cand.fullName} className="h-12 w-12 rounded-xl object-cover border border-slate-200 shrink-0 shadow-sm" referrerPolicy="no-referrer" />
                                   ) : (
-                                    <div className="h-10 w-10 rounded-sm bg-neutral-100 group-hover:bg-neutral-200 text-[var(--accent)] flex items-center justify-center font-bold text-xs border border-[var(--border)] shrink-0">
+                                    <div className="h-12 w-12 rounded-xl bg-sky-50 group-hover:bg-sky-100 text-sky-600 flex items-center justify-center font-bold text-sm border border-sky-100 shrink-0">
                                       {cand.fullName[0]}
                                     </div>
                                   )}
                                   <div>
-                                    <p className="font-bold text-[var(--ink)] text-xs group-hover:text-[var(--accent)] transition-colors uppercase tracking-wider">
+                                    <p className="font-bold text-[var(--ink)] text-xs group-hover:text-sky-600 transition-colors uppercase tracking-wider">
                                       {cand.fullName}
                                     </p>
-                                    <p className="text-[9px] font-bold text-zinc-500 mt-0.5">
-                                      {cand.party ? cand.party.toUpperCase() : "INDEPENDENT"} {cand.yearLevel ? `• YEAR ${cand.yearLevel} LOCK` : ""}
+                                    <p className="text-[10px] font-bold text-zinc-500 mt-0.5">
+                                      {cand.party ? cand.party.toUpperCase() : "INDEPENDENT"} {cand.yearLevel ? `• GRADE ${cand.yearLevel}` : ""}
                                     </p>
                                   </div>
                                 </div>
 
-                                <p className="text-[11px] text-zinc-600 leading-relaxed italic">
+                                <p className="text-[11px] text-zinc-600 leading-relaxed italic line-clamp-3">
                                   "{cand.manifesto}"
                                 </p>
                               </div>
@@ -523,10 +523,10 @@ export default function VotePage({
                                       initial={{ opacity: 0 }}
                                       animate={{ opacity: 1 }}
                                       exit={{ opacity: 0 }}
-                                      className="w-full py-2 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 border border-emerald-200"
+                                      className="w-full py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 border border-emerald-200 rounded-xl"
                                     >
-                                      <ShieldCheck size={12} />
-                                      CURRENT BALLOT SELECTION
+                                      <ShieldCheck size={14} />
+                                      Current Ballot Selection
                                     </motion.div>
                                   ) : (
                                     <motion.button
@@ -541,9 +541,13 @@ export default function VotePage({
                                         candidateName: cand.fullName,
                                         positionName: pos.name,
                                       })}
-                                      className="w-full py-2 bg-transparent hover:bg-[var(--accent)] hover:text-[var(--surface)] disabled:hover:bg-transparent disabled:hover:text-zinc-400 disabled:text-zinc-400 disabled:border-zinc-300 text-[var(--accent)] border border-[var(--accent)]/40 rounded-none font-bold text-[10px] uppercase tracking-widest transition-all cursor-pointer disabled:cursor-not-allowed"
+                                      className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer disabled:cursor-not-allowed shadow-sm ${
+                                        voteForThisPos
+                                          ? "bg-sky-50 text-sky-700 border border-sky-300 hover:bg-sky-100"
+                                          : "bg-sky-600 hover:bg-sky-500 text-white shadow-sky-900/15"
+                                      } disabled:opacity-50 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200`}
                                     >
-                                      {getPhase(activeElection.startsAt, activeElection.endsAt) !== "live" ? "VOTING NOT OPEN" : voteForThisPos ? "CHANGE VOTE" : "CAST VOTE"}
+                                      {getPhase(activeElection.startsAt, activeElection.endsAt) !== "live" ? "Voting Closed" : voteForThisPos ? "Change Selection" : "Select Candidate"}
                                     </motion.button>
                                   )}
                                 </AnimatePresence>
@@ -553,8 +557,8 @@ export default function VotePage({
                         })}
 
                         {positionCandidates.length === 0 && (
-                          <div className="col-span-1 md:col-span-2 bg-[var(--surface)] border border-[var(--border)] rounded-none p-6 text-center text-zinc-500">
-                            <p className="text-[10px] uppercase tracking-wider">No active nominees for this position.</p>
+                          <div className="col-span-1 md:col-span-2 bg-white border border-slate-200 rounded-2xl p-6 text-center text-zinc-500">
+                            <p className="text-xs uppercase tracking-wider font-semibold">No active nominees for this position.</p>
                           </div>
                         )}
                       </div>

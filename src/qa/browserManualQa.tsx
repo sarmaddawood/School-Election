@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import AppShell from "../components/AppShell";
+import DashboardTab from "../components/DashboardTab";
 import BrandingTab from "../components/BrandingTab";
 import CalendarTab from "../components/CalendarTab";
 import CandidatesTab from "../components/CandidatesTab";
@@ -9,6 +10,7 @@ import PositionsTab from "../components/PositionsTab";
 import ResultsPage from "../components/ResultsPage";
 import UsersTab from "../components/UsersTab";
 import VotePage from "../components/VotePage";
+import ChangePasswordTab from "../components/ChangePasswordTab";
 import type { Candidate, Election, Position, SchoolBranding, User, Vote } from "../types";
 
 declare global {
@@ -113,7 +115,8 @@ function Harness() {
   };
 
   let content: React.ReactNode = <div className="p-8 text-slate-700">Select a feature from the navigation.</div>;
-  if (activeTab === "elections") content = <ElectionTab elections={elections} onRefreshData={async () => undefined} {...common} initialDate={null} onInitialDateConsumed={() => undefined} />;
+  if (activeTab === "dashboard") content = <DashboardTab currentUser={currentUser} users={users} votes={votes} elections={elections} positions={positions} candidates={candidates} onSelectTab={setActiveTab} token="qa-token" onRefreshData={async () => undefined} />;
+  if (activeTab === "elections") content = <ElectionTab users={users} elections={elections} onRefreshData={async () => undefined} {...common} initialDate={null} onInitialDateConsumed={() => undefined} />;
   if (activeTab === "positions") content = <PositionsTab elections={elections} positions={positions} onRefreshData={async () => undefined} {...common} />;
   if (activeTab === "candidates") content = <CandidatesTab elections={elections} positions={positions} candidates={candidates} users={users} votes={votes} onRefreshData={async () => undefined} {...common} />;
   if (activeTab === "users") content = <UsersTab currentUser={currentUser} users={users} candidates={candidates} positions={positions} elections={elections} votes={votes} onRefreshData={async () => undefined} {...common} />;
@@ -121,6 +124,7 @@ function Harness() {
   if (activeTab === "calendar") content = <CalendarTab elections={elections} currentUser={currentUser} onCreateElectionAtDate={role === "admin" ? () => setActiveTab("elections") : undefined} />;
   if (activeTab === "branding") content = <BrandingTab branding={branding} token="qa-token" onUpdated={() => undefined} setErrorNotification={notification} setSuccessNotification={notification} />;
   if (activeTab === "vote") content = <VotePage user={currentUser} elections={elections} positions={positions} candidates={candidates} token="qa-token" setErrorNotification={notification} setSuccessNotification={notification} onLogout={() => undefined} />;
+  if (activeTab === "password") content = <ChangePasswordTab token="qa-token" setErrorNotification={notification} setSuccessNotification={notification} onSuccess={() => setActiveTab(role === "admin" ? "dashboard" : role === "teacher" ? "users" : "vote")} />;
 
   return (
     <>
