@@ -1424,7 +1424,7 @@ export function createElectionApp() {
       }
 
       const finalPhotoUrl = await ensureHostedPhotoUrl(req.body.photoUrl);
-      const hasPassword = password && password.trim().length > 0;
+      const hasPassword = Boolean(password && password.trim().length > 0);
 
       const newUser = {
         id: studentDocumentId(finalStudentNumber),

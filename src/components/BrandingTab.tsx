@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Building2, Save, ShieldCheck } from "lucide-react";
 import { SchoolBranding } from "../types";
+import bolinaoLogo from "../assets/images/bolinao_logo_1783614038890.png";
 
 interface BrandingTabProps {
   branding: SchoolBranding;
@@ -70,6 +71,8 @@ export default function BrandingTab({
     }
   };
 
+  const displayLogo = form.logoUrl && !form.logoUrl.startsWith("/src/") ? form.logoUrl : bolinaoLogo;
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-sans text-slate-800">
       <div className="border-b border-slate-200 pb-4">
@@ -85,13 +88,12 @@ export default function BrandingTab({
           <label className="space-y-1.5 md:col-span-2">
             <span className="text-xs font-bold uppercase text-slate-600">Logo Image</span>
             <div className="flex items-center gap-4">
-              {form.logoUrl && !logoFile && <img src={form.logoUrl} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
+              {displayLogo && !logoFile && <img src={displayLogo} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
               {logoFile && <img src={URL.createObjectURL(logoFile)} alt="Logo preview" className="w-12 h-12 rounded-lg object-contain border border-slate-200 bg-slate-50" />}
               <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files?.[0] || null)} className="flex-1 text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100" />
             </div>
           </label>
           <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Primary Color</span><div className="flex gap-2"><input type="color" value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} className="w-12 h-10 p-1 bg-white border border-slate-200 rounded-lg cursor-pointer" /><input value={form.primaryColor} onChange={(e) => update("primaryColor", e.target.value)} pattern="#[0-9A-Fa-f]{6}" className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono outline-none focus:border-sky-500" /></div></label>
-          <label className="space-y-1.5"><span className="text-xs font-bold uppercase text-slate-600">Contact Email</span><input type="email" value={form.contactEmail || ""} onChange={(e) => update("contactEmail", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500" /></label>
           <label className="space-y-1.5 md:col-span-2"><span className="text-xs font-bold uppercase text-slate-600">School Address</span><textarea rows={2} value={form.address || ""} onChange={(e) => update("address", e.target.value)} className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-sky-500 resize-none" /></label>
         </div>
 

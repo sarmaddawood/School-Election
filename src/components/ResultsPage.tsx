@@ -30,6 +30,7 @@ export default function ResultsPage({
   const [votedUserIds, setVotedUserIds] = useState<string[]>([]);
   const [unvotedSearchTerm, setUnvotedSearchTerm] = useState("");
   const [activeSubTab, setActiveSubTab] = useState<"tally" | "unvoted">("tally");
+  const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
 
   const getPhase = (startsAt: string, endsAt: string): ElectionPhase => {
     const now = new Date();
@@ -259,18 +260,21 @@ export default function ResultsPage({
               unvotedStudents.map((st) => (
                 <div
                   key={st.id}
-                  className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3 hover:border-slate-300 transition-all"
+                  title={st.fullName}
+                  onClick={() => setSelectedStudent(st)}
+                  className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-3 hover:border-slate-300 transition-all cursor-pointer shadow-sm hover:shadow-md"
                 >
                   <div className="w-9 h-9 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xs shrink-0 border border-rose-200">
                     <XCircle size={18} />
                   </div>
-                  <div className="overflow-hidden text-xs">
-                    <p className="font-bold text-slate-800 truncate">{st.fullName}</p>
+                  <div className="overflow-hidden text-xs w-full">
+                    <p className="font-bold text-slate-800 truncate">
+                      {st.fullName}
+                    </p>
                     <p className="text-[11px] text-slate-500 font-mono">ID: {st.studentNumber}</p>
                     <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-600">
                       {st.yearLevel && <span className="bg-slate-200 px-1.5 py-0.5 rounded font-mono">Gr. {st.yearLevel}</span>}
                       {st.section && <span>Sec: {st.section}</span>}
-                      {st.room && <span>Rm: {st.room}</span>}
                     </div>
                   </div>
                 </div>
@@ -502,6 +506,61 @@ export default function ResultsPage({
           )}
         </div>
       )}
+
+      {/* Student Details Modal */}
+      <AnimatePresence>
+        {selectedStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden"
+            >
+              <div className="flex justify-between items-center p-4 border-b border-slate-100">
+                <h3 className="font-bold text-slate-900 text-sm">Student Details</h3>
+                <button onClick={() => setSelectedStudent(null)} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                  <XCircle size={20} />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-20 h-20 rounded-full bg-sky-100 border-2 border-sky-200 flex items-center justify-center font-bold text-2xl text-sky-700 overflow-hidden shadow-sm">
+                    {selectedStudent.photoUrl ? (
+                       <img src={selectedStudent.photoUrl} alt="Photo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                       selectedStudent.fullName[0]
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-lg leading-tight">{selectedStudent.fullName}</h4>
+                    <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md mt-1 inline-block">ID: {selectedStudent.studentNumber}</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 mt-2">
+                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Grade</span>
+                     <span className="text-sm font-bold text-slate-700">{selectedStudent.yearLevel || "N/A"}</span>
+                   </div>
+                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Section</span>
+                     <span className="text-sm font-bold text-slate-700">{selectedStudent.section || "N/A"}</span>
+                   </div>
+                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Room</span>
+                     <span className="text-sm font-bold text-slate-700">{selectedStudent.room || "N/A"}</span>
+                   </div>
+                   <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-100 text-center">
+                     <span className="block text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-0.5">Status</span>
+                     <span className="text-sm font-black text-rose-600">Not Voted</span>
+                   </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

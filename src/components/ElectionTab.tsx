@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle, Shield, Flag, Filter } from "lucide-react";
-import { Election, ElectionPhase } from "../types";
+import { Election, ElectionPhase, User } from "../types";
 import ConfirmModal from "./ConfirmModal";
 
 interface ElectionTabProps {
+  users: User[];
   elections: Election[];
   onRefreshData: () => Promise<void>;
   setErrorNotification: (msg: string) => void;
@@ -15,6 +16,7 @@ interface ElectionTabProps {
 }
 
 export default function ElectionTab({
+  users,
   elections,
   onRefreshData,
   setErrorNotification,
@@ -35,6 +37,30 @@ export default function ElectionTab({
   const [endsAt, setEndsAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmElection, setDeleteConfirmElection] = useState<{ id: string; title: string } | null>(null);
+
+  const availableGrades = useMemo(() => {
+    const grades = new Set<string>();
+    users.forEach((u) => {
+      if (u.yearLevel != null) grades.add(String(u.yearLevel));
+    });
+    return Array.from(grades).sort((a, b) => Number.parseInt(a) - Number.parseInt(b));
+  }, [users]);
+
+  const availableSections = useMemo(() => {
+    const sections = new Set<string>();
+    users.forEach((u) => {
+      if (u.section) sections.add(u.section);
+    });
+    return Array.from(sections).sort();
+  }, [users]);
+
+  const availableRooms = useMemo(() => {
+    const rooms = new Set<string>();
+    users.forEach((u) => {
+      if (u.room) rooms.add(u.room);
+    });
+    return Array.from(rooms).sort();
+  }, [users]);
 
   const getPhase = (startStr: string, endStr: string): ElectionPhase => {
     const now = new Date();
@@ -306,7 +332,10 @@ export default function ElectionTab({
                   </label>
                   <select
                     value={scope}
-                    onChange={(e) => setScope(e.target.value as any)}
+                    onChange={(e) => {
+                      setScope(e.target.value as any);
+                      setScopeValue("");
+                    }}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
                   >
                     <option value="all">School-Wide (All Eligible Students)</option>
@@ -321,14 +350,17 @@ export default function ElectionTab({
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                       Target {scope === "grade" ? "Grade Level" : scope === "section" ? "Section Name" : "Room Number"}
                     </label>
-                    <input
-                      type="text"
+                    <select
                       required
-                      placeholder={scope === "grade" ? "e.g. 10" : scope === "section" ? "e.g. Grade 10-Aquarius" : "e.g. Room 204"}
                       value={scopeValue}
                       onChange={(e) => setScopeValue(e.target.value)}
                       className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
-                    />
+                    >
+                      <option value="" disabled>Select {scope === "grade" ? "Grade Level" : scope === "section" ? "Section" : "Room"}...</option>
+                      {scope === "grade" && availableGrades.map((g) => <option key={g} value={g}>Grade {g}</option>)}
+                      {scope === "section" && availableSections.map((s) => <option key={s} value={s}>{s}</option>)}
+                      {scope === "room" && availableRooms.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
                   </div>
                 ) : (
                   <div className="space-y-1.5">

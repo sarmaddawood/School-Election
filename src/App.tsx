@@ -243,6 +243,7 @@ export default function App() {
       case "elections":
         return (
           <ElectionTab
+            users={users}
             elections={elections}
             onRefreshData={handleRefreshData}
             setErrorNotification={setErrorNotification}

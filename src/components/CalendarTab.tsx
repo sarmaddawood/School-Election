@@ -196,7 +196,7 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
             <div className="grid grid-cols-7 gap-1.5">
               {/* Blank offset cells */}
               {Array.from({ length: startingDayOfWeek }).map((_, i) => (
-                <div key={`blank-${i}`} className="h-20 bg-slate-50/50 rounded-xl border border-slate-100/50 opacity-40" />
+                <div key={`blank-${i}`} className="h-16 bg-slate-50/50 rounded-xl border border-slate-100/50 opacity-40" />
               ))}
 
               {/* Day cells */}
@@ -220,7 +220,7 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                   <div
                     key={dayNum}
                     onClick={() => setSelectedDate(cellDate)}
-                    className={`h-20 p-1.5 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
+                    className={`h-16 p-2 rounded-xl border text-left flex flex-col justify-between transition-all cursor-pointer ${
                       isSelected
                         ? "bg-sky-50 border-sky-400 ring-2 ring-sky-400/20 shadow-sm"
                         : isToday
@@ -228,7 +228,7 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                         : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/80"
                     }`}
                   >
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-start">
                       <span
                         className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${
                           isToday
@@ -240,32 +240,27 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                       >
                         {dayNum}
                       </span>
-                      {dayElections.length > 0 && (
-                        <span className="w-2 h-2 rounded-full bg-sky-600 animate-pulse" />
-                      )}
                     </div>
 
-                    <div className="space-y-1 overflow-hidden">
-                      {dayElections.slice(0, 2).map((el) => {
+                    <div className="flex gap-1 flex-wrap mt-auto">
+                      {dayElections.slice(0, 4).map((el) => {
                         const st = getElectionStatus(el);
                         return (
                           <div
                             key={el.id}
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded truncate ${
+                            className={`w-1.5 h-1.5 rounded-full ${
                               st === "active"
-                                ? "bg-emerald-100 text-emerald-800"
+                                ? "bg-emerald-500"
                                 : st === "upcoming"
-                                ? "bg-sky-100 text-sky-800"
-                                : "bg-slate-100 text-slate-600"
+                                ? "bg-sky-500"
+                                : "bg-slate-300"
                             }`}
-                          >
-                            {el.title}
-                          </div>
+                          />
                         );
                       })}
-                      {dayElections.length > 2 && (
-                        <span className="text-[9px] text-slate-500 font-bold block">
-                          +{dayElections.length - 2} more
+                      {dayElections.length > 4 && (
+                        <span className="text-[8px] font-bold text-slate-400 leading-none flex items-center">
+                          +{dayElections.length - 4}
                         </span>
                       )}
                     </div>
