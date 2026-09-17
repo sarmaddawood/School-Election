@@ -57,6 +57,54 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
     return "completed";
   };
 
+  const getScopeInfo = (election: Election) => {
+    const scope = election.scope || "all";
+    const rawVal =
+      scope === "grade"
+        ? (election.targetGradeLevel != null ? String(election.targetGradeLevel) : election.scopeValue || "")
+        : scope === "section"
+        ? (election.targetSection || election.scopeValue || "")
+        : scope === "room"
+        ? (election.targetRoom || election.scopeValue || "")
+        : "";
+
+    switch (scope) {
+      case "grade":
+        return {
+          scope,
+          label: rawVal ? (rawVal.toLowerCase().startsWith("grade") ? rawVal : `Grade ${rawVal}`) : "Grade Level",
+          typeLabel: "Grade Level",
+          dotColor: "bg-emerald-500",
+          badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        };
+      case "section":
+        return {
+          scope,
+          label: rawVal ? (rawVal.toLowerCase().startsWith("section") ? rawVal : `Section ${rawVal}`) : "Section",
+          typeLabel: "Section",
+          dotColor: "bg-violet-500",
+          badgeClass: "bg-violet-50 text-violet-700 border-violet-200",
+        };
+      case "room":
+        return {
+          scope,
+          label: rawVal ? (rawVal.toLowerCase().startsWith("room") ? rawVal : `Room ${rawVal}`) : "Room",
+          typeLabel: "Room",
+          dotColor: "bg-amber-500",
+          badgeClass: "bg-amber-50 text-amber-700 border-amber-200",
+        };
+      case "all":
+      default:
+        return {
+          scope: "all",
+          label: "School-Wide",
+          typeLabel: "School-Wide",
+          dotColor: "bg-sky-500",
+          badgeClass: "bg-sky-50 text-sky-700 border-sky-200",
+        };
+    }
+  };
+
   // Calendar calculations
   const year = currentMonthDate.getFullYear();
   const month = currentMonthDate.getMonth();
@@ -141,12 +189,34 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
         </div>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="flex items-center gap-2 flex-wrap">
-        <Filter size={14} className="text-slate-500" />
-        <button type="button" onClick={() => setFilterMode("all")} className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${filterMode === "all" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-slate-200"}`}>All Elections</button>
-        {currentUser.role === "student" && (
-          <button type="button" onClick={() => setFilterMode("eligible")} className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${filterMode === "eligible" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-slate-200"}`}>Elections I Can Vote In</button>
-        )}
+      <motion.div variants={itemVariants} className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Filter size={14} className="text-slate-500" />
+          <button type="button" onClick={() => setFilterMode("all")} className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${filterMode === "all" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-slate-200"}`}>All Elections</button>
+          {currentUser.role === "student" && (
+            <button type="button" onClick={() => setFilterMode("eligible")} className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${filterMode === "eligible" ? "bg-sky-600 text-white border-sky-600" : "bg-white text-slate-600 border-slate-200"}`}>Elections I Can Vote In</button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2.5 sm:gap-3 text-[11px] font-semibold text-slate-600 flex-wrap bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl shadow-2xs">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">Scope:</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0" />
+            <span>School-Wide</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            <span>Grade</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-violet-500 shrink-0" />
+            <span>Section</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+            <span>Room</span>
+          </span>
+        </div>
       </motion.div>
 
       {viewMode === "calendar" ? (
@@ -247,15 +317,13 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                     <div className="flex gap-1 flex-wrap mt-auto">
                       {dayElections.slice(0, 4).map((el) => {
                         const st = getElectionStatus(el);
+                        const scopeInfo = getScopeInfo(el);
                         return (
                           <div
                             key={el.id}
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              st === "active"
-                                ? "bg-emerald-500"
-                                : st === "upcoming"
-                                ? "bg-sky-500"
-                                : "bg-slate-300"
+                            title={`${el.title} • ${scopeInfo.label}`}
+                            className={`w-1.5 h-1.5 rounded-full ${scopeInfo.dotColor} ${
+                              st === "completed" ? "opacity-35" : "opacity-100"
                             }`}
                           />
                         );
@@ -299,10 +367,18 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                 ) : (
                   selectedDateElections.map((el) => {
                     const st = getElectionStatus(el);
+                    const scopeInfo = getScopeInfo(el);
                     return (
                       <div key={el.id} className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
                         <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-bold text-slate-900 text-xs leading-snug">{el.title}</h4>
+                          <div className="space-y-1 min-w-0">
+                            <h4 className="font-bold text-slate-900 text-xs leading-snug">{el.title}</h4>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase ${scopeInfo.badgeClass}`}>
+                                {scopeInfo.label}
+                              </span>
+                            </div>
+                          </div>
                           <span
                             className={`px-2 py-0.5 text-[9px] font-bold rounded-full uppercase shrink-0 ${
                               st === "active"
@@ -361,10 +437,11 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
             <div className="space-y-6">
               {sortedElections.map((election) => {
                 const status = getElectionStatus(election);
+                const scopeInfo = getScopeInfo(election);
                 return (
                   <div key={election.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span
                           className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase ${
                             status === "active"
@@ -375,6 +452,9 @@ export default function CalendarTab({ elections, currentUser, onCreateElectionAt
                           }`}
                         >
                           {status}
+                        </span>
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded border uppercase ${scopeInfo.badgeClass}`}>
+                          {scopeInfo.label}
                         </span>
                         <h3 className="font-bold text-slate-900 text-sm">{election.title}</h3>
                       </div>

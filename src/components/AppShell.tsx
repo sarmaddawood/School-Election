@@ -326,13 +326,13 @@ export default function AppShell({
 
       <main className="min-w-0 p-3 min-[380px]:p-4 md:p-8 xl:p-10 overflow-x-hidden overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(0,255,170,0.03),transparent)] relative min-h-0 safe-area-bottom">
         {activeTab === "dashboard" && user.role === "admin" && (
-          <header className="hidden md:flex justify-between items-end mb-8 shrink-0">
+          <header className="flex justify-between items-end mb-6 md:mb-8 shrink-0">
             <div>
               <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">
-                SYSTEM TELEMETRY & OVERVIEW
+                SYSTEM OVERVIEW
               </span>
-              <h2 className="font-display text-3xl font-extrabold uppercase leading-none tracking-tight text-slate-900 mt-2">
-                ADMINISTRATION<br/>TELEMETRY
+              <h2 className="font-display text-2xl sm:text-3xl font-extrabold uppercase leading-tight tracking-tight text-slate-900 mt-2">
+                Welcome, {user.fullName}
               </h2>
               <p className="text-xs text-slate-500 max-w-[450px] mt-2 leading-relaxed">
                 Real-time status updates, polling metrics, and registry logs across the centralized school election system.
