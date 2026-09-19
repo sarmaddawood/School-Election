@@ -33,12 +33,7 @@ export default function App() {
   const [calendarDraftDate, setCalendarDraftDate] = useState<string | null>(null);
   const [branding, setBranding] = useState<SchoolBranding>(defaultBranding);
 
-  const [elections, setElections] = useState<Election[]>([]);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [votes, setVotes] = useState<VoteType[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
+
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -75,53 +70,9 @@ export default function App() {
     document.documentElement.style.setProperty("--accent", branding.primaryColor);
   }, [branding.primaryColor]);
 
-  const fetchGlobalData = async (authToken: string, canManageUsers: boolean) => {
-    setDataLoading(true);
-    try {
-      const headers = { Authorization: `Bearer ${authToken}` };
-
-      const [elRes, posRes, candRes] = await Promise.all([
-        fetch("/api/elections", { headers }),
-        fetch("/api/positions", { headers }),
-        fetch("/api/candidates", { headers }),
-      ]);
-
-      const primaryResponses = [elRes, posRes, candRes];
-      const failedPrimary = primaryResponses.find((response) => !response.ok);
-      if (failedPrimary) {
-        const detail = await failedPrimary.json().catch(() => ({}));
-        throw new Error(detail.error || `Data synchronization failed (${failedPrimary.status})`);
-      }
-
-      setElections(await elRes.json());
-      setPositions(await posRes.json());
-      setCandidates(await candRes.json());
-
-      if (canManageUsers) {
-        const [usersRes, votesRes] = await Promise.all([
-          fetch("/api/users", { headers }),
-          fetch("/api/votes", { headers }),
-        ]);
-        const failedManagement = [usersRes, votesRes].find((response) => !response.ok);
-        if (failedManagement) {
-          const detail = await failedManagement.json().catch(() => ({}));
-          throw new Error(detail.error || `Management data synchronization failed (${failedManagement.status})`);
-        }
-        setUsers(await usersRes.json());
-        setVotes(await votesRes.json());
-      }
-    } catch (err: any) {
-      console.error("Failed to sync system data", err);
-      setErrorNotification(err.message || "Failed to synchronize application data");
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
   const handleRefreshData = async () => {
-    if (token && user) {
-      await fetchGlobalData(token, user.role === "admin" || user.role === "teacher");
-    }
+    // Refresh logic is now delegated to individual tabs.
+    // This is kept for compatibility with components that might trigger it.
   };
 
   useEffect(() => {
@@ -144,7 +95,6 @@ export default function App() {
                 setUser(data.user);
                 setToken(savedToken);
                 setActiveTab(data.user.role === "admin" ? "dashboard" : data.user.role === "teacher" ? "users" : "vote");
-                await fetchGlobalData(savedToken, data.user.role === "admin" || data.user.role === "teacher");
                 return;
               }
             }
@@ -173,17 +123,12 @@ export default function App() {
     setUser(newUser);
     setToken(newToken);
     setActiveTab(newUser.role === "admin" ? "dashboard" : newUser.role === "teacher" ? "users" : "vote");
-    await fetchGlobalData(newToken, newUser.role === "admin" || newUser.role === "teacher");
   };
 
   const handleLogout = () => {
     localStorage.removeItem("civicflow_token");
     setUser(null);
     setToken(null);
-    setElections([]);
-    setPositions([]);
-    setCandidates([]);
-    setUsers([]);
   };
 
   if (authLoading) {
@@ -221,34 +166,25 @@ export default function App() {
   }
 
   const renderActiveContent = () => {
-    if (dataLoading && elections.length === 0) {
-      return <DashboardSkeletonPage />;
-    }
+    // Data is fetched at tab level now.
 
     switch (activeTab) {
       case "dashboard":
         return (
           <DashboardTab
             currentUser={user}
-            users={users}
-            votes={votes}
-            elections={elections}
-            positions={positions}
-            candidates={candidates}
             onSelectTab={setActiveTab}
             token={token || ""}
-            onRefreshData={handleRefreshData}
+            setErrorNotification={setErrorNotification}
           />
         );
       case "elections":
         return (
           <ElectionTab
-            users={users}
-            elections={elections}
-            onRefreshData={handleRefreshData}
+            token={token || ''}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
-            token={token}
+            
             initialDate={calendarDraftDate}
             onInitialDateConsumed={() => setCalendarDraftDate(null)}
           />
@@ -256,51 +192,38 @@ export default function App() {
       case "positions":
         return (
           <PositionsTab
-            elections={elections}
-            positions={positions}
-            onRefreshData={handleRefreshData}
+            token={token || ''}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
-            token={token}
+            
           />
         );
       case "candidates":
         return (
           <CandidatesTab
-            elections={elections}
-            positions={positions}
-            candidates={candidates}
-            users={users}
-            votes={votes}
-            onRefreshData={handleRefreshData}
+            token={token || ''}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
-            token={token}
+            
+            currentUser={user}
           />
         );
       case "users":
         return (
           <UsersTab
+            token={token || ''}
             currentUser={user}
-            users={users}
-            candidates={candidates}
-            positions={positions}
-            elections={elections}
-            votes={votes}
-            onRefreshData={handleRefreshData}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
-            token={token}
+            
           />
         );
       case "vote":
         return user.role === "student" ? (
           <VotePage
+            token={token || ''}
             user={user}
-            elections={elections}
-            positions={positions}
-            candidates={candidates}
-            token={token}
+            
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
             onLogout={handleLogout}
@@ -315,18 +238,17 @@ export default function App() {
       case "results":
         return (
           <ResultsPage
+            token={token || ''}
             user={user}
-            elections={elections}
-            positions={positions}
-            candidates={candidates}
-            token={token}
+            
           />
         );
       case "calendar":
         return (
           <CalendarTab
-            elections={elections}
+            token={token || ''}
             currentUser={user}
+            
             onCreateElectionAtDate={user.role === "admin" ? (date) => {
               setCalendarDraftDate(date.toISOString());
               setActiveTab("elections");
@@ -336,8 +258,9 @@ export default function App() {
       case "branding":
         return user.role === "admin" ? (
           <BrandingTab
+            token={token || ''}
             branding={branding}
-            token={token}
+            
             onUpdated={setBranding}
             setErrorNotification={setErrorNotification}
             setSuccessNotification={setSuccessNotification}
@@ -362,9 +285,10 @@ export default function App() {
 
   return (
     <AppShell
+            token={token || ''}
       user={user}
       onLogout={handleLogout}
-      token={token}
+      
       activeTab={activeTab}
       onTabChange={setActiveTab}
       setErrorNotification={setErrorNotification}

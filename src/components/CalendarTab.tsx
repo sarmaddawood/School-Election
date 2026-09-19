@@ -4,12 +4,18 @@ import { CalendarDays, ChevronLeft, ChevronRight, Filter, Info, Plus } from "luc
 import { Election, User } from "../types";
 
 interface CalendarTabProps {
-  elections: Election[];
+  token: string;
   currentUser: User;
   onCreateElectionAtDate?: (date: Date) => void;
 }
 
-export default function CalendarTab({ elections, currentUser, onCreateElectionAtDate }: CalendarTabProps) {
+export default function CalendarTab({ token, currentUser, onCreateElectionAtDate }: CalendarTabProps) {
+  const [elections, setElections] = React.useState<Election[]>([]);
+  React.useEffect(() => { 
+    fetch("/api/elections", {headers: {Authorization: `Bearer ${token}`}})
+      .then(r => r.json())
+      .then(d => setElections(d.data || d)); 
+  }, [token]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());

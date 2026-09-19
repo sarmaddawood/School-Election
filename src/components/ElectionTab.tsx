@@ -5,9 +5,6 @@ import { Election, ElectionPhase, User } from "../types";
 import ConfirmModal from "./ConfirmModal";
 
 interface ElectionTabProps {
-  users: User[];
-  elections: Election[];
-  onRefreshData: () => Promise<void>;
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
   token: string;
@@ -16,15 +13,63 @@ interface ElectionTabProps {
 }
 
 export default function ElectionTab({
-  users,
-  elections,
-  onRefreshData,
   setErrorNotification,
   setSuccessNotification,
   token,
   initialDate,
   onInitialDateConsumed,
 }: ElectionTabProps) {
+  const [elections, setElections] = useState<Election[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+
+  const fetchElections = async () => {
+    try {
+      const res = await fetch("/api/elections", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch elections");
+      const data = await res.json();
+      setElections(Array.isArray(data) ? data : (data.elections || []));
+    } catch (err: any) {
+      setErrorNotification(err.message || "Failed to load elections");
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      let allUsers: User[] = [];
+      let cursor = null;
+      let hasMore = true;
+
+      while (hasMore) {
+        const url = new URL("/api/users", window.location.origin);
+        if (cursor) url.searchParams.append("cursor", cursor);
+        const res = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) break;
+        const data = await res.json();
+        
+        const fetchedUsers = Array.isArray(data) ? data : (data.users || []);
+        allUsers = [...allUsers, ...fetchedUsers];
+        
+        if (data.nextCursor) {
+          cursor = data.nextCursor;
+        } else {
+          hasMore = false;
+        }
+      }
+      setUsers(allUsers);
+    } catch (err: any) {
+      console.error("Failed to load users for options", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchElections();
+    fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
   const [showForm, setShowForm] = useState(false);
   const [editingElection, setEditingElection] = useState<Election | null>(null);
 
@@ -185,7 +230,7 @@ export default function ElectionTab({
       );
       setShowForm(false);
       setEditingElection(null);
-      await onRefreshData();
+      await fetchElections();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {
@@ -215,7 +260,7 @@ export default function ElectionTab({
       }
 
       setSuccessNotification("Election and all cascading records deleted successfully");
-      await onRefreshData();
+      await fetchElections();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {

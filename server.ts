@@ -877,6 +877,27 @@ const db = {
 
 
 // Helper database queries
+
+async function getPaginated(collectionName: string, queries: any[] = []): Promise<{ documents: any[], total: number, cursor: string | null }> {
+  try {
+    const response = await databases.listDocuments(APPWRITE_DB, collectionName, queries);
+    const documents = response.documents.map((doc: any) => {
+      const data = { ...doc };
+      const id = data.$id;
+      delete data.$id; delete data.$createdAt; delete data.$updatedAt;
+      delete data.$permissions; delete data.$databaseId; delete data.$collectionId;
+      return { id, ...data };
+    });
+    return {
+      documents,
+      total: response.total,
+      cursor: documents.length > 0 ? response.documents[response.documents.length - 1].$id : null
+    };
+  } catch (e: any) {
+    throw e;
+  }
+}
+
 async function getAll(collectionName: string): Promise<any[]> {
   const list: any[] = [];
   let cursor: string | null = null;
@@ -1346,8 +1367,16 @@ export function createElectionApp() {
   // --- Users API ---
   app.get("/api/users", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
-      const users = await getAll("users");
-      res.json(users.map(toPublicUser));
+      const limit = parseInt(req.query.limit as string) || 50;
+      const cursor = req.query.cursor as string;
+      const roleFilter = req.query.role as string;
+      
+      const queries = [Query.limit(limit)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      if (roleFilter) queries.push(Query.equal("role", roleFilter));
+      
+      const { documents: users, cursor: nextCursor, total } = await getPaginated("users", queries);
+      res.json({ data: users.map(toPublicUser), nextCursor, total });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch users" });
     }
@@ -1622,7 +1651,13 @@ export function createElectionApp() {
   // --- Elections API ---
   app.get("/api/elections", requireAuth, async (req: Request, res: Response) => {
     try {
-      const list = await getAll("elections");
+      const limit = parseInt(req.query.limit as string) || 100;
+      const cursor = req.query.cursor as string;
+      const queries = [Query.limit(limit)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      
+      const { documents: list, cursor: nextCursor, total } = await getPaginated("elections", queries);
+      
       const mapped = list.map((e: any) => ({
         id: e.id,
         title: e.title,
@@ -1637,7 +1672,7 @@ export function createElectionApp() {
         targetRoom: e.targetRoom || (e.scope === "room" ? e.scopeValue : null) || null,
         hasPartyListSupport: e.hasPartyList === true || e.hasPartyListSupport === true,
       }));
-      res.json(mapped);
+      res.json({ data: mapped, nextCursor, total });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch elections" });
     }
@@ -1860,8 +1895,14 @@ export function createElectionApp() {
   app.get("/api/positions", requireAuth, async (req: Request, res: Response) => {
     const { electionId } = req.query;
     try {
-      const list = await queryPositions(electionId as string);
-      res.json(list);
+      const limit = parseInt(req.query.limit as string) || 100;
+      const cursor = req.query.cursor as string;
+      const queries = [Query.limit(limit)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      if (electionId) queries.push(Query.equal("electionId", electionId as string));
+      
+      const { documents: list, cursor: nextCursor, total } = await getPaginated("positions", queries);
+      res.json({ data: list, nextCursor, total });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch positions" });
     }
@@ -1977,20 +2018,18 @@ export function createElectionApp() {
     const { electionId, positionId } = req.query;
 
     try {
-      let list = await queryCandidates(electionId as string, positionId as string);
+      const limit = parseInt(req.query.limit as string) || 100;
+      const cursor = req.query.cursor as string;
+      const queries = [Query.limit(limit)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      if (electionId) queries.push(Query.equal("electionId", electionId as string));
+      if (positionId) queries.push(Query.equal("positionId", positionId as string));
+
+      let { documents: list, cursor: nextCursor, total } = await getPaginated("candidates", queries);
       const user = (req as any).user;
-      const allVotes = await getAll("votes");
-      const voteCounts = new Map<string, number>();
-      for (const vote of allVotes) {
-        voteCounts.set(vote.candidateId, (voteCounts.get(vote.candidateId) || 0) + 1);
-      }
-      list = list.map((candidate: any) => ({
-        ...candidate,
-        voteCount: voteCounts.get(candidate.id) || 0,
-      }));
 
       if (user.role !== "admin" && user.role !== "teacher") {
-        const elections = await getAll("elections");
+        const { documents: elections } = await getPaginated("elections", []);
         list = list.map((c: any) => {
           const election = elections.find((e: any) => e.id === c.electionId);
           if (election && !canViewElectionResults(user.role, election)) {
@@ -2000,7 +2039,7 @@ export function createElectionApp() {
         });
       }
 
-      res.json(list);
+      res.json({ data: list, nextCursor, total });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch candidates" });
     }
@@ -2165,6 +2204,9 @@ export function createElectionApp() {
     // A deterministic document ID and unique composite index are the final
     // concurrency guards. Legacy random-ID records are migrated atomically.
     const legacyIds = previous.filter((vote) => vote.id !== voteId).map((vote) => vote.id);
+    let isReplace = false;
+    let oldCandidateId = null;
+    
     if (legacyIds.length > 0) {
       const transaction = await databases.createTransaction({ ttl: 30 });
       try {
@@ -2176,6 +2218,13 @@ export function createElectionApp() {
             transactionId: transaction.$id,
           });
         }
+        
+        const existingVoteDoc = previous.find((v: any) => v.id === voteId);
+        if (existingVoteDoc && existingVoteDoc.candidateId !== candidateId) {
+            isReplace = true;
+            oldCandidateId = existingVoteDoc.candidateId;
+        }
+
         const { id, ...voteData } = newVote;
         await databases.upsertDocument({
           databaseId: APPWRITE_DB,
@@ -2188,14 +2237,40 @@ export function createElectionApp() {
       } catch (error) {
         try {
           await databases.updateTransaction({ transactionId: transaction.$id, rollback: true });
-        } catch {
-          // The failed transaction may already be rolled back.
-        }
+        } catch {}
         throw error;
       }
     } else {
-      await db.collection("votes").doc(voteId).set(newVote);
+      const existingVoteDoc = previous.find((v: any) => v.id === voteId);
+      if (existingVoteDoc) {
+          if (existingVoteDoc.candidateId !== candidateId) {
+              isReplace = true;
+              oldCandidateId = existingVoteDoc.candidateId;
+              await db.collection("votes").doc(voteId).update(newVote);
+          }
+      } else {
+          await db.collection("votes").doc(voteId).set(newVote);
+      }
     }
+    
+    // Update candidate voteCounts natively
+    try {
+        const candRef = db.collection("candidates").doc(candidateId);
+        const candDoc = await candRef.get();
+        if (candDoc.exists) {
+            await candRef.update({ voteCount: (candDoc.data().voteCount || 0) + 1 });
+        }
+        if (isReplace && oldCandidateId) {
+            const oldCandRef = db.collection("candidates").doc(oldCandidateId);
+            const oldCandDoc = await oldCandRef.get();
+            if (oldCandDoc.exists && (oldCandDoc.data().voteCount || 0) > 0) {
+                await oldCandRef.update({ voteCount: oldCandDoc.data().voteCount - 1 });
+            }
+        }
+    } catch (e) {
+        console.error("Failed to update vote count natively: ", e);
+    }
+    
     return {
       vote: newVote,
       replaced: previous.some((vote) => vote.candidateId !== candidateId),
@@ -2207,8 +2282,14 @@ export function createElectionApp() {
   app.get("/api/votes", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
       const electionId = String(req.query.electionId || "");
-      const list = await getAll("votes");
-      res.json(electionId ? list.filter((vote) => vote.electionId === electionId) : list);
+      const limit = parseInt(req.query.limit as string) || 100;
+      const cursor = req.query.cursor as string;
+      const queries = [Query.limit(limit)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+      if (electionId) queries.push(Query.equal("electionId", electionId));
+      
+      const { documents: list, cursor: nextCursor, total } = await getPaginated("votes", queries);
+      res.json({ data: list, nextCursor, total });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to fetch votes" });
     }

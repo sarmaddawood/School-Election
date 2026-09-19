@@ -9,12 +9,7 @@ import ImageCropModal from "./ImageCropModal";
 
 
 interface UsersTabProps {
-  users: UserType[];
-  candidates: Candidate[];
-  positions: Position[];
-  elections: Election[];
-  votes: Vote[];
-  onRefreshData: () => Promise<void>;
+  
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
   token: string;
@@ -22,17 +17,43 @@ interface UsersTabProps {
 }
 
 export default function UsersTab({
-  users,
-  candidates,
-  positions,
-  elections,
-  votes,
-  onRefreshData,
   setErrorNotification,
   setSuccessNotification,
   token,
   currentUser,
 }: UsersTabProps) {
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  React.useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async (cursor?: string) => {
+    try {
+      setLoadingUsers(true);
+      const url = cursor 
+        ? `/api/users?limit=50&cursor=${cursor}`
+        : `/api/users?limit=50`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch users");
+      const data = await res.json();
+      if (cursor) {
+        setUsers(prev => [...prev, ...data.data]);
+      } else {
+        setUsers(data.data);
+      }
+      setNextCursor(data.nextCursor || null);
+    } catch (err: any) {
+      setErrorNotification(err.message || "Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   const [studentNumber, setStudentNumber] = useState("");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
@@ -215,7 +236,8 @@ export default function UsersTab({
       setRoom("");
       setPhotoFile(null);
       setPhotoPreview(null);
-      await onRefreshData();
+      await fetchUsers();
+      
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {
@@ -249,7 +271,8 @@ export default function UsersTab({
       }
 
       setSuccessNotification(`User "${name}" and cascading records deleted successfully`);
-      await onRefreshData();
+      await fetchUsers();
+      
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {
@@ -625,6 +648,19 @@ export default function UsersTab({
             )}
           </div>
 
+
+            {nextCursor && (
+              <div className="flex justify-center mt-4">
+                <button
+                  type="button"
+                  onClick={() => fetchUsers(nextCursor)}
+                  disabled={loadingUsers}
+                  className="px-4 py-2 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
+                >
+                  {loadingUsers ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
           {/* Desktop Table View (>= md) */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs">
@@ -707,6 +743,19 @@ export default function UsersTab({
               </tbody>
             </table>
           </div>
+
+          {nextCursor && (
+            <div className="hidden md:flex justify-center mt-4 pb-2">
+              <button
+                type="button"
+                onClick={() => fetchUsers(nextCursor)}
+                disabled={loadingUsers}
+                className="px-4 py-2 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                {loadingUsers ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
 
@@ -723,14 +772,13 @@ export default function UsersTab({
 
       <UserDetailModal
         user={selectedDetailUser}
-        candidates={candidates}
-        positions={positions}
-        elections={elections}
-        votes={votes}
+        candidates={[]}
+        positions={[]}
+        elections={[]}
+        votes={[]}
         isOpen={selectedDetailUser !== null}
         onClose={() => setSelectedDetailUser(null)}
         token={token}
-        onRefreshData={onRefreshData}
         setErrorNotification={setErrorNotification}
         setSuccessNotification={setSuccessNotification}
       />
@@ -740,7 +788,7 @@ export default function UsersTab({
         onClose={() => setIsBulkImportOpen(false)}
         token={token}
         existingUsers={users}
-        onSuccess={onRefreshData}
+        onSuccess={async () => { await fetchUsers();  }}
         setErrorNotification={setErrorNotification}
         setSuccessNotification={setSuccessNotification}
       />

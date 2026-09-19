@@ -7,28 +7,49 @@ import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
 
 interface CandidatesTabProps {
-  elections: Election[];
-  positions: Position[];
-  candidates: Candidate[];
-  users: User[];
-  votes: Vote[];
-  onRefreshData: () => Promise<void>;
+  
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
   token: string;
+  currentUser?: User;
 }
 
 export default function CandidatesTab({
-  elections,
-  positions,
-  candidates,
-  users,
-  votes,
-  onRefreshData,
   setErrorNotification,
   setSuccessNotification,
   token,
+  currentUser,
 }: CandidatesTabProps) {
+  const [elections, setElections] = useState<Election[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
+
+  const fetchLocalData = async () => {
+    try {
+      const [elRes, posRes, candRes, usersRes, votesRes] = await Promise.all([
+        fetch("/api/elections", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/positions", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/candidates", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/votes", { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+
+      if (elRes.ok) setElections((await elRes.json()).data || (await elRes.json()) /* FIX ME */);
+      if (posRes.ok) setPositions((await posRes.json()).data || (await posRes.json()) /* FIX ME */);
+      if (candRes.ok) setCandidates((await candRes.json()).data || (await candRes.json()) /* FIX ME */);
+      if (usersRes.ok) setUsers((await usersRes.json()).data || (await usersRes.json()) /* FIX ME */);
+      if (votesRes.ok) setVotes((await votesRes.json()).data || (await votesRes.json()) /* FIX ME */);
+    } catch (err) {
+      console.error("Failed to fetch local data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLocalData();
+  }, [token]);
+
   const [selectedElectionId, setSelectedElectionId] = useState("");
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [selectedYearLevel, setSelectedYearLevel] = useState("");
@@ -190,7 +211,8 @@ export default function CandidatesTab({
 
       setSuccessNotification(`Successfully nominated ${studentName} to the ballot!`);
       setManifesto("");
-      await onRefreshData();
+      
+      await fetchLocalData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred during nomination");
     } finally {
@@ -235,7 +257,8 @@ export default function CandidatesTab({
       }
 
       setSuccessNotification("Candidate removed from ballot");
-      await onRefreshData();
+      
+      await fetchLocalData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {

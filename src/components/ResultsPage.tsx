@@ -8,19 +8,15 @@ import CandidateDonutChart from "./CandidateDonutChart";
 
 interface ResultsPageProps {
   user: User;
-  elections: Election[];
-  positions: Position[];
-  candidates: Candidate[];
   token: string;
 }
 
 export default function ResultsPage({
   user,
-  elections,
-  positions,
-  candidates,
   token,
 }: ResultsPageProps) {
+  const [elections, setElections] = useState<Election[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState("");
   const [localCandidates, setLocalCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,6 +27,28 @@ export default function ResultsPage({
   const [unvotedSearchTerm, setUnvotedSearchTerm] = useState("");
   const [activeSubTab, setActiveSubTab] = useState<"tally" | "unvoted">("tally");
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [elRes, posRes] = await Promise.all([
+          fetch("/api/elections", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/positions", { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+        if (elRes.ok) {
+          const elData = await elRes.json();
+            setElections(elData.data || elData);
+        }
+        if (posRes.ok) {
+          const posData = await posRes.json();
+            setPositions(posData.data || posData);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchInitialData();
+  }, [token]);
 
   const getPhase = (startsAt: string, endsAt: string): ElectionPhase => {
     const now = new Date();
@@ -53,15 +71,37 @@ export default function ResultsPage({
   const fetchLatestCandidates = async (electionId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/candidates?electionId=${electionId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setLocalCandidates(data);
+      let allCandidates: Candidate[] = [];
+      let currentCursor: string | null = null;
+      let hasMore = true;
+
+      while (hasMore) {
+        const url = new URL(`/api/candidates`, window.location.origin);
+        url.searchParams.append("electionId", electionId);
+        if (currentCursor) {
+          url.searchParams.append("cursor", currentCursor);
+        }
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          break;
+        }
+
+        const data = await response.json();
+        if (data && data.data) {
+          allCandidates = [...allCandidates, ...data.data];
+          currentCursor = data.nextCursor;
+          hasMore = !!currentCursor;
+        } else {
+          hasMore = false;
+        }
       }
+      setLocalCandidates(allCandidates);
     } catch (err) {
       console.error(err);
     } finally {
@@ -92,7 +132,7 @@ export default function ResultsPage({
         fetchVoterTurnoutData(selectedElectionId);
       }
     }
-  }, [selectedElectionId, candidates, user.role]);
+  }, [selectedElectionId, user.role]);
 
   const currentElection = elections.find((e) => e.id === selectedElectionId);
   const phase = currentElection ? getPhase(currentElection.startsAt, currentElection.endsAt) : "ended";

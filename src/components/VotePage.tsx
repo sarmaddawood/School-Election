@@ -11,9 +11,6 @@ import { CandidateVoteGridSkeleton } from "./Skeleton";
 
 interface VotePageProps {
   user: User;
-  elections: Election[];
-  positions: Position[];
-  candidates: Candidate[];
   token: string;
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
@@ -22,14 +19,16 @@ interface VotePageProps {
 
 export default function VotePage({
   user,
-  elections,
-  positions,
-  candidates,
   token,
   setErrorNotification,
   setSuccessNotification,
   onLogout,
 }: VotePageProps) {
+  const [elections, setElections] = useState<Election[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
   const [activeElection, setActiveElection] = useState<Election | null>(null);
   const [roomQuery, setRoomQuery] = useState(user.room || "");
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
@@ -60,6 +59,30 @@ export default function VotePage({
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        
+        const [elRes, posRes, candRes] = await Promise.all([
+          fetch("/api/elections", { headers }),
+          fetch("/api/positions", { headers }),
+          fetch("/api/candidates", { headers }),
+        ]);
+
+        if (elRes.ok) setElections((await elRes.json()).data || (await elRes.json()) /* FIX ME */);
+        if (posRes.ok) setPositions((await posRes.json()).data || (await posRes.json()) /* FIX ME */);
+        if (candRes.ok) setCandidates((await candRes.json()).data || (await candRes.json()) /* FIX ME */);
+      } catch (err) {
+        console.error("Failed to fetch vote data", err);
+        setErrorNotification("Failed to load voting data.");
+      } finally {
+        setLoadingData(false);
+      }
+    };
+    fetchData();
+  }, [token, setErrorNotification]);
+
 
   const getPhase = (startsAt: string, endsAt: string) => {
     const start = new Date(startsAt);
@@ -72,10 +95,10 @@ export default function VotePage({
   // Find active live or upcoming elections
   const isEligible = (election: Election) => {
     const scope = election.scope || "all";
-    const value = (election.scopeValue || "").trim().toLowerCase();
+    const value = (election.scopeValue || "").trim()?.toString().toLowerCase();
     if (scope === "grade") return user.yearLevel === (election.targetGradeLevel || Number.parseInt(value, 10));
-    if (scope === "section") return Boolean(user.section) && user.section!.trim().toLowerCase() === (election.targetSection || value).trim().toLowerCase();
-    if (scope === "room") return Boolean(user.room) && user.room!.trim().toLowerCase() === (election.targetRoom || value).trim().toLowerCase();
+    if (scope === "section") return Boolean(user.section) && user.section!.trim()?.toString().toLowerCase() === (election.targetSection || value).trim()?.toString().toLowerCase();
+    if (scope === "room") return Boolean(user.room) && user.room!.trim()?.toString().toLowerCase() === (election.targetRoom || value).trim()?.toString().toLowerCase();
     return true;
   };
 
@@ -88,8 +111,8 @@ export default function VotePage({
       // Auto pick user's room election or first live election
       const roomEl = user.room
         ? availableElections.find((e) => {
-            const r = (e.scopeValue || e.targetRoom || "").toLowerCase();
-            const uRoom = user.room?.toLowerCase() || "";
+            const r = (e.scopeValue || e.targetRoom || "")?.toString().toLowerCase();
+            const uRoom = user.room?.toString().toLowerCase() || "";
             return r === uRoom || uRoom.includes(r) || r.includes(uRoom);
           })
         : null;
@@ -105,7 +128,7 @@ export default function VotePage({
     if (e) e.preventDefault();
     setSearchFeedback(null);
 
-    const query = roomQuery.trim().toLowerCase();
+    const query = roomQuery.trim()?.toString().toLowerCase();
     if (!query) {
       const live = availableElections.find((el) => getPhase(el.startsAt, el.endsAt) === "live") || availableElections[0];
       if (live) setActiveElection(live);
@@ -113,11 +136,11 @@ export default function VotePage({
     }
 
     const matched = availableElections.find((el) => {
-      const title = (el.title || "").toLowerCase();
-      const id = (el.id || "").toLowerCase();
-      const scopeVal = (el.scopeValue || "").toLowerCase();
-      const targetRoom = (el.targetRoom || "").toLowerCase();
-      const targetSec = (el.targetSection || "").toLowerCase();
+      const title = (el.title || "")?.toString().toLowerCase();
+      const id = (el.id || "")?.toString().toLowerCase();
+      const scopeVal = (el.scopeValue || "")?.toString().toLowerCase();
+      const targetRoom = (el.targetRoom || "")?.toString().toLowerCase();
+      const targetSec = (el.targetSection || "")?.toString().toLowerCase();
       const targetGrade = el.targetGradeLevel ? String(el.targetGradeLevel) : "";
 
       return (
@@ -286,8 +309,8 @@ export default function VotePage({
               onClick={() => {
                 setRoomQuery(user.room || "");
                 const matched = availableElections.find((el) => {
-                  const r = (el.scopeValue || el.targetRoom || "").toLowerCase();
-                  return r === user.room?.toLowerCase();
+                  const r = (el.scopeValue || el.targetRoom || "")?.toString().toLowerCase();
+                  return r === user.room?.toString().toLowerCase();
                 });
                 if (matched) setActiveElection(matched);
               }}
@@ -335,7 +358,7 @@ export default function VotePage({
             <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">AVAILABLE ROOMS:</span>
             {roomBadges.map((room) => {
               const matchedEl = availableElections.find(
-                (el) => (el.scopeValue || el.targetRoom || "").toLowerCase() === room.toLowerCase()
+                (el) => (el.scopeValue || el.targetRoom || "")?.toString().toLowerCase() === room?.toString().toLowerCase()
               );
               const isActive = activeElection && (activeElection.scopeValue === room || activeElection.targetRoom === room);
               return (

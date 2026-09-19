@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Trash2, Award, ChevronDown, Check, X, Edit2, Save } from "lucide-react";
 import { Election, Position } from "../types";
@@ -21,22 +21,20 @@ const STANDARD_POSITIONS = [
 ];
 
 interface PositionsTabProps {
-  elections: Election[];
-  positions: Position[];
-  onRefreshData: () => Promise<void>;
   setErrorNotification: (msg: string) => void;
   setSuccessNotification: (msg: string) => void;
   token: string;
 }
 
 export default function PositionsTab({
-  elections,
-  positions,
-  onRefreshData,
   setErrorNotification,
   setSuccessNotification,
   token,
 }: PositionsTabProps) {
+  const [elections, setElections] = useState<Election[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [selectedElectionId, setSelectedElectionId] = useState("");
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [customPosition, setCustomPosition] = useState("");
@@ -50,6 +48,32 @@ export default function PositionsTab({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const fetchData = useCallback(async () => {
+    try {
+      const [electionsRes, positionsRes] = await Promise.all([
+        fetch("/api/elections", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/positions", { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      if (!electionsRes.ok) throw new Error("Failed to fetch elections");
+      if (!positionsRes.ok) throw new Error("Failed to fetch positions");
+
+      const electionsData = await electionsRes.json();
+      const positionsData = await positionsRes.json();
+
+      setElections(electionsData);
+      setPositions(positionsData);
+    } catch (error: any) {
+      setErrorNotification(error.message || "Failed to load data");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token, setErrorNotification]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -60,11 +84,11 @@ export default function PositionsTab({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (elections.length > 0 && !selectedElectionId) {
       setSelectedElectionId(elections[0].id);
     }
-  }, [elections]);
+  }, [elections, selectedElectionId]);
 
   const togglePosition = (pos: string) => {
     if (selectedPositions.includes(pos)) {
@@ -126,7 +150,7 @@ export default function PositionsTab({
       setSuccessNotification(`Added ${finalPositions.length} position(s) successfully`);
       setSelectedPositions([]);
       setCustomPosition("");
-      await onRefreshData();
+      await fetchData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {
@@ -156,7 +180,7 @@ export default function PositionsTab({
       }
 
       setSuccessNotification("Position and cascading records deleted successfully");
-      await onRefreshData();
+      await fetchData();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
     } finally {
@@ -197,7 +221,7 @@ export default function PositionsTab({
       }
 
       setSuccessNotification("Position updated successfully");
-      await onRefreshData();
+      await fetchData();
       cancelEditing();
     } catch (err: any) {
       setErrorNotification(err.message || "An error occurred");
@@ -222,6 +246,14 @@ export default function PositionsTab({
       transition: { type: "spring", stiffness: 120, damping: 18 }
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]"></div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
