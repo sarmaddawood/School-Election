@@ -161,3 +161,12 @@ test("deployment configuration is self-contained and does not require environmen
   assert.doesNotMatch(serverSource, /process\.env|dotenv/);
   assert.equal(fs.existsSync(path.join(workspace, ".env.example")), false);
 });
+
+test("elections remain editable even after voting has started", () => {
+  const putStart = serverSource.indexOf('app.put("/api/elections/:id"');
+  const putEnd = serverSource.indexOf('app.delete("/api/elections/:id"', putStart);
+  assert.ok(putStart >= 0 && putEnd > putStart);
+  const putRoute = serverSource.slice(putStart, putEnd);
+  assert.doesNotMatch(putRoute, /An election cannot be edited after voting has started/);
+});
+

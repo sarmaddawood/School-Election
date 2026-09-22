@@ -1729,11 +1729,6 @@ export function createElectionApp() {
         return;
       }
 
-      if (getElectionPhase({ id, ...electionDoc.data() }) !== "upcoming") {
-        res.status(409).json({ error: "An election cannot be edited after voting has started" });
-        return;
-      }
-
       const finalScopeValue = scope === "all" ? "" : String(scopeValue).trim();
       const updatedElection = {
         id,

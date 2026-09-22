@@ -329,9 +329,24 @@ export default function ElectionTab({
               className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-sm"
             >
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 className="font-display font-extrabold text-sm text-slate-900 uppercase tracking-wider">
-                  {editingElection ? "Edit Election Parameters" : "Initialize New Election"}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display font-extrabold text-sm text-slate-900 uppercase tracking-wider">
+                    {editingElection ? "Edit Election Parameters" : "Initialize New Election"}
+                  </h3>
+                  {editingElection && (
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded-full border ${
+                        getPhase(editingElection.startsAt, editingElection.endsAt) === "live"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : getPhase(editingElection.startsAt, editingElection.endsAt) === "upcoming"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-slate-100 text-slate-600 border-slate-200"
+                      }`}
+                    >
+                      {getPhase(editingElection.startsAt, editingElection.endsAt)}
+                    </span>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
@@ -340,6 +355,29 @@ export default function ElectionTab({
                   <X size={16} />
                 </button>
               </div>
+
+              {editingElection && getPhase(editingElection.startsAt, editingElection.endsAt) === "live" && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-start gap-2.5">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Active Election</p>
+                    <p className="text-[11px] text-amber-700 mt-0.5">
+                      This election is currently active. Adjusting dates (such as extending voting deadlines) or updating election parameters will take effect immediately.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {editingElection && getPhase(editingElection.startsAt, editingElection.endsAt) === "ended" && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 text-xs flex items-start gap-2.5">
+                  <AlertCircle size={16} className="text-slate-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Concluded Election</p>
+                    <p className="text-[11px] text-slate-600 mt-0.5">
+                      This election has concluded. You may update its metadata or extend the end date to reopen voting.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 md:col-span-2">

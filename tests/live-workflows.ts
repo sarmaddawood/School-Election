@@ -159,6 +159,12 @@ try {
     body: { ...liveElection, startsAt: liveStartsAt, endsAt: liveEndsAt, scopeValue: "", hasPartyList: true },
   }), 200, "Activate the configured election");
 
+  expect(await api(`/api/elections/${liveElection.id}`, {
+    method: "PUT",
+    token: adminToken,
+    body: { ...liveElection, title: `${liveElection.title} (Updated Live)`, startsAt: liveStartsAt, endsAt: liveEndsAt, scopeValue: "", hasPartyList: true },
+  }), 200, "Election remains editable even after voting has started");
+
   expect(await api("/api/votes", {
     method: "POST", token: alphaToken, body: { electionId: liveElection.id, positionId: position.id, candidateId: candidateA.id },
   }), 201, "Student casts an online vote");
