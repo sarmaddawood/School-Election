@@ -13,8 +13,14 @@ export default function CalendarTab({ token, currentUser, onCreateElectionAtDate
   const [elections, setElections] = React.useState<Election[]>([]);
   React.useEffect(() => { 
     fetch("/api/elections", {headers: {Authorization: `Bearer ${token}`}})
-      .then(r => r.json())
-      .then(d => setElections(d.data || d)); 
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d) {
+          const list = Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []);
+          setElections(list);
+        }
+      })
+      .catch(console.error); 
   }, [token]);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date());
@@ -49,7 +55,8 @@ export default function CalendarTab({ token, currentUser, onCreateElectionAtDate
     return currentUser.role === "student";
   };
 
-  const visibleElections = filterMode === "eligible" ? elections.filter(isEligible) : elections;
+  const safeElections = Array.isArray(elections) ? elections : [];
+  const visibleElections = filterMode === "eligible" ? safeElections.filter(isEligible) : safeElections;
   const sortedElections = [...visibleElections].sort(
     (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
   );

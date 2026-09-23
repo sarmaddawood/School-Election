@@ -42,7 +42,7 @@ export default function DashboardTab({
           candidatesRes.json().catch(() => ({ total: 0 }))
         ]);
 
-        setElections(electionsData.data || []);
+        setElections(Array.isArray(electionsData) ? electionsData : (Array.isArray(electionsData?.data) ? electionsData.data : []));
         setTotalUsers(usersData.total || 0);
         setTotalVotes(votesData.total || 0);
         setTotalPositions(positionsData.total || 0);

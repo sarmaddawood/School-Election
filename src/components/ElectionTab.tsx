@@ -29,7 +29,7 @@ export default function ElectionTab({
       });
       if (!res.ok) throw new Error("Failed to fetch elections");
       const data = await res.json();
-      setElections(Array.isArray(data) ? data : (data.elections || []));
+      setElections(Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : (data?.elections || [])));
     } catch (err: any) {
       setErrorNotification(err.message || "Failed to load elections");
     }
@@ -520,7 +520,7 @@ export default function ElectionTab({
         animate="visible"
         className="grid grid-cols-1 md:grid-cols-2 gap-4"
       >
-        {elections.map((el) => {
+        {(Array.isArray(elections) ? elections : []).map((el) => {
           const phase = getPhase(el.startsAt, el.endsAt);
           return (
             <motion.div
@@ -596,7 +596,7 @@ export default function ElectionTab({
           );
         })}
 
-        {elections.length === 0 && (
+        {(!Array.isArray(elections) || elections.length === 0) && (
           <motion.div
             variants={cardVariants}
             className="col-span-1 md:col-span-2 bg-white rounded-2xl border border-slate-200 p-12 text-center flex flex-col items-center justify-center space-y-3 shadow-sm"

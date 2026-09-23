@@ -70,9 +70,18 @@ export default function VotePage({
           fetch("/api/candidates", { headers }),
         ]);
 
-        if (elRes.ok) setElections((await elRes.json()).data || (await elRes.json()) /* FIX ME */);
-        if (posRes.ok) setPositions((await posRes.json()).data || (await posRes.json()) /* FIX ME */);
-        if (candRes.ok) setCandidates((await candRes.json()).data || (await candRes.json()) /* FIX ME */);
+        if (elRes.ok) {
+          const d = await elRes.json();
+          setElections(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+        }
+        if (posRes.ok) {
+          const d = await posRes.json();
+          setPositions(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+        }
+        if (candRes.ok) {
+          const d = await candRes.json();
+          setCandidates(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+        }
       } catch (err) {
         console.error("Failed to fetch vote data", err);
         setErrorNotification("Failed to load voting data.");
@@ -102,7 +111,7 @@ export default function VotePage({
     return true;
   };
 
-  const availableElections = elections.filter(
+  const availableElections = (Array.isArray(elections) ? elections : []).filter(
     (e) => getPhase(e.startsAt, e.endsAt) !== "ended" && isEligible(e)
   );
 
@@ -261,7 +270,7 @@ export default function VotePage({
   // Collect distinct room badges for quick selection
   const roomBadges = Array.from(
     new Set(
-      elections
+      (Array.isArray(elections) ? elections : [])
         .map((e) => e.scopeValue || e.targetRoom)
         .filter((r): r is string => Boolean(r && r.trim()))
     )

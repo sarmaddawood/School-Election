@@ -36,11 +36,26 @@ export default function CandidatesTab({
         fetch("/api/votes", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      if (elRes.ok) setElections((await elRes.json()).data || (await elRes.json()) /* FIX ME */);
-      if (posRes.ok) setPositions((await posRes.json()).data || (await posRes.json()) /* FIX ME */);
-      if (candRes.ok) setCandidates((await candRes.json()).data || (await candRes.json()) /* FIX ME */);
-      if (usersRes.ok) setUsers((await usersRes.json()).data || (await usersRes.json()) /* FIX ME */);
-      if (votesRes.ok) setVotes((await votesRes.json()).data || (await votesRes.json()) /* FIX ME */);
+      if (elRes.ok) {
+        const d = await elRes.json();
+        setElections(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+      }
+      if (posRes.ok) {
+        const d = await posRes.json();
+        setPositions(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+      }
+      if (candRes.ok) {
+        const d = await candRes.json();
+        setCandidates(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+      }
+      if (usersRes.ok) {
+        const d = await usersRes.json();
+        setUsers(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+      }
+      if (votesRes.ok) {
+        const d = await votesRes.json();
+        setVotes(Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : []));
+      }
     } catch (err) {
       console.error("Failed to fetch local data:", err);
     }
@@ -333,7 +348,7 @@ export default function CandidatesTab({
                     onChange={(e) => setSelectedElectionId(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 appearance-none cursor-pointer pr-10 outline-none focus:border-sky-500 focus:bg-white"
                   >
-                    {elections.map((el) => (
+                    {(Array.isArray(elections) ? elections : []).map((el) => (
                       <option key={el.id} value={el.id}>
                         {el.title} ({el.scope ? el.scope.toUpperCase() : "SCHOOLWIDE"})
                       </option>
@@ -539,9 +554,9 @@ export default function CandidatesTab({
             </div>
 
             <div className="space-y-6">
-              {elections.map((el) => {
-                const electionPositions = positions.filter((p) => p.electionId === el.id);
-                const electionCandidates = candidates.filter((c) => {
+              {(Array.isArray(elections) ? elections : []).map((el) => {
+                const electionPositions = (Array.isArray(positions) ? positions : []).filter((p) => p.electionId === el.id);
+                const electionCandidates = (Array.isArray(candidates) ? candidates : []).filter((c) => {
                   if (c.electionId !== el.id) return false;
                   if (!searchQuery.trim()) return true;
                   

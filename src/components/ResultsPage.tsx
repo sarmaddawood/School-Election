@@ -37,11 +37,11 @@ export default function ResultsPage({
         ]);
         if (elRes.ok) {
           const elData = await elRes.json();
-            setElections(elData.data || elData);
+          setElections(Array.isArray(elData) ? elData : (Array.isArray(elData?.data) ? elData.data : []));
         }
         if (posRes.ok) {
           const posData = await posRes.json();
-            setPositions(posData.data || posData);
+          setPositions(Array.isArray(posData) ? posData : (Array.isArray(posData?.data) ? posData.data : []));
         }
       } catch (err) {
         console.error(err);
@@ -209,7 +209,7 @@ export default function ResultsPage({
               onChange={(e) => setSelectedElectionId(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 uppercase appearance-none cursor-pointer pr-10 outline-none focus:border-sky-500"
             >
-              {elections.map((el) => (
+              {(Array.isArray(elections) ? elections : []).map((el) => (
                 <option key={el.id} value={el.id}>
                   {el.title}
                 </option>
@@ -255,7 +255,7 @@ export default function ResultsPage({
         </div>
       )}
 
-      {elections.length === 0 ? (
+      {(!Array.isArray(elections) || elections.length === 0) ? (
         <motion.div
           variants={itemVariants}
           className="bg-white rounded-2xl p-16 text-center space-y-4 border border-slate-200 shadow-sm"

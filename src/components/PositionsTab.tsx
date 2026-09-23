@@ -61,8 +61,8 @@ export default function PositionsTab({
       const electionsData = await electionsRes.json();
       const positionsData = await positionsRes.json();
 
-      setElections(electionsData);
-      setPositions(positionsData);
+      setElections(Array.isArray(electionsData) ? electionsData : (Array.isArray(electionsData?.data) ? electionsData.data : []));
+      setPositions(Array.isArray(positionsData) ? positionsData : (Array.isArray(positionsData?.data) ? positionsData.data : []));
     } catch (error: any) {
       setErrorNotification(error.message || "Failed to load data");
     } finally {
@@ -304,7 +304,7 @@ export default function PositionsTab({
                     onChange={(e) => setSelectedElectionId(e.target.value)}
                     className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)]"
                   >
-                    {elections.map((el) => (
+                    {(Array.isArray(elections) ? elections : []).map((el) => (
                       <option key={el.id} value={el.id} className="bg-[var(--surface)] text-[var(--ink)]">
                         {el.title}
                       </option>
@@ -455,8 +455,8 @@ export default function PositionsTab({
             </h3>
 
             <div className="space-y-6">
-              {elections.map((el) => {
-                const electionPositions = positions.filter((p) => p.electionId === el.id);
+              {(Array.isArray(elections) ? elections : []).map((el) => {
+                const electionPositions = (Array.isArray(positions) ? positions : []).filter((p) => p.electionId === el.id);
                 return (
                   <motion.div
                     key={el.id}
