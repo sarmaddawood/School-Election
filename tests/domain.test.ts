@@ -42,9 +42,13 @@ test("eligibility enforces grade, section, room, and student role", () => {
   const base = { startsAt: "2026-01-01T00:00:00.000Z", endsAt: "2027-01-01T00:00:00.000Z" };
   assert.equal(isEligibleForElection(student, { ...base, scope: "all" }), true);
   assert.equal(isEligibleForElection(student, { ...base, scope: "grade", scopeValue: "10" }), true);
+  assert.equal(isEligibleForElection(student, { ...base, scope: "grade", scopeValue: "Grade 10" }), true);
+  assert.equal(isEligibleForElection(student, { ...base, scope: "grade", targetGradeLevel: 10 }), true);
   assert.equal(isEligibleForElection(student, { ...base, scope: "grade", scopeValue: "11" }), false);
   assert.equal(isEligibleForElection(student, { ...base, scope: "section", scopeValue: "rizal" }), true);
+  assert.equal(isEligibleForElection(student, { ...base, scope: "section", scopeValue: "Grade 10 - Rizal" }), true);
   assert.equal(isEligibleForElection(student, { ...base, scope: "room", scopeValue: "room 204" }), true);
+  assert.equal(isEligibleForElection(student, { ...base, scope: "room", scopeValue: "204" }), true);
   assert.equal(isEligibleForElection({ ...student, role: "teacher" }, { ...base, scope: "all" }), false);
 });
 
@@ -77,6 +81,7 @@ test("database integrity validation checks references, eligibility, and duplicat
 test("election validation rejects invalid windows and scoped Party-Lists", () => {
   const valid = { title: "Council", startsAt: "2026-01-01T08:00:00Z", endsAt: "2026-01-01T17:00:00Z", scope: "all" };
   assert.equal(validateElectionInput(valid), null);
+  assert.equal(validateElectionInput({ ...valid, scope: "grade", scopeValue: "Grade 10" }), null);
   assert.match(validateElectionInput({ ...valid, endsAt: valid.startsAt }) || "", /after/i);
   assert.match(validateElectionInput({ ...valid, scope: "grade", scopeValue: "13" }) || "", /grade/i);
   assert.match(validateElectionInput({ ...valid, scope: "room", scopeValue: "204", hasPartyList: true }) || "", /school-wide/i);

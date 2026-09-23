@@ -235,6 +235,39 @@ export default function CandidatesTab({
     }
   };
 
+  const [onlyEligible, setOnlyEligible] = useState(true);
+
+  const currentElection = elections.find((e) => e.id === selectedElectionId);
+
+  const isStudentEligible = (student: User, el?: Election): { eligible: boolean; reason?: string } => {
+    if (!el) return { eligible: true };
+    if (student.role !== "student") return { eligible: false, reason: "Not a student" };
+    const scope = el.scope || "all";
+    const value = (el.scopeValue || "").trim();
+
+    if (scope === "grade") {
+      const rawGrade = el.targetGradeLevel ?? value;
+      const targetGrade = typeof rawGrade === "number" ? rawGrade : Number.parseInt(String(rawGrade ?? "").replace(/\D+/g, ""), 10);
+      const eligible = Number.isFinite(targetGrade) && student.yearLevel === targetGrade;
+      return { eligible, reason: eligible ? undefined : `Requires Grade ${targetGrade}` };
+    }
+    if (scope === "section") {
+      const targetSec = (el.targetSection || value).trim().toLowerCase();
+      if (!targetSec || !student.section) return { eligible: false, reason: "Outside section scope" };
+      const uSec = student.section.trim().toLowerCase();
+      const eligible = uSec === targetSec || uSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim() === targetSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim();
+      return { eligible, reason: eligible ? undefined : `Requires Sec ${el.targetSection || value}` };
+    }
+    if (scope === "room") {
+      const targetRoom = (el.targetRoom || value).trim().toLowerCase();
+      if (!targetRoom || !student.room) return { eligible: false, reason: "Outside room scope" };
+      const uRoom = student.room.trim().toLowerCase();
+      const eligible = uRoom === targetRoom || uRoom.replace(/^room\s*/i, "").trim() === targetRoom.replace(/^room\s*/i, "").trim();
+      return { eligible, reason: eligible ? undefined : `Requires Room ${el.targetRoom || value}` };
+    }
+    return { eligible: true };
+  };
+
   const filteredPositions = positions.filter((p) => p.electionId === selectedElectionId);
 
   // Search matching students for nomination
@@ -248,6 +281,10 @@ export default function CandidatesTab({
       const name = (u.fullName || "").toLowerCase();
       const sec = (u.section || "").toLowerCase();
       return sNum.includes(term) || name.includes(term) || sec.includes(term);
+    })
+    .filter((u) => {
+      if (!onlyEligible || !currentElection || currentElection.scope === "all" || !currentElection.scope) return true;
+      return isStudentEligible(u, currentElection).eligible;
     });
 
   const handleDelete = (id: string, name: string) => {
@@ -359,6 +396,28 @@ export default function CandidatesTab({
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                   />
                 </div>
+                {currentElection && (
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Scope:</span>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${
+                      currentElection.scope === "grade"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : currentElection.scope === "section"
+                        ? "bg-violet-50 text-violet-700 border-violet-200"
+                        : currentElection.scope === "room"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-sky-50 text-sky-700 border-sky-200"
+                    }`}>
+                      {currentElection.scope === "grade"
+                        ? `Grade ${currentElection.targetGradeLevel || currentElection.scopeValue}`
+                        : currentElection.scope === "section"
+                        ? `Section ${currentElection.targetSection || currentElection.scopeValue}`
+                        : currentElection.scope === "room"
+                        ? `Room ${currentElection.targetRoom || currentElection.scopeValue}`
+                        : "School-Wide (All Eligible Students)"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -464,9 +523,22 @@ export default function CandidatesTab({
 
               {/* INSTANT SEARCH & NOMINATE DIRECT BUTTONS */}
               <div className="pt-2 border-t border-slate-100 space-y-3">
-                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                  Search & Nominate Student
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                    Search & Nominate Student
+                  </label>
+                  {currentElection && currentElection.scope && currentElection.scope !== "all" && (
+                    <label className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={onlyEligible}
+                        onChange={(e) => setOnlyEligible(e.target.checked)}
+                        className="w-3.5 h-3.5 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
+                      />
+                      <span>Scope-Eligible Only</span>
+                    </label>
+                  )}
+                </div>
 
                 <div className="relative">
                   <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -482,18 +554,25 @@ export default function CandidatesTab({
                 <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                   {searchedStudents.length === 0 ? (
                     <div className="text-center py-6 text-slate-400 text-xs">
-                      No matching student accounts found.
+                      {onlyEligible && currentElection && currentElection.scope !== "all"
+                        ? "No scope-eligible students found matching your search."
+                        : "No matching student accounts found."}
                     </div>
                   ) : (
                     searchedStudents.map((st) => {
                       const isAlreadyCandidate = candidates.some(
                         (c) => c.positionId === selectedPositionId && c.userId === st.id
                       );
+                      const eligibility = isStudentEligible(st, currentElection);
 
                       return (
                         <div
                           key={st.id}
-                          className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all"
+                          className={`flex items-center justify-between p-3 border rounded-xl transition-all ${
+                            !eligibility.eligible
+                              ? "bg-slate-50/60 border-slate-200 opacity-75"
+                              : "bg-slate-50 hover:bg-slate-100 border-slate-200"
+                          }`}
                         >
                           <div className="flex items-center gap-2.5 overflow-hidden pr-2">
                             <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0 border border-sky-200">
@@ -502,7 +581,7 @@ export default function CandidatesTab({
                             <div className="truncate">
                               <p className="text-xs font-bold text-slate-800 truncate">{st.fullName}</p>
                               <p className="text-[10px] text-slate-500 font-mono">
-                                {st.studentNumber} {st.section ? `• Sec: ${st.section}` : ""}
+                                {st.studentNumber} {st.section ? `• Sec: ${st.section}` : ""} {st.yearLevel ? `• Gr: ${st.yearLevel}` : ""}
                               </p>
                             </div>
                           </div>
@@ -511,6 +590,10 @@ export default function CandidatesTab({
                             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1 shrink-0">
                               <CheckCircle size={12} />
                               Nominated
+                            </span>
+                          ) : !eligibility.eligible ? (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 shrink-0">
+                              {eligibility.reason || "Outside Scope"}
                             </span>
                           ) : (
                             <button

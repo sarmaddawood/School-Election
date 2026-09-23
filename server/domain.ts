@@ -140,8 +140,16 @@ export function canViewElectionResults(role: UserRole, election: ElectionLike, n
   return role === "admin" || role === "teacher" || getElectionPhase(election, now) === "ended";
 }
 
-function normalizedComparison(value: unknown): string {
+function normalizeScopeString(value: unknown): string {
   return String(value ?? "").trim().toLocaleLowerCase();
+}
+
+function stripSectionPrefix(value: string): string {
+  return value.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim();
+}
+
+function stripRoomPrefix(value: string): string {
+  return value.replace(/^room\s*/i, "").trim();
 }
 
 export function isEligibleForElection(user: UserLike, election: ElectionLike): boolean {
@@ -150,16 +158,23 @@ export function isEligibleForElection(user: UserLike, election: ElectionLike): b
   const scopeValue = election.scopeValue;
 
   if (scope === "grade") {
-    const grade = election.targetGradeLevel ?? Number.parseInt(String(scopeValue ?? ""), 10);
+    const rawGrade = election.targetGradeLevel ?? scopeValue;
+    const grade = typeof rawGrade === "number" ? rawGrade : Number.parseInt(String(rawGrade ?? "").replace(/\D+/g, ""), 10);
     return Number.isFinite(grade) && user.yearLevel === grade;
   }
   if (scope === "section") {
     const section = election.targetSection || scopeValue;
-    return Boolean(section) && normalizedComparison(user.section) === normalizedComparison(section);
+    if (!section || !user.section) return false;
+    const uSec = normalizeScopeString(user.section);
+    const eSec = normalizeScopeString(section);
+    return uSec === eSec || stripSectionPrefix(uSec) === stripSectionPrefix(eSec);
   }
   if (scope === "room") {
     const room = election.targetRoom || scopeValue;
-    return Boolean(room) && normalizedComparison(user.room) === normalizedComparison(room);
+    if (!room || !user.room) return false;
+    const uRoom = normalizeScopeString(user.room);
+    const eRoom = normalizeScopeString(room);
+    return uRoom === eRoom || stripRoomPrefix(uRoom) === stripRoomPrefix(eRoom);
   }
   return true;
 }
@@ -182,7 +197,7 @@ export function validateElectionInput(input: Record<string, unknown>): string | 
   if (scope !== "all" && !scopeValue) return `A target ${scope} is required`;
   if (scopeValue.length > 255) return "Election scope target must not exceed 255 characters";
   if (scope === "grade") {
-    const grade = Number.parseInt(scopeValue, 10);
+    const grade = Number.parseInt(scopeValue.replace(/\D+/g, ""), 10);
     if (!Number.isInteger(grade) || grade < 1 || grade > 12) return "Grade must be between 1 and 12";
   }
   if (Boolean(input.hasPartyList) && scope !== "all") {

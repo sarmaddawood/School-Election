@@ -47,12 +47,27 @@ export default function CalendarTab({ token, currentUser, onCreateElectionAtDate
   };
 
   const isEligible = (election: Election) => {
+    if (currentUser.role !== "student") return false;
     const scope = election.scope || "all";
-    const value = (election.scopeValue || "").trim().toLowerCase();
-    if (scope === "grade") return currentUser.yearLevel === (election.targetGradeLevel || Number.parseInt(value, 10));
-    if (scope === "section") return Boolean(currentUser.section) && currentUser.section!.trim().toLowerCase() === (election.targetSection || value).trim().toLowerCase();
-    if (scope === "room") return Boolean(currentUser.room) && currentUser.room!.trim().toLowerCase() === (election.targetRoom || value).trim().toLowerCase();
-    return currentUser.role === "student";
+    const value = (election.scopeValue || "").trim();
+    if (scope === "grade") {
+      const rawGrade = election.targetGradeLevel ?? value;
+      const grade = typeof rawGrade === "number" ? rawGrade : Number.parseInt(String(rawGrade ?? "").replace(/\D+/g, ""), 10);
+      return Number.isFinite(grade) && currentUser.yearLevel === grade;
+    }
+    if (scope === "section") {
+      const targetSec = (election.targetSection || value).trim().toLowerCase();
+      if (!targetSec || !currentUser.section) return false;
+      const uSec = currentUser.section.trim().toLowerCase();
+      return uSec === targetSec || uSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim() === targetSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim();
+    }
+    if (scope === "room") {
+      const targetRoom = (election.targetRoom || value).trim().toLowerCase();
+      if (!targetRoom || !currentUser.room) return false;
+      const uRoom = currentUser.room.trim().toLowerCase();
+      return uRoom === targetRoom || uRoom.replace(/^room\s*/i, "").trim() === targetRoom.replace(/^room\s*/i, "").trim();
+    }
+    return true;
   };
 
   const safeElections = Array.isArray(elections) ? elections : [];

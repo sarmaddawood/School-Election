@@ -1687,7 +1687,8 @@ export function createElectionApp() {
     }
 
     try {
-      const finalScopeValue = scope === "all" ? "" : String(scopeValue).trim();
+      const parsedGrade = scope === "grade" ? Number.parseInt(String(scopeValue ?? "").replace(/\D+/g, ""), 10) : null;
+      const cleanScopeValue = scope === "all" ? "" : scope === "grade" && Number.isInteger(parsedGrade) ? String(parsedGrade) : String(scopeValue ?? "").trim();
       const newElection = {
         id: ID.unique(),
         title: String(title).trim(),
@@ -1695,16 +1696,16 @@ export function createElectionApp() {
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
         scope,
-        scopeValue: finalScopeValue,
+        scopeValue: cleanScopeValue,
         hasPartyList: scope === "all" && hasPartyList === true,
-        targetGradeLevel: scope === "grade" ? Number.parseInt(finalScopeValue, 10) : null,
-        targetSection: scope === "section" ? finalScopeValue : null,
-        targetRoom: scope === "room" ? finalScopeValue : null,
+        targetGradeLevel: scope === "grade" && Number.isInteger(parsedGrade) ? parsedGrade : null,
+        targetSection: scope === "section" ? cleanScopeValue : null,
+        targetRoom: scope === "room" ? cleanScopeValue : null,
         hasPartyListSupport: scope === "all" && hasPartyList === true,
       };
 
       await db.collection("elections").doc(newElection.id).set(newElection);
-      await logAuditEvent("CREATE_ELECTION", (req as any).user.fullName, "admin", `Created election: ${title} (Scope: ${newElection.scope}${finalScopeValue ? `, target: ${finalScopeValue}` : ""})`);
+      await logAuditEvent("CREATE_ELECTION", (req as any).user.fullName, "admin", `Created election: ${title} (Scope: ${newElection.scope}${cleanScopeValue ? `, target: ${cleanScopeValue}` : ""})`);
 
       res.status(201).json(newElection);
     } catch (err: any) {
@@ -1729,7 +1730,8 @@ export function createElectionApp() {
         return;
       }
 
-      const finalScopeValue = scope === "all" ? "" : String(scopeValue).trim();
+      const parsedGrade = scope === "grade" ? Number.parseInt(String(scopeValue ?? "").replace(/\D+/g, ""), 10) : null;
+      const cleanScopeValue = scope === "all" ? "" : scope === "grade" && Number.isInteger(parsedGrade) ? String(parsedGrade) : String(scopeValue ?? "").trim();
       const updatedElection = {
         id,
         title: String(title).trim(),
@@ -1737,16 +1739,16 @@ export function createElectionApp() {
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
         scope,
-        scopeValue: finalScopeValue,
+        scopeValue: cleanScopeValue,
         hasPartyList: scope === "all" && hasPartyList === true,
-        targetGradeLevel: scope === "grade" ? Number.parseInt(finalScopeValue, 10) : null,
-        targetSection: scope === "section" ? finalScopeValue : null,
-        targetRoom: scope === "room" ? finalScopeValue : null,
+        targetGradeLevel: scope === "grade" && Number.isInteger(parsedGrade) ? parsedGrade : null,
+        targetSection: scope === "section" ? cleanScopeValue : null,
+        targetRoom: scope === "room" ? cleanScopeValue : null,
         hasPartyListSupport: scope === "all" && hasPartyList === true,
       };
 
       await electionRef.set(updatedElection);
-      await logAuditEvent("UPDATE_ELECTION", (req as any).user.fullName, "admin", `Updated election: ${title} (Scope: ${scope}${finalScopeValue ? `, target: ${finalScopeValue}` : ""})`);
+      await logAuditEvent("UPDATE_ELECTION", (req as any).user.fullName, "admin", `Updated election: ${title} (Scope: ${scope}${cleanScopeValue ? `, target: ${cleanScopeValue}` : ""})`);
 
       res.json(updatedElection);
     } catch (err: any) {

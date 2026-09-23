@@ -103,11 +103,26 @@ export default function VotePage({
 
   // Find active live or upcoming elections
   const isEligible = (election: Election) => {
+    if (user.role !== "student") return false;
     const scope = election.scope || "all";
-    const value = (election.scopeValue || "").trim()?.toString().toLowerCase();
-    if (scope === "grade") return user.yearLevel === (election.targetGradeLevel || Number.parseInt(value, 10));
-    if (scope === "section") return Boolean(user.section) && user.section!.trim()?.toString().toLowerCase() === (election.targetSection || value).trim()?.toString().toLowerCase();
-    if (scope === "room") return Boolean(user.room) && user.room!.trim()?.toString().toLowerCase() === (election.targetRoom || value).trim()?.toString().toLowerCase();
+    const value = (election.scopeValue || "").trim();
+    if (scope === "grade") {
+      const rawGrade = election.targetGradeLevel ?? value;
+      const grade = typeof rawGrade === "number" ? rawGrade : Number.parseInt(String(rawGrade ?? "").replace(/\D+/g, ""), 10);
+      return Number.isFinite(grade) && user.yearLevel === grade;
+    }
+    if (scope === "section") {
+      const targetSec = (election.targetSection || value).trim().toLowerCase();
+      if (!targetSec || !user.section) return false;
+      const uSec = user.section.trim().toLowerCase();
+      return uSec === targetSec || uSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim() === targetSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim();
+    }
+    if (scope === "room") {
+      const targetRoom = (election.targetRoom || value).trim().toLowerCase();
+      if (!targetRoom || !user.room) return false;
+      const uRoom = user.room.trim().toLowerCase();
+      return uRoom === targetRoom || uRoom.replace(/^room\s*/i, "").trim() === targetRoom.replace(/^room\s*/i, "").trim();
+    }
     return true;
   };
 
@@ -117,21 +132,27 @@ export default function VotePage({
 
   useEffect(() => {
     if (!activeElection && availableElections.length > 0) {
-      // Auto pick user's room election or first live election
-      const roomEl = user.room
-        ? availableElections.find((e) => {
-            const r = (e.scopeValue || e.targetRoom || "")?.toString().toLowerCase();
-            const uRoom = user.room?.toString().toLowerCase() || "";
-            return r === uRoom || uRoom.includes(r) || r.includes(uRoom);
-          })
-        : null;
+      // Auto pick user's room or section election or first live election
+      const matchedEl = availableElections.find((e) => {
+        if (e.scope === "room" && user.room) {
+          const r = (e.targetRoom || e.scopeValue || "").toLowerCase().trim();
+          const u = user.room.toLowerCase().trim();
+          return Boolean(r && u && (r === u || r.replace(/^room\s*/i, "") === u.replace(/^room\s*/i, "")));
+        }
+        if (e.scope === "section" && user.section) {
+          const s = (e.targetSection || e.scopeValue || "").toLowerCase().trim();
+          const u = user.section.toLowerCase().trim();
+          return Boolean(s && u && (s === u || s.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "") === u.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "")));
+        }
+        return false;
+      });
 
-      const defaultEl = roomEl || availableElections.find((e) => getPhase(e.startsAt, e.endsAt) === "live") || availableElections[0];
+      const defaultEl = matchedEl || availableElections.find((e) => getPhase(e.startsAt, e.endsAt) === "live") || availableElections[0];
       if (defaultEl) {
         setActiveElection(defaultEl);
       }
     }
-  }, [elections, user.room, activeElection]);
+  }, [elections, user.room, user.section, activeElection, availableElections]);
 
   const handleRoomSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -267,12 +288,32 @@ export default function VotePage({
     }
   };
 
-  // Collect distinct room badges for quick selection
+  const getScopeBadge = (el: Election) => {
+    const scope = el.scope || "all";
+    if (scope === "grade") {
+      const g = el.targetGradeLevel ?? (el.scopeValue || "").replace(/\D+/g, "");
+      return { label: `GRADE ${g}`, className: "bg-emerald-100 text-emerald-800" };
+    }
+    if (scope === "section") {
+      const s = el.targetSection || el.scopeValue || "";
+      return { label: `SEC: ${s}`, className: "bg-violet-100 text-violet-800" };
+    }
+    if (scope === "room") {
+      const r = el.targetRoom || el.scopeValue || "";
+      return { label: `ROOM ${r}`, className: "bg-amber-100 text-amber-800" };
+    }
+    return { label: "SCHOOL-WIDE", className: "bg-sky-100 text-sky-800" };
+  };
+
+  // Collect distinct room badges for quick selection (specifically from room-scoped elections or user assigned room)
   const roomBadges = Array.from(
     new Set(
-      (Array.isArray(elections) ? elections : [])
-        .map((e) => e.scopeValue || e.targetRoom)
-        .filter((r): r is string => Boolean(r && r.trim()))
+      [
+        user.room ? user.room.trim() : null,
+        ...(Array.isArray(elections) ? elections : [])
+          .filter((e) => e.scope === "room")
+          .map((e) => e.targetRoom || e.scopeValue)
+      ].filter((r): r is string => Boolean(r && r.trim()))
     )
   );
 
@@ -418,11 +459,14 @@ export default function VotePage({
                       <span className={`px-2 py-0.5 text-[8px] font-bold uppercase ${phase === "live" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800"}`}>
                         {phase}
                       </span>
-                      {roomInfo && (
-                        <span className="text-[9px] font-bold text-[var(--accent)]">
-                          ROOM {roomInfo}
-                        </span>
-                      )}
+                      {(() => {
+                        const badge = getScopeBadge(el);
+                        return (
+                          <span className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border border-transparent ${badge.className}`}>
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="font-bold text-xs text-[var(--ink)] truncate">{el.title}</p>
                   </div>
@@ -450,11 +494,14 @@ export default function VotePage({
                     >
                       LIVE POLLING STATION
                     </motion.span>
-                    {(activeElection.scopeValue || activeElection.targetRoom) && (
-                      <span className="px-2 py-0.5 bg-slate-100 text-slate-800 border border-slate-300 text-[9px] font-bold uppercase">
-                        📍 ROOM {activeElection.scopeValue || activeElection.targetRoom}
-                      </span>
-                    )}
+                    {(() => {
+                      const badge = getScopeBadge(activeElection);
+                      return (
+                        <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border border-slate-300 ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <h3 className="font-display font-extrabold text-[var(--ink)] text-base uppercase tracking-wider mt-2.5">
                     {activeElection.title}

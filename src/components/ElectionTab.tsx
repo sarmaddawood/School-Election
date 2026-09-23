@@ -50,7 +50,7 @@ export default function ElectionTab({
         if (!res.ok) break;
         const data = await res.json();
         
-        const fetchedUsers = Array.isArray(data) ? data : (data.users || []);
+        const fetchedUsers = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : (data?.users || []));
         allUsers = [...allUsers, ...fetchedUsers];
         
         if (data.nextCursor) {
@@ -84,7 +84,7 @@ export default function ElectionTab({
   const [deleteConfirmElection, setDeleteConfirmElection] = useState<{ id: string; title: string } | null>(null);
 
   const availableGrades = useMemo(() => {
-    const grades = new Set<string>();
+    const grades = new Set<string>(["7", "8", "9", "10", "11", "12"]);
     users.forEach((u) => {
       if (u.yearLevel != null) grades.add(String(u.yearLevel));
     });
@@ -94,18 +94,22 @@ export default function ElectionTab({
   const availableSections = useMemo(() => {
     const sections = new Set<string>();
     users.forEach((u) => {
-      if (u.section) sections.add(u.section);
+      if (u.section) sections.add(u.section.trim());
     });
-    return Array.from(sections).sort();
-  }, [users]);
+    if (editingElection?.targetSection) sections.add(editingElection.targetSection.trim());
+    if (editingElection?.scope === "section" && editingElection.scopeValue) sections.add(editingElection.scopeValue.trim());
+    return Array.from(sections).filter(Boolean).sort();
+  }, [users, editingElection]);
 
   const availableRooms = useMemo(() => {
     const rooms = new Set<string>();
     users.forEach((u) => {
-      if (u.room) rooms.add(u.room);
+      if (u.room) rooms.add(u.room.trim());
     });
-    return Array.from(rooms).sort();
-  }, [users]);
+    if (editingElection?.targetRoom) rooms.add(editingElection.targetRoom.trim());
+    if (editingElection?.scope === "room" && editingElection.scopeValue) rooms.add(editingElection.scopeValue.trim());
+    return Array.from(rooms).filter(Boolean).sort();
+  }, [users, editingElection]);
 
   const getPhase = (startStr: string, endStr: string): ElectionPhase => {
     const now = new Date();
@@ -155,8 +159,17 @@ export default function ElectionTab({
     setEditingElection(el);
     setTitle(el.title);
     setDescription(el.description || "");
-    setScope(el.scope || "all");
-    setScopeValue(el.scopeValue || "");
+    const electionScope = el.scope || "all";
+    setScope(electionScope);
+    const initialScopeValue =
+      electionScope === "grade"
+        ? (el.targetGradeLevel != null ? String(el.targetGradeLevel) : (el.scopeValue || "").replace(/\D+/g, "") || "")
+        : electionScope === "section"
+        ? (el.targetSection || el.scopeValue || "")
+        : electionScope === "room"
+        ? (el.targetRoom || el.scopeValue || "")
+        : "";
+    setScopeValue(initialScopeValue);
     setHasPartyList(!!el.hasPartyList);
 
     const toLocalISOString = (dateStr: string) => {
@@ -181,7 +194,9 @@ export default function ElectionTab({
       return;
     }
 
-    if (scope !== "all" && !scopeValue.trim()) {
+    const finalScopeValue = scope === "grade" ? scopeValue.replace(/\D+/g, "") : scopeValue.trim();
+
+    if (scope !== "all" && !finalScopeValue) {
       setErrorNotification(`Please enter the required ${scope} designation (e.g. Grade '10', Section '10-A', or Room '204')`);
       return;
     }
@@ -211,7 +226,7 @@ export default function ElectionTab({
           title,
           description,
           scope,
-          scopeValue: scope !== "all" ? scopeValue.trim() : null,
+          scopeValue: scope !== "all" ? finalScopeValue : null,
           hasPartyList,
           startsAt: startVal.toISOString(),
           endsAt: endVal.toISOString(),
@@ -430,20 +445,63 @@ export default function ElectionTab({
 
                 {scope !== "all" ? (
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Target {scope === "grade" ? "Grade Level" : scope === "section" ? "Section Name" : "Room Number"}
-                    </label>
-                    <select
-                      required
-                      value={scopeValue}
-                      onChange={(e) => setScopeValue(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
-                    >
-                      <option value="" disabled>Select {scope === "grade" ? "Grade Level" : scope === "section" ? "Section" : "Room"}...</option>
-                      {scope === "grade" && availableGrades.map((g) => <option key={g} value={g}>Grade {g}</option>)}
-                      {scope === "section" && availableSections.map((s) => <option key={s} value={s}>{s}</option>)}
-                      {scope === "room" && availableRooms.map((r) => <option key={r} value={r}>{r}</option>)}
-                    </select>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Target {scope === "grade" ? "Grade Level" : scope === "section" ? "Section Name" : "Room Number"}
+                      </label>
+                      {scope !== "grade" && (
+                        <span className="text-[10px] text-slate-400 font-medium">Select suggestion or type custom</span>
+                      )}
+                    </div>
+                    {scope === "grade" ? (
+                      <select
+                        required
+                        value={scopeValue}
+                        onChange={(e) => setScopeValue(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
+                      >
+                        <option value="" disabled>Select Grade Level...</option>
+                        {availableGrades.map((g) => (
+                          <option key={g} value={g}>Grade {g}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          required
+                          list={`available-${scope}-datalist`}
+                          value={scopeValue}
+                          onChange={(e) => setScopeValue(e.target.value)}
+                          placeholder={scope === "section" ? "e.g. GLASSFISH, Rizal, Gold..." : "e.g. Room 101, Lab 2, 204..."}
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
+                        />
+                        <datalist id={`available-${scope}-datalist`}>
+                          {(scope === "section" ? availableSections : availableRooms).map((opt) => (
+                            <option key={opt} value={opt} />
+                          ))}
+                        </datalist>
+                        {(scope === "section" ? availableSections : availableRooms).length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span className="text-[10px] text-slate-400 font-medium">Suggestions:</span>
+                            {(scope === "section" ? availableSections : availableRooms).slice(0, 8).map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setScopeValue(opt)}
+                                className={`px-2 py-0.5 text-[10px] rounded-md border transition-all cursor-pointer font-semibold ${
+                                  scopeValue.toLowerCase() === opt.toLowerCase()
+                                    ? "bg-sky-600 text-white border-sky-600 shadow-sm"
+                                    : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-sky-50 hover:border-sky-300 hover:text-sky-700"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-1.5">
