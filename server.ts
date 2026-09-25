@@ -2370,6 +2370,100 @@ export function createElectionApp() {
     }
   });
 
+  app.get("/api/dashboard/stats", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    try {
+      const [users, votes, elections, positions, candidates] = await Promise.all([
+        getAll("users"),
+        getAll("votes"),
+        getAll("elections"),
+        getAll("positions"),
+        getAll("candidates"),
+      ]);
+
+      const students = users.filter((u: any) => u.role === "student");
+      const baseGrades = [7, 8, 9, 10];
+      const studentGrades = students
+        .map((s: any) => Number(s.yearLevel))
+        .filter((n: number) => Number.isFinite(n) && n > 0);
+      const allGrades = Array.from(new Set([...baseGrades, ...studentGrades])).sort((a, b) => a - b);
+
+      const allVoterIds = new Set(votes.map((v: any) => v.voterId || v.userId));
+      const votedStudentsOverall = students.filter((s: any) => allVoterIds.has(s.id));
+
+      const overallCohort = allGrades.map((grade) => {
+        const gradeStudents = students.filter((s: any) => Number(s.yearLevel) === grade);
+        const gradeVoted = gradeStudents.filter((s: any) => allVoterIds.has(s.id));
+        const percent = gradeStudents.length > 0
+          ? Math.round((gradeVoted.length / gradeStudents.length) * 100)
+          : 0;
+        return {
+          grade,
+          percent,
+          voted: gradeVoted.length,
+          total: gradeStudents.length,
+        };
+      });
+
+      const electionStats: Record<string, any> = {};
+      for (const el of elections) {
+        const elVotes = votes.filter((v: any) => v.electionId === el.id);
+        const elVoterIds = new Set(elVotes.map((v: any) => v.voterId || v.userId));
+        const eligibleStudents = students.filter((s: any) => isEligibleForElection(s, el));
+        const elVotedStudents = eligibleStudents.filter((s: any) => elVoterIds.has(s.id));
+        const elTurnout = eligibleStudents.length > 0
+          ? Math.round((elVotedStudents.length / eligibleStudents.length) * 100)
+          : 0;
+
+        const cohortData = allGrades.map((grade) => {
+          const gradeStudents = students.filter((s: any) => Number(s.yearLevel) === grade);
+          const gradeVoted = gradeStudents.filter((s: any) => elVoterIds.has(s.id));
+          const percent = gradeStudents.length > 0
+            ? Math.round((gradeVoted.length / gradeStudents.length) * 100)
+            : 0;
+          return {
+            grade,
+            percent,
+            voted: gradeVoted.length,
+            total: gradeStudents.length,
+          };
+        });
+
+        electionStats[el.id] = {
+          id: el.id,
+          title: el.title,
+          phase: getElectionPhase(el),
+          eligibleCount: eligibleStudents.length,
+          votedCount: elVotedStudents.length,
+          turnoutPercent: elTurnout,
+          pendingSessionsCount: Math.max(0, eligibleStudents.length - elVotedStudents.length),
+          cohortData,
+        };
+      }
+
+      res.json({
+        summary: {
+          studentsCount: students.length,
+          totalUsers: users.length,
+          totalElections: elections.length,
+          totalPositions: positions.length,
+          totalCandidates: candidates.length,
+          totalVotes: votes.length,
+          votedStudentsCount: votedStudentsOverall.length,
+          turnoutPercent: students.length > 0
+            ? Math.round((votedStudentsOverall.length / students.length) * 100)
+            : 0,
+          pendingSessionsCount: Math.max(0, students.length - votedStudentsOverall.length),
+        },
+        overallCohort,
+        electionStats,
+        gradeLevels: allGrades,
+      });
+    } catch (err: any) {
+      console.error("Dashboard stats error:", err);
+      res.status(500).json({ error: err.message || "Failed to load dashboard stats" });
+    }
+  });
+
   // --- School Branding Settings API ---
   app.get("/api/branding", async (req: Request, res: Response) => {
     try {

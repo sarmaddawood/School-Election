@@ -9,6 +9,8 @@ export default function DashboardTab({
   onRefreshData
 }: any) {
   const [elections, setElections] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [cohortView, setCohortView] = useState<string>("active");
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalVotes, setTotalVotes] = useState(0);
   const [totalPositions, setTotalPositions] = useState(0);
@@ -20,33 +22,45 @@ export default function DashboardTab({
       try {
         const headers = { Authorization: `Bearer ${token}` };
         
-        const [
-          electionsRes,
-          usersRes,
-          votesRes,
-          positionsRes,
-          candidatesRes
-        ] = await Promise.all([
-          fetch("/api/elections", { headers }),
-          fetch("/api/users?limit=1", { headers }),
-          fetch("/api/votes?limit=1", { headers }),
-          fetch("/api/positions?limit=1", { headers }),
-          fetch("/api/candidates?limit=1", { headers })
+        const [statsRes, electionsRes] = await Promise.all([
+          fetch("/api/dashboard/stats", { headers }),
+          fetch("/api/elections", { headers })
         ]);
 
-        const [electionsData, usersData, votesData, positionsData, candidatesData] = await Promise.all([
-          electionsRes.json().catch(() => ({ data: [] })),
-          usersRes.json().catch(() => ({ total: 0 })),
-          votesRes.json().catch(() => ({ total: 0 })),
-          positionsRes.json().catch(() => ({ total: 0 })),
-          candidatesRes.json().catch(() => ({ total: 0 }))
+        const [statsData, electionsData] = await Promise.all([
+          statsRes.ok ? statsRes.json().catch(() => null) : null,
+          electionsRes.ok ? electionsRes.json().catch(() => ({ data: [] })) : { data: [] }
         ]);
+
+        if (statsData?.summary) {
+          setStats(statsData);
+          setTotalUsers(statsData.summary.totalUsers || 0);
+          setTotalVotes(statsData.summary.totalVotes || 0);
+          setTotalPositions(statsData.summary.totalPositions || 0);
+          setTotalCandidates(statsData.summary.totalCandidates || 0);
+        } else {
+          // Fallback if specific stats endpoint fails
+          const [usersRes, votesRes, positionsRes, candidatesRes] = await Promise.all([
+            fetch("/api/users?limit=1", { headers }),
+            fetch("/api/votes?limit=1", { headers }),
+            fetch("/api/positions?limit=1", { headers }),
+            fetch("/api/candidates?limit=1", { headers })
+          ]);
+
+          const [usersData, votesData, positionsData, candidatesData] = await Promise.all([
+            usersRes.json().catch(() => ({ total: 0 })),
+            votesRes.json().catch(() => ({ total: 0 })),
+            positionsRes.json().catch(() => ({ total: 0 })),
+            candidatesRes.json().catch(() => ({ total: 0 }))
+          ]);
+
+          setTotalUsers(usersData.total || 0);
+          setTotalVotes(votesData.total || 0);
+          setTotalPositions(positionsData.total || 0);
+          setTotalCandidates(candidatesData.total || 0);
+        }
 
         setElections(Array.isArray(electionsData) ? electionsData : (Array.isArray(electionsData?.data) ? electionsData.data : []));
-        setTotalUsers(usersData.total || 0);
-        setTotalVotes(votesData.total || 0);
-        setTotalPositions(positionsData.total || 0);
-        setTotalCandidates(candidatesData.total || 0);
       } catch (err) {
         console.error("Failed to fetch dashboard stats", err);
       } finally {
@@ -63,12 +77,12 @@ export default function DashboardTab({
 
   // --- DATABASE CALCULATIONS ---
   
-  // 1. Registered Users
-  const studentsCount = totalUsers;
-  const teachersCount = 0;
+  // 1. Registered Users (Students only vs total registered accounts)
+  const studentsCount = stats?.summary?.studentsCount ?? totalUsers;
+  const totalRegisteredAccounts = stats?.summary?.totalUsers ?? totalUsers;
 
   // 2. Total Elections
-  const totalElectionsCount = elections.length || 0;
+  const totalElectionsCount = stats?.summary?.totalElections ?? (elections.length || 0);
   const now = new Date();
   
   const liveElections = elections.filter((el: any) => {
@@ -91,32 +105,54 @@ export default function DashboardTab({
   const activeElection = liveElections[0] || upcomingElections[0] || endedElections[0] || null;
 
   // 3. Polling Positions & Nominated Candidates
-  const totalPositionsCount = totalPositions || 0;
-  const nominatedCount = totalCandidates || 0;
+  const totalPositionsCount = stats?.summary?.totalPositions ?? totalPositions;
+  const nominatedCount = stats?.summary?.totalCandidates ?? totalCandidates;
 
   // 4. Votes & Turnout
-  const totalVotesCount = totalVotes || 0;
-  const votedStudentsCount = totalVotesCount;
-  
-  const turnoutPercent = studentsCount > 0
-    ? Math.min(100, Math.round((votedStudentsCount / studentsCount) * 100))
-    : 0;
+  const totalVotesCount = stats?.summary?.totalVotes ?? totalVotes;
+  const votedStudentsCount = stats?.summary?.votedStudentsCount ?? totalVotes;
+  const overallTurnoutPercent = stats?.summary?.turnoutPercent ?? (
+    studentsCount > 0 ? Math.min(100, Math.round((votedStudentsCount / studentsCount) * 100)) : 0
+  );
 
-  const pendingSessionsCount = Math.max(0, studentsCount - votedStudentsCount);
+  // Active Election Stats for Ballot Monitor
+  const activeStats = (activeElection && stats?.electionStats?.[activeElection.id]) || null;
+  const activeTurnout = activeStats ? activeStats.turnoutPercent : overallTurnoutPercent;
+  const activePendingSessions = activeStats 
+    ? activeStats.pendingSessionsCount 
+    : Math.max(0, studentsCount - votedStudentsCount);
 
-  // Cohort Turnout calculation - mocked based on total since we don't have all users
-  const displayGrades = [7, 8, 9, 10];
-  const cohortData = displayGrades.map(grade => {
-    const gradeStudents = Math.floor(studentsCount / 4);
-    const gradeVoted = Math.floor(votedStudentsCount / 4);
-    const percent = gradeStudents > 0 ? Math.min(100, Math.round((gradeVoted / gradeStudents) * 100)) : 0;
-    return {
+  // Cohort Turnout calculation from real data
+  let cohortData: any[] = [];
+  let selectedCohortLabel = "Active Ballot";
+
+  if (cohortView === "overall") {
+    selectedCohortLabel = "All Elections";
+    cohortData = stats?.overallCohort || [];
+  } else if (cohortView === "active" || !cohortView) {
+    if (activeElection && stats?.electionStats?.[activeElection.id]) {
+      selectedCohortLabel = activeElection.title;
+      cohortData = stats.electionStats[activeElection.id].cohortData || [];
+    } else {
+      selectedCohortLabel = "All Elections";
+      cohortData = stats?.overallCohort || [];
+    }
+  } else {
+    const el = elections.find((e: any) => e.id === cohortView);
+    selectedCohortLabel = el?.title || "Election";
+    cohortData = stats?.electionStats?.[cohortView]?.cohortData || stats?.overallCohort || [];
+  }
+
+  // Safe fallback if cohortData is empty
+  if (!cohortData || cohortData.length === 0) {
+    const baseGrades = [7, 8, 9, 10];
+    cohortData = baseGrades.map((grade) => ({
       grade,
-      percent,
-      voted: gradeVoted,
-      total: gradeStudents
-    };
-  });
+      percent: 0,
+      voted: 0,
+      total: 0
+    }));
+  }
 
   // Live Timer for Ballot Monitor
   const [timeLeft, setTimeLeft] = useState({
@@ -206,13 +242,13 @@ export default function DashboardTab({
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-50 block mb-2">Students</span>
                 <div>
                   <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[var(--ink)]">{studentsCount}</span>
-                  <p className="text-[0.65rem] opacity-50 mt-1 truncate">{totalUsers} total registered</p>
+                  <p className="text-[0.65rem] opacity-50 mt-1 truncate">{totalRegisteredAccounts} total registered</p>
                 </div>
             </div>
             <div className="bg-[var(--surface)] p-4 sm:p-5 flex flex-col justify-between">
                 <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-50 block mb-2">Turnout</span>
                 <div>
-                  <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[var(--accent)]">{turnoutPercent}%</span>
+                  <span className="font-display text-2xl sm:text-3xl font-bold leading-none text-[var(--accent)]">{overallTurnoutPercent}%</span>
                   <p className="text-[0.65rem] opacity-50 mt-1 truncate">{votedStudentsCount} of {studentsCount} voted</p>
                 </div>
             </div>
@@ -286,12 +322,12 @@ export default function DashboardTab({
                       <div className="mt-6">
                           <div className="flex justify-between font-mono text-[0.65rem] uppercase mb-2 text-zinc-500">
                               <span className="font-bold">Participation Tracker</span>
-                              <span className="text-[var(--accent)] font-bold">{turnoutPercent}% LOGGED</span>
+                              <span className="text-[var(--accent)] font-bold">{activeTurnout}% LOGGED</span>
                           </div>
                           <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
-                              <div className="h-full bg-[var(--accent)] transition-all duration-500 rounded-full" style={{ width: `${turnoutPercent}%` }}></div>
+                              <div className="h-full bg-[var(--accent)] transition-all duration-500 rounded-full" style={{ width: `${activeTurnout}%` }}></div>
                           </div>
-                          <p className="font-mono text-[0.6rem] opacity-50 text-right uppercase mt-2">{pendingSessionsCount} PENDING SESSIONS</p>
+                          <p className="font-mono text-[0.6rem] opacity-50 text-right uppercase mt-2">{activePendingSessions} PENDING SESSIONS</p>
                       </div>
                     </>
                   ) : (
@@ -304,13 +340,33 @@ export default function DashboardTab({
 
             <section className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
                 <div>
-                  <div className="border-b border-[var(--border)] pb-4 mb-6 flex justify-between items-center">
-                      <h3 className="font-mono text-[0.75rem] uppercase tracking-widest text-[var(--ink)] font-bold">COHORT INTELLIGENCE</h3>
-                      <span className="text-[0.65rem] font-mono text-zinc-400">{cohortData.length} Grade Levels</span>
+                  <div className="border-b border-[var(--border)] pb-4 mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                      <div>
+                        <h3 className="font-mono text-[0.75rem] uppercase tracking-widest text-[var(--ink)] font-bold">COHORT INTELLIGENCE</h3>
+                        <span className="text-[0.65rem] font-mono text-zinc-400">
+                          {cohortData.length} Grade Levels • {selectedCohortLabel}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          aria-label="Filter cohort by election"
+                          value={cohortView}
+                          onChange={(e) => setCohortView(e.target.value)}
+                          className="text-[0.7rem] bg-[var(--bg)] border border-[var(--border)] rounded-lg px-2.5 py-1 text-[var(--ink)] font-mono focus:outline-none focus:border-[var(--accent)] cursor-pointer"
+                        >
+                          <option value="active">Active Ballot ({activeElection ? activeElection.title : "None"})</option>
+                          <option value="overall">All Elections (Overall)</option>
+                          {elections.map((el: any) => (
+                            <option key={el.id} value={el.id}>
+                              {el.title}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                   </div>
                   
                   <div className={`grid grid-cols-2 ${cohortData.length > 2 ? "sm:grid-cols-4" : ""} gap-3`}>
-                      {cohortData.map((cohort) => (
+                      {cohortData.map((cohort: any) => (
                         <div key={cohort.grade} className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-3.5 text-center hover:border-[var(--accent)] transition-colors">
                             <span className="font-mono text-[0.6rem] uppercase tracking-widest opacity-50 block mb-2 font-bold">Grade {cohort.grade}</span>
                             <span className="font-display text-2xl font-bold text-[var(--ink)]">{cohort.percent}%</span>
@@ -320,14 +376,18 @@ export default function DashboardTab({
                   </div>
                   
                   <div className="mt-6 h-[130px] rounded-xl border border-[var(--border)] bg-gradient-to-t from-[var(--accent-soft)] to-transparent relative flex items-end justify-around px-4 pb-3 pt-4">
-                    {cohortData.map((cohort) => (
+                    {cohortData.map((cohort: any) => (
                       <div key={cohort.grade} className="flex flex-col items-center gap-1 w-12 h-full justify-end z-10">
-                        <span className="text-[9px] font-mono font-bold text-[var(--accent)]">{cohort.percent}%</span>
+                        <span className={`text-[9px] font-mono font-bold ${cohort.percent > 0 ? "text-[var(--accent)]" : "text-zinc-400"}`}>
+                          {cohort.percent}%
+                        </span>
                         <div 
-                          className="w-full bg-[var(--accent)] rounded-t-md relative transition-all duration-500 origin-bottom shadow-xs"
-                          style={{ height: `${Math.max(6, cohort.percent * 0.75)}%`, minHeight: "6px" }}
+                          className={`w-full rounded-t-md relative transition-all duration-500 origin-bottom shadow-xs ${
+                            cohort.percent > 0 ? "bg-[var(--accent)]" : "bg-zinc-200 dark:bg-zinc-700/60"
+                          }`}
+                          style={{ height: `${cohort.percent > 0 ? Math.max(8, cohort.percent * 0.75) : 3}%`, minHeight: cohort.percent > 0 ? "8px" : "3px" }}
                         >
-                          <div className="absolute inset-0 bg-white/10 rounded-t-md" />
+                          {cohort.percent > 0 && <div className="absolute inset-0 bg-white/10 rounded-t-md" />}
                         </div>
                         <span className="text-[9px] font-mono font-bold text-zinc-500 mt-1">G{cohort.grade}</span>
                       </div>

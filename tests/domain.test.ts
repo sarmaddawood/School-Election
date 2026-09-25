@@ -141,3 +141,40 @@ test("effective vote IDs enforce one record per election, position, and voter", 
   assert.notEqual(studentDocumentId("2026-001"), studentDocumentId("2026-002"));
 });
 
+test("cohort turnout calculates real grade level statistics rather than dividing evenly", () => {
+  const students = [
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `g7_${i}`, role: "student" as const, yearLevel: 7 })),
+    ...Array.from({ length: 50 }, (_, i) => ({ id: `g8_${i}`, role: "student" as const, yearLevel: 8 })),
+    ...Array.from({ length: 0 }, (_, i) => ({ id: `g9_${i}`, role: "student" as const, yearLevel: 9 })),
+  ];
+  // 20 students in grade 7 voted, 10 in grade 8 voted
+  const votedIds = new Set([
+    ...Array.from({ length: 20 }, (_, i) => `g7_${i}`),
+    ...Array.from({ length: 10 }, (_, i) => `g8_${i}`)
+  ]);
+
+  const baseGrades = [7, 8, 9, 10];
+  const studentGrades = students.map((s) => Number(s.yearLevel)).filter((n) => Number.isFinite(n) && n > 0);
+  const allGrades = Array.from(new Set([...baseGrades, ...studentGrades])).sort((a, b) => a - b);
+
+  const cohortData = allGrades.map((grade) => {
+    const gradeStudents = students.filter((s) => Number(s.yearLevel) === grade);
+    const gradeVoted = gradeStudents.filter((s) => votedIds.has(s.id));
+    const percent = gradeStudents.length > 0 ? Math.round((gradeVoted.length / gradeStudents.length) * 100) : 0;
+    return { grade, percent, voted: gradeVoted.length, total: gradeStudents.length };
+  });
+
+  assert.deepEqual(cohortData, [
+    { grade: 7, percent: 20, voted: 20, total: 100 },
+    { grade: 8, percent: 20, voted: 10, total: 50 },
+    { grade: 9, percent: 0, voted: 0, total: 0 },
+    { grade: 10, percent: 0, voted: 0, total: 0 },
+  ]);
+  // Grade 7 has 100 total, not 150/4 = 37
+  assert.equal(cohortData[0].total, 100);
+  assert.equal(cohortData[0].voted, 20);
+  // Grade 8 has 50 total, not 150/4 = 37
+  assert.equal(cohortData[1].total, 50);
+  assert.equal(cohortData[1].voted, 10);
+});
+

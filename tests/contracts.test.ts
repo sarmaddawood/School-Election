@@ -41,6 +41,7 @@ test("every frontend API operation has a matching backend route", () => {
     ["GET", "/api/votes/my"],
     ["POST", "/api/votes"],
     ["GET", "/api/elections/:id/turnout"],
+    ["GET", "/api/dashboard/stats"],
     ["PUT", "/api/branding"],
     ["GET", "/api/diagnostics/run-tests"],
     ["POST", "/api/ai/suggest-manifesto"],
