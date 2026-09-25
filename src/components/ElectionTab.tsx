@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle, Shield, Flag, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, Calendar, Clock, X, AlertCircle, Shield, Flag, Filter, StopCircle, CheckCircle2 } from "lucide-react";
 import { Election, ElectionPhase, User } from "../types";
 import ConfirmModal from "./ConfirmModal";
 
@@ -82,6 +82,8 @@ export default function ElectionTab({
   const [endsAt, setEndsAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmElection, setDeleteConfirmElection] = useState<{ id: string; title: string } | null>(null);
+  const [endConfirmElection, setEndConfirmElection] = useState<{ id: string; title: string } | null>(null);
+  const [endingElectionId, setEndingElectionId] = useState<string | null>(null);
 
   const availableGrades = useMemo(() => {
     const grades = new Set<string>(["7", "8", "9", "10", "11", "12"]);
@@ -283,6 +285,71 @@ export default function ElectionTab({
     }
   };
 
+  const handleOpenEndElection = (el: Election) => {
+    setEndConfirmElection({ id: el.id, title: el.title });
+  };
+
+  const handleConfirmEndElection = async () => {
+    if (!endConfirmElection) return;
+    const { id, title } = endConfirmElection;
+    setEndingElectionId(id);
+
+    try {
+      let response = await fetch(`/api/elections/${id}/end`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Resilient fallback to PUT if /api/elections/:id/end returns 404
+      if (!response.ok && response.status === 404) {
+        const el = elections.find((e) => e.id === id);
+        if (el) {
+          const now = new Date();
+          const start = new Date(el.startsAt);
+          const startsAt = start >= now ? new Date(now.getTime() - 1000).toISOString() : el.startsAt;
+          const endsAt = now.toISOString();
+
+          response = await fetch(`/api/elections/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              title: el.title,
+              description: el.description || "",
+              scope: el.scope || "all",
+              scopeValue: el.scopeValue || "",
+              hasPartyList: !!el.hasPartyList,
+              startsAt,
+              endsAt,
+            }),
+          });
+        }
+      }
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to end election");
+      }
+
+      setSuccessNotification(`Election "${title}" has ended successfully`);
+      if (editingElection?.id === id) {
+        setShowForm(false);
+        setEditingElection(null);
+      }
+      await fetchElections();
+    } catch (err: any) {
+      setErrorNotification(err.message || "An error occurred while ending the election");
+    } finally {
+      setEndConfirmElection(null);
+      setEndingElectionId(null);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -372,14 +439,24 @@ export default function ElectionTab({
               </div>
 
               {editingElection && getPhase(editingElection.startsAt, editingElection.endsAt) === "live" && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-start gap-2.5">
-                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold">Active Election</p>
-                    <p className="text-[11px] text-amber-700 mt-0.5">
-                      This election is currently active. Adjusting dates (such as extending voting deadlines) or updating election parameters will take effect immediately.
-                    </p>
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Active Election</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        This election is currently active. Adjusting dates or election parameters will take effect immediately.
+                      </p>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenEndElection(editingElection)}
+                    className="self-start sm:self-auto shrink-0 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                  >
+                    <StopCircle size={13} />
+                    End Election Now
+                  </button>
                 </div>
               )}
               {editingElection && getPhase(editingElection.startsAt, editingElection.endsAt) === "ended" && (
@@ -633,21 +710,48 @@ export default function ElectionTab({
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(el)}
-                    className="p-2 hover:bg-sky-50 rounded-lg border border-slate-200 text-slate-600 hover:text-sky-600 cursor-pointer transition-all"
-                  >
-                    <Edit2 size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(el.id, el.title)}
-                    className="p-2 hover:bg-rose-50 rounded-lg border border-rose-200 text-rose-600 cursor-pointer transition-all"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <div>
+                    {phase !== "ended" ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEndElection(el)}
+                        disabled={endingElectionId === el.id}
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                        title="End this election immediately"
+                      >
+                        <StopCircle size={13} className="text-rose-600" />
+                        <span>{endingElectionId === el.id ? "Ending..." : "End Election"}</span>
+                      </button>
+                    ) : (
+                      <span
+                        className="px-2.5 py-1 bg-slate-50 text-slate-400 border border-slate-200 text-[11px] font-semibold rounded-lg inline-flex items-center gap-1 select-none"
+                        title="This election has concluded"
+                      >
+                        <CheckCircle2 size={12} className="text-slate-400" />
+                        Ended
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(el)}
+                      className="p-2 hover:bg-sky-50 rounded-lg border border-slate-200 text-slate-600 hover:text-sky-600 cursor-pointer transition-all"
+                      title="Edit Election"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(el.id, el.title)}
+                      className="p-2 hover:bg-rose-50 rounded-lg border border-rose-200 text-rose-600 cursor-pointer transition-all"
+                      title="Delete Election"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -676,6 +780,17 @@ export default function ElectionTab({
           </motion.div>
         )}
       </motion.div>
+      <ConfirmModal
+        isOpen={endConfirmElection !== null}
+        onClose={() => setEndConfirmElection(null)}
+        onConfirm={handleConfirmEndElection}
+        title="End Election Early?"
+        message={`Are you sure you want to end "${endConfirmElection?.title}" immediately? Voting will be closed right away and results will be finalized.`}
+        confirmText="END ELECTION NOW"
+        cancelText="CANCEL"
+        isDanger={true}
+        icon={<StopCircle size={32} className="text-rose-600" />}
+      />
       <ConfirmModal
         isOpen={deleteConfirmElection !== null}
         onClose={() => setDeleteConfirmElection(null)}

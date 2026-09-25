@@ -1799,6 +1799,47 @@ export function createElectionApp() {
     }
   });
 
+  app.post("/api/elections/:id/end", requireAdmin, async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    try {
+      const electionRef = db.collection("elections").doc(id);
+      const electionDoc = await electionRef.get();
+      if (!electionDoc.exists) {
+        res.status(404).json({ error: "Election not found" });
+        return;
+      }
+
+      const election = electionDoc.data();
+      const now = new Date();
+      const nowIso = now.toISOString();
+
+      if (getElectionPhase({ id, ...election }, now) === "ended") {
+        res.status(400).json({ error: "Election has already ended" });
+        return;
+      }
+
+      // If the election has not started yet, adjust startsAt to 1 second before now
+      const start = new Date(election.startsAt);
+      const startsAt = start >= now ? new Date(now.getTime() - 1000).toISOString() : election.startsAt;
+      const endsAt = nowIso;
+
+      const updatedElection = {
+        ...election,
+        id,
+        startsAt,
+        endsAt,
+      };
+
+      await electionRef.set(updatedElection);
+      await logAuditEvent("END_ELECTION", (req as any).user.fullName, "admin", `Manually ended election early: ${election.title}`);
+
+      res.json(updatedElection);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || "Failed to end election" });
+    }
+  });
+
   // --- Party Lists API ---
   app.get("/api/partylists", requireAuth, async (req: Request, res: Response) => {
     const { electionId } = req.query;
