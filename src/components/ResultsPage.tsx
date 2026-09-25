@@ -194,7 +194,7 @@ export default function ResultsPage({
         className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">AUDIT & RESULTS</span>
+          <span className="text-[10px] font-bold text-sky-600 tracking-wider uppercase bg-sky-50 px-2.5 py-1 rounded-md border border-sky-100">ELECTION RESULTS</span>
           <h2 className="font-display font-black text-2xl text-slate-900 tracking-tight mt-1 flex items-center gap-2">
             <BarChart3 className="text-sky-600" size={24} />
             Election Tally & Turnout

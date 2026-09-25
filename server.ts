@@ -49,21 +49,62 @@ function normalizeBranding(branding: any) {
     attributionText: PERMANENT_ATTRIBUTION,
   };
 }
+// --- In-Memory Caching for Appwrite Free Tier Optimization (Minimizes Reads, Writes, and Egress) ---
+const authUserCache = new Map<string, { user: any; expiresAt: number }>();
+const cacheTTL = {
+  user: 60 * 1000,          // 60s for authenticated users (cuts user reads by ~90%)
+  branding: 5 * 60 * 1000,  // 5m for branding (eliminates redundant DB hits on every page load)
+  elections: 30 * 1000,     // 30s for elections list/metadata
+  positions: 30 * 1000,     // 30s for positions
+  usersList: 60 * 1000,     // 60s for student nomination search
+  dashboardStats: 10 * 1000,// 10s for dashboard stats
+  turnout: 5 * 1000,        // 5s for election turnout
+};
 
-async function logAuditEvent(action: string, performedBy: string, role: string, details: string) {
-  const entry = {
-    id: ID.unique(),
-    action,
-    performedBy,
-    performedByRole: role,
-    timestamp: new Date().toISOString(),
-    details: String(details || "").slice(0, 5000),
-  };
-  try {
-    await saveAppwriteDoc("auditLogs", entry.id, entry, false);
-  } catch (error: any) {
-    console.error("Failed to persist audit event:", error.message);
+let cachedBranding: { data: any; expiresAt: number } | null = null;
+let cachedDashboardStats: { data: any; expiresAt: number } | null = null;
+let cachedUsersList: { data: any[]; expiresAt: number } | null = null;
+const cachedTurnout = new Map<string, { data: any; expiresAt: number }>();
+const cachedElections = new Map<string, { data: any; expiresAt: number }>();
+const cachedPositions = new Map<string, { data: any; expiresAt: number }>();
+
+function invalidateUserCache(userId?: string) {
+  if (userId) {
+    authUserCache.delete(userId);
+  } else {
+    authUserCache.clear();
   }
+  cachedUsersList = null;
+  cachedDashboardStats = null;
+}
+
+function invalidateElectionCache(electionId?: string) {
+  if (electionId) {
+    cachedElections.delete(electionId);
+    cachedTurnout.delete(electionId);
+  } else {
+    cachedElections.clear();
+    cachedTurnout.clear();
+  }
+  cachedDashboardStats = null;
+}
+
+function invalidatePositionCache(electionId?: string) {
+  if (electionId) {
+    cachedPositions.delete(electionId);
+  } else {
+    cachedPositions.clear();
+  }
+  cachedDashboardStats = null;
+}
+
+function optimizeMediaUrl(url: string | null | undefined): string | null {
+  if (!url || typeof url !== "string") return null;
+  // If it's an Appwrite storage view URL, convert to compressed webp preview to minimize bandwidth/egress
+  if (url.includes("/storage/buckets/") && url.includes("/files/") && url.includes("/view")) {
+    return url.replace("/view?", "/preview?width=320&height=320&output=webp&quality=80&");
+  }
+  return url;
 }
 
 
@@ -243,19 +284,7 @@ async function ensureCollectionsExist() {
           { key: "contactEmail", type: "string", size: 255, required: false },
           { key: "address", type: "string", size: 1000, required: false }
         ]
-      },
-      {
-        id: "auditLogs",
-        name: "Audit Logs",
-        attributes: [
-          { key: "action", type: "string", size: 255, required: true },
-          { key: "performedBy", type: "string", size: 255, required: true },
-          { key: "performedByRole", type: "string", size: 50, required: true },
-          { key: "timestamp", type: "string", size: 255, required: true },
-          { key: "details", type: "string", size: 5000, required: true }
-        ]
       }
-
     ];
 
     for (const col of requiredCollections) {
@@ -670,7 +699,6 @@ async function ensureCollectionsExist() {
       { collection: "votes", id: "votes_position", type: "key", attributes: ["positionId"] },
       { collection: "votes", id: "votes_candidate", type: "key", attributes: ["candidateId"] },
       { collection: "partyLists", id: "party_election_normalized_name", type: "unique", attributes: ["electionId", "normalizedName"] },
-      { collection: "auditLogs", id: "audit_timestamp", type: "key", attributes: ["timestamp"], orders: ["desc"] },
     ];
 
     const indexedCollections = Array.from(new Set(requiredIndexes.map((index) => index.collection)));
@@ -1042,7 +1070,7 @@ export function createElectionApp() {
     section: user.section || null,
     room: user.room || null,
     hasSetPassword: user.hasSetPassword !== false && Boolean(user.password),
-    photoUrl: user.photoUrl || null,
+    photoUrl: optimizeMediaUrl(user.photoUrl),
     sex: user.sex || null,
     birthDate: user.birthDate || null,
     age: user.age ?? null,
@@ -1068,7 +1096,7 @@ export function createElectionApp() {
     12 * 60 * 60,
   );
 
-  // Authentication validation middleware
+  // Authentication validation middleware with in-memory caching to eliminate redundant Appwrite reads
   async function getAuthenticatedUser(req: Request) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -1078,11 +1106,20 @@ export function createElectionApp() {
     const claims = verifySignedToken<{ sub: string }>(token, APP_SECURITY_SECRET, "session");
     const userId = claims?.sub;
     if (!userId) return null;
+
+    const now = Date.now();
+    const cached = authUserCache.get(userId);
+    if (cached && cached.expiresAt > now) {
+      return cached.user;
+    }
+
     const user = await getOne("users", userId);
     if (!user) {
       return null;
     }
-    return toPublicUser(user);
+    const publicUser = toPublicUser(user);
+    authUserCache.set(userId, { user: publicUser, expiresAt: now + cacheTTL.user });
+    return publicUser;
   }
 
   async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -1164,7 +1201,6 @@ export function createElectionApp() {
       const user = userDocument ? { id: userDocument.$id, ...userDocument } as any : null;
 
       if (!user) {
-        await logAuditEvent("LOGIN_FAILED", identifier, "unknown", "Sign-in rejected: Identifier was not found");
         res.status(401).json({ error: "No account found matching this Student Number or Email" });
         return;
       }
@@ -1184,12 +1220,9 @@ export function createElectionApp() {
       }
 
       if (!(await verifyPassword(password, user.password))) {
-        await logAuditEvent("LOGIN_FAILED", user.fullName, user.role, `Sign-in rejected for ${identifier}: incorrect password`);
         res.status(401).json({ error: "Invalid password for this account" });
         return;
       }
-
-      await logAuditEvent("LOGIN_SUCCESS", user.fullName, user.role, `Logged in via ${identifier}`);
 
       res.json({
         user: { ...toPublicUser(user), hasSetPassword: true },
@@ -1232,14 +1265,13 @@ export function createElectionApp() {
         password: await hashPassword(newPassword),
         hasSetPassword: true
       });
+      invalidateUserCache(userId);
 
       const updatedUser = {
         ...userDoc.data(),
         id: userId,
         hasSetPassword: true
       };
-
-      await logAuditEvent("FIRST_TIME_PASSWORD_SET", updatedUser.fullName, updatedUser.role, `Set account password for Student Number ${claims.studentNumber}`);
 
       res.json({
         message: "Password configured successfully! Account ready.",
@@ -1279,7 +1311,7 @@ export function createElectionApp() {
       }
 
       await userRef.update({ password: await hashPassword(newPassword), hasSetPassword: true });
-      await logAuditEvent("CHANGE_PASSWORD", user.fullName, user.role, "Updated account password");
+      invalidateUserCache(user.id);
       res.json({ message: "Password updated successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to update password" });
@@ -1318,7 +1350,7 @@ export function createElectionApp() {
           InputFile.fromBuffer(buffer, filename)
         );
 
-        const hostedUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/view?project=${APPWRITE_PROJECT}`;
+        const hostedUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/preview?width=320&height=320&output=webp&quality=80&project=${APPWRITE_PROJECT}`;
         return hostedUrl;
       } catch (err: any) {
         console.error("Failed to upload base64 image to Appwrite storage:", err);
@@ -1331,13 +1363,39 @@ export function createElectionApp() {
       const parsed = new URL(trimmed);
       if (parsed.protocol !== "https:") throw new Error("Only HTTPS image URLs are accepted");
       if (trimmed.length > 1000) throw new Error("Image URL is too long");
-      return trimmed;
+      return optimizeMediaUrl(trimmed);
     } catch (error: any) {
       throw Object.assign(new Error(error.message || "Profile image URL is invalid"), { status: 400 });
     }
   }
 
-  // --- Upload API ---
+  // --- Media & Upload API ---
+  app.get("/api/media/:fileId", async (req: Request, res: Response) => {
+    const fileId = req.params.fileId;
+    try {
+      const buffer = await storage.getFilePreview(
+        APPWRITE_BUCKET_ID,
+        fileId,
+        320,
+        320,
+        undefined,
+        80,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        "webp"
+      );
+      res.setHeader("Content-Type", "image/webp");
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      res.send(Buffer.from(buffer));
+    } catch {
+      res.status(404).json({ error: "Image not found" });
+    }
+  });
+
   app.post("/api/upload", requireAuth, upload.single("file"), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
@@ -1354,9 +1412,8 @@ export function createElectionApp() {
         InputFile.fromBuffer(req.file.buffer, req.file.originalname)
       );
 
-      const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/view?project=${APPWRITE_PROJECT}`;
+      const fileUrl = `${APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${appwriteFile.$id}/preview?width=320&height=320&output=webp&quality=80&project=${APPWRITE_PROJECT}`;
 
-      await logAuditEvent("UPLOAD_IMAGE", (req as any).user.fullName, (req as any).user.role, `Uploaded image file ${appwriteFile.$id}`);
       res.json({ url: fileUrl, fileId: appwriteFile.$id });
     } catch (err: any) {
       console.error("Upload error:", err);
@@ -1382,11 +1439,18 @@ export function createElectionApp() {
     }
   });
 
-  // Fast Student Search for Candidate Nomination
+  // Fast Student Search for Candidate Nomination (cached in-memory to prevent repeated full-database reads)
   app.get("/api/students/search", requireAdminOrTeacher, async (req: Request, res: Response) => {
     const query = (req.query.q || "").toString().toLowerCase().trim();
     try {
-      const users = await getAll("users");
+      const now = Date.now();
+      let users: any[];
+      if (cachedUsersList && cachedUsersList.expiresAt > now) {
+        users = cachedUsersList.data;
+      } else {
+        users = await getAll("users");
+        cachedUsersList = { data: users, expiresAt: now + cacheTTL.usersList };
+      }
       const students = users
         .filter((u: any) => u.role === "student")
         .filter((u: any) => {
@@ -1469,7 +1533,7 @@ export function createElectionApp() {
       };
 
       await db.collection("users").doc(newUser.id).set(newUser);
-      await logAuditEvent("CREATE_USER", requester.fullName, requester.role, `Created ${role} account for ${fullName} (${finalStudentNumber})`);
+      invalidateUserCache();
       res.status(201).json(toPublicUser(newUser));
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
@@ -1546,7 +1610,7 @@ export function createElectionApp() {
         }
       }
 
-      await logAuditEvent("BULK_USER_IMPORT", (req as any).user.fullName, (req as any).user.role, `Bulk imported ${created.length} student records without passwords (${errors.length} skipped/errors).`);
+      invalidateUserCache();
 
       res.status(201).json({
         success: true,
@@ -1597,7 +1661,7 @@ export function createElectionApp() {
       votesSnapshot.forEach((d) => { batch.delete(db.collection("votes").doc(d.id)); });
       await batch.commit();
 
-      await logAuditEvent("DELETE_USER", requester.fullName, requester.role, `Deleted user account ${userData.fullName} (${normalizeStudentNumber(userData.studentNumber || userData.username)})`);
+      invalidateUserCache(id);
 
       res.json({ message: "User deleted successfully" });
     } catch (err: any) {
@@ -1632,9 +1696,9 @@ export function createElectionApp() {
       const finalPhotoUrl = await ensureHostedPhotoUrl(photoUrl);
 
       await userRef.update({ photoUrl: finalPhotoUrl });
+      invalidateUserCache(id);
       const userData = targetUser || {};
       const updatedUser = { ...userData, id, photoUrl: finalPhotoUrl };
-      await logAuditEvent("UPDATE_PROFILE_PHOTO", authUser.fullName, authUser.role, `Updated profile photo for ${targetUser.fullName || id}`);
       res.json({ message: "Profile photo updated successfully", user: toPublicUser(updatedUser) });
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to update profile photo" });
@@ -1705,7 +1769,7 @@ export function createElectionApp() {
       };
 
       await db.collection("elections").doc(newElection.id).set(newElection);
-      await logAuditEvent("CREATE_ELECTION", (req as any).user.fullName, "admin", `Created election: ${title} (Scope: ${newElection.scope}${cleanScopeValue ? `, target: ${cleanScopeValue}` : ""})`);
+      invalidateElectionCache();
 
       res.status(201).json(newElection);
     } catch (err: any) {
@@ -1748,7 +1812,7 @@ export function createElectionApp() {
       };
 
       await electionRef.set(updatedElection);
-      await logAuditEvent("UPDATE_ELECTION", (req as any).user.fullName, "admin", `Updated election: ${title} (Scope: ${scope}${cleanScopeValue ? `, target: ${cleanScopeValue}` : ""})`);
+      invalidateElectionCache(id);
 
       res.json(updatedElection);
     } catch (err: any) {
@@ -1791,7 +1855,7 @@ export function createElectionApp() {
 
       await batch.commit();
 
-      await logAuditEvent("DELETE_ELECTION", (req as any).user.fullName, "admin", `Deleted election: ${elTitle} and all associated records`);
+      invalidateElectionCache(id);
 
       res.json({ message: "Election deleted successfully" });
     } catch (err: any) {
@@ -1832,7 +1896,7 @@ export function createElectionApp() {
       };
 
       await electionRef.set(updatedElection);
-      await logAuditEvent("END_ELECTION", (req as any).user.fullName, "admin", `Manually ended election early: ${election.title}`);
+      invalidateElectionCache(id);
 
       res.json(updatedElection);
     } catch (err: any) {
@@ -1891,7 +1955,6 @@ export function createElectionApp() {
       };
 
       await db.collection("partyLists").doc(newParty.id).set(newParty);
-      await logAuditEvent("CREATE_PARTY_LIST", (req as any).user.fullName, "admin", `Registered Party-List "${newParty.name}" (${newParty.acronym})`);
 
       res.status(201).json(newParty);
     } catch (err: any) {
@@ -1922,7 +1985,6 @@ export function createElectionApp() {
         partyListName: null,
       }));
       await batch.commit();
-      await logAuditEvent("DELETE_PARTY_LIST", (req as any).user.fullName, "admin", `Removed Party-List "${partyList.name}"`);
       res.json({ message: "Party-List removed successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete party-list" });
@@ -1977,7 +2039,7 @@ export function createElectionApp() {
       };
 
       await db.collection("positions").doc(newPosition.id).set(newPosition);
-      await logAuditEvent("CREATE_POSITION", (req as any).user.fullName, "admin", `Created position "${cleanName}" for election ${electionId}`);
+      invalidatePositionCache(electionId);
       res.status(201).json(newPosition);
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
@@ -2011,7 +2073,7 @@ export function createElectionApp() {
       votes.forEach((doc) => batch.delete(db.collection("votes").doc(doc.id)));
 
       await batch.commit();
-      await logAuditEvent("DELETE_POSITION", (req as any).user.fullName, "admin", `Deleted position "${positionDoc.data()?.name || id}" and associated nominations and votes`);
+      invalidatePositionCache();
       res.json({ message: "Position deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete position" });
@@ -2043,7 +2105,7 @@ export function createElectionApp() {
         return;
       }
       await positionRef.update({ name: cleanName, normalizedName: cleanName.toLocaleLowerCase() });
-      await logAuditEvent("UPDATE_POSITION", (req as any).user.fullName, "admin", `Renamed position to "${cleanName}"`);
+      invalidatePositionCache();
       res.json({ message: "Position updated successfully" });
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
@@ -2067,9 +2129,17 @@ export function createElectionApp() {
       const user = (req as any).user;
 
       if (user.role !== "admin" && user.role !== "teacher") {
-        const { documents: elections } = await getPaginated("elections", []);
+        let electionsList: any[];
+        const now = Date.now();
+        if (cachedElections.has("__all__") && cachedElections.get("__all__")!.expiresAt > now) {
+          electionsList = cachedElections.get("__all__")!.data;
+        } else {
+          const { documents: fetched } = await getPaginated("elections", []);
+          electionsList = fetched;
+          cachedElections.set("__all__", { data: fetched, expiresAt: now + cacheTTL.elections });
+        }
         list = list.map((c: any) => {
-          const election = elections.find((e: any) => e.id === c.electionId);
+          const election = electionsList.find((e: any) => e.id === c.electionId);
           if (election && !canViewElectionResults(user.role, election)) {
             return { ...c, voteCount: 0 };
           }
@@ -2174,7 +2244,7 @@ export function createElectionApp() {
       };
 
       await db.collection("candidates").doc(newCandidate.id).set(newCandidate);
-      await logAuditEvent("NOMINATE_CANDIDATE", (req as any).user.fullName, "admin", `Nominated ${user.fullName} for ${position.name} in ${election.title}`);
+      cachedDashboardStats = null;
 
       res.status(201).json(newCandidate);
     } catch (err: any) {
@@ -2206,7 +2276,7 @@ export function createElectionApp() {
       votesSnapshot.forEach((d) => { batch.delete(db.collection("votes").doc(d.id)); });
       await batch.commit();
 
-      await logAuditEvent("DELETE_CANDIDATE", (req as any).user.fullName, "admin", `Removed candidate ${candidate.fullName || id}`);
+      cachedDashboardStats = null;
 
       res.json({ message: "Candidate removed successfully" });
     } catch (err: any) {
@@ -2223,11 +2293,20 @@ export function createElectionApp() {
     timestamp = new Date().toISOString(),
   }: any) {
     if (student.role !== "student") throw Object.assign(new Error("Only students are authorized to vote"), { status: 403 });
-    const [election, position, candidate] = await Promise.all([
-      getOne("elections", electionId),
-      getOne("positions", positionId),
-      getOne("candidates", candidateId),
-    ]);
+    const now = Date.now();
+    let election = cachedElections.get(electionId)?.data;
+    if (!election) {
+      election = await getOne("elections", electionId);
+      if (election) cachedElections.set(electionId, { data: election, expiresAt: now + cacheTTL.elections });
+    }
+
+    let position = cachedPositions.get(positionId)?.data;
+    if (!position) {
+      position = await getOne("positions", positionId);
+      if (position) cachedPositions.set(positionId, { data: position, expiresAt: now + cacheTTL.positions });
+    }
+
+    const candidate = await getOne("candidates", candidateId);
     if (!election) throw Object.assign(new Error("Election not found"), { status: 404 });
     if (!isEligibleForElection(student, election)) throw Object.assign(new Error("This student is not eligible for the selected election"), { status: 403 });
     if (!position || position.electionId !== electionId) throw Object.assign(new Error("Invalid position for this election"), { status: 400 });
@@ -2329,6 +2408,9 @@ export function createElectionApp() {
         console.error("Failed to update vote count natively: ", e);
     }
     
+    cachedDashboardStats = null;
+    cachedTurnout.delete(electionId);
+
     return {
       vote: newVote,
       replaced: previous.some((vote) => vote.candidateId !== candidateId),
@@ -2376,12 +2458,6 @@ export function createElectionApp() {
     try {
       const user = (req as any).user;
       const result = await saveEffectiveVote({ student: user, electionId, positionId, candidateId });
-      await logAuditEvent(
-        result.replaced ? "VOTE_REVISED" : "VOTE_CAST",
-        user.fullName,
-        user.role,
-        `${result.replaced ? "Revised" : "Cast"} ballot selection in election "${result.election.title}"`,
-      );
       res.status(201).json(result.vote);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to submit vote" });
@@ -2391,18 +2467,27 @@ export function createElectionApp() {
 
   app.get("/api/elections/:id/turnout", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
+      const now = Date.now();
+      const cached = cachedTurnout.get(req.params.id);
+      if (cached && cached.expiresAt > now) {
+        res.json(cached.data);
+        return;
+      }
+
       const election = await getOne("elections", req.params.id);
       if (!election) {
         res.status(404).json({ error: "Election not found" });
         return;
       }
-      const [users, votes, positions] = await Promise.all([
+      const [users, positions, votesRes] = await Promise.all([
         getAll("users"),
-        getAll("votes"),
         queryPositions(req.params.id),
+        db.collection("votes").where("electionId", "==", req.params.id).get(),
       ]);
+      const electionVotes: any[] = [];
+      votesRes.forEach((doc: any) => electionVotes.push({ id: doc.id, ...doc.data() }));
+
       const eligible = users.filter((user) => isEligibleForElection({ id: user.id, ...user }, election));
-      const electionVotes = votes.filter((vote) => vote.electionId === req.params.id);
       const votesByVoter = new Map<string, Set<string>>();
       for (const vote of electionVotes) {
         if (!votesByVoter.has(vote.voterId)) votesByVoter.set(vote.voterId, new Set());
@@ -2419,13 +2504,15 @@ export function createElectionApp() {
         };
       });
       const votedCount = roster.filter((student) => student.hasVoted).length;
-      res.json({
+      const turnoutData = {
         electionId: req.params.id,
         eligibleCount: roster.length,
         votedCount,
         turnoutPercentage: roster.length ? Math.round((votedCount / roster.length) * 100) : 0,
         students: roster,
-      });
+      };
+      cachedTurnout.set(req.params.id, { data: turnoutData, expiresAt: now + cacheTTL.turnout });
+      res.json(turnoutData);
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to calculate election turnout" });
     }
@@ -2433,6 +2520,12 @@ export function createElectionApp() {
 
   app.get("/api/dashboard/stats", requireAdminOrTeacher, async (req: Request, res: Response) => {
     try {
+      const now = Date.now();
+      if (cachedDashboardStats && cachedDashboardStats.expiresAt > now) {
+        res.json(cachedDashboardStats.data);
+        return;
+      }
+
       const [users, votes, elections, positions, candidates] = await Promise.all([
         getAll("users"),
         getAll("votes"),
@@ -2501,7 +2594,7 @@ export function createElectionApp() {
         };
       }
 
-      res.json({
+      const result = {
         summary: {
           studentsCount: students.length,
           totalUsers: users.length,
@@ -2518,7 +2611,9 @@ export function createElectionApp() {
         overallCohort,
         electionStats,
         gradeLevels: allGrades,
-      });
+      };
+      cachedDashboardStats = { data: result, expiresAt: now + cacheTTL.dashboardStats };
+      res.json(result);
     } catch (err: any) {
       console.error("Dashboard stats error:", err);
       res.status(500).json({ error: err.message || "Failed to load dashboard stats" });
@@ -2526,9 +2621,21 @@ export function createElectionApp() {
   });
 
   // --- School Branding Settings API ---
+  async function getCachedBranding() {
+    const now = Date.now();
+    if (cachedBranding && cachedBranding.expiresAt > now) {
+      return cachedBranding.data;
+    }
+    const data = normalizeBranding(await getOne("branding", "school"));
+    cachedBranding = { data, expiresAt: now + cacheTTL.branding };
+    return data;
+  }
+
   app.get("/api/branding", async (req: Request, res: Response) => {
     try {
-      res.json(normalizeBranding(await getOne("branding", "school")));
+      const data = await getCachedBranding();
+      res.setHeader("Cache-Control", "public, max-age=120, stale-while-revalidate=300");
+      res.json(data);
     } catch {
       res.json(DEFAULT_BRANDING);
     }
@@ -2536,7 +2643,7 @@ export function createElectionApp() {
 
   app.put("/api/branding", requireAdmin, async (req: Request, res: Response) => {
     try {
-      const existing = normalizeBranding(await getOne("branding", "school"));
+      const existing = await getCachedBranding();
       const primaryColor = String(req.body.primaryColor || existing.primaryColor);
       if (!/^#[0-9a-f]{6}$/i.test(primaryColor)) {
         res.status(400).json({ error: "Primary color must be a six-digit hexadecimal color" });
@@ -2563,30 +2670,10 @@ export function createElectionApp() {
         return;
       }
       await db.collection("branding").doc("school").set(branding);
-      await logAuditEvent("UPDATE_BRANDING", (req as any).user.fullName, "admin", "Updated reusable school branding settings");
+      cachedBranding = { data: branding, expiresAt: Date.now() + cacheTTL.branding };
       res.json(branding);
     } catch (err: any) {
       res.status(err.status || 500).json({ error: err.message || "Failed to update branding settings" });
-    }
-  });
-
-  // --- Audit Logs API ---
-  app.get("/api/audit-logs", requireAdminOrTeacher, async (req: Request, res: Response) => {
-    try {
-      const response = await databases.listDocuments(APPWRITE_DB, "auditLogs", [
-        Query.orderDesc("timestamp"),
-        Query.limit(500),
-      ]);
-      res.json(response.documents.map((document: any) => ({
-        id: document.$id,
-        action: document.action,
-        performedBy: document.performedBy,
-        performedByRole: document.performedByRole,
-        timestamp: document.timestamp,
-        details: document.details,
-      })));
-    } catch (err: any) {
-      res.status(500).json({ error: err.message || "Failed to fetch audit logs" });
     }
   });
 

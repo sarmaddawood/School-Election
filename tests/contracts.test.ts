@@ -62,7 +62,6 @@ test("Appwrite collections contain every field consumed by the frontend and serv
     votes: ["electionId", "positionId", "voterId", "candidateId", "timestamp"],
     partyLists: ["electionId", "name", "normalizedName", "acronym", "logoUrl", "advocacy"],
     branding: ["schoolName", "tagline", "logoUrl", "primaryColor", "attributionText", "contactEmail", "address"],
-    auditLogs: ["action", "performedBy", "performedByRole", "timestamp", "details"],
   };
 
   for (const [collection, fields] of Object.entries(requiredFields)) {

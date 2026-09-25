@@ -74,7 +74,6 @@ async function main() {
     "partyLists",
     "elections",
     "offlineBallots",
-    "auditLogs",
     "users",
   ];
 
@@ -349,17 +348,7 @@ async function main() {
     console.log(`    [CREATED] 5 Class Officer Positions for ${sec}`);
   }
 
-  // Step 7: Record Audit Event
-  const auditDoc = {
-    action: "DATABASE_INITIALIZED",
-    performedBy: "System Administrator",
-    performedByRole: "admin",
-    timestamp: new Date().toISOString(),
-    details: `Cleaned database and successfully onboarded 1 Admin, 4 Teachers, and 99 Grade 7 Students across GLASSFISH, SAILFISH, GARFISH, and MOONFIISH sections. Initialized SSLG Election 2026 and 4 Class Elections.`,
-  };
-  await databases.createDocument(APPWRITE_DB, "auditLogs", ID.unique(), auditDoc);
-
-  // Step 8: Comprehensive Verification
+  // Step 7: Comprehensive Verification
   console.log("\n===============================================================");
   console.log("                    DATABASE VERIFICATION                      ");
   console.log("===============================================================");

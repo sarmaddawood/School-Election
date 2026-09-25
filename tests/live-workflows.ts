@@ -203,10 +203,6 @@ try {
   assert.equal(branded.schoolName, `QA School ${suffix}`);
   assert.equal(branded.attributionText, "GWC Student-Built Election System\u2122 \u2022 \u00a9 2026 Golden West Colleges, Inc. student developers.");
 
-  const logs = expect(await api("/api/audit-logs", { token: teacherToken }), 200, "Teacher views audit logs");
-  assert.ok(logs.some((entry: any) => entry.action === "VOTE_REVISED"));
-  assert.ok(logs.some((entry: any) => entry.action === "OFFLINE_BALLOT_IMPORTED"));
-
   const waitMs = Math.max(0, new Date(liveEndsAt).getTime() - Date.now() + 1_000);
   if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
   expect(await api(`/api/elections/${liveElection.id}`, { method: "DELETE", token: adminToken }), 200, "Delete the completed disposable election with cascades");

@@ -79,15 +79,6 @@ export interface SchoolBranding {
   address?: string;
 }
 
-export interface AuditLog {
-  id: string;
-  action: string;
-  performedBy: string;
-  performedByRole: string;
-  timestamp: string;
-  details: string;
-}
-
 export type ElectionPhase = "upcoming" | "live" | "ended";
 
 export interface AuthState {

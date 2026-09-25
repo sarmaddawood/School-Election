@@ -305,10 +305,10 @@ export default function UserDetailModal({
                   )}
                 </div>
 
-                {/* Cast Ballots / Auditing Log */}
+                {/* Cast Ballots / History Log */}
                 <div className="space-y-4 border-t border-[var(--border)] pt-6 mt-6">
                   <h4 className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
-                    <CheckCircle size={13} className="text-[var(--accent)]" /> CRYPTOGRAPHIC BALLOT AUDIT LOG (NON-IDENTIFYING)
+                    <CheckCircle size={13} className="text-[var(--accent)]" /> CAST BALLOT HISTORY (NON-IDENTIFYING)
                   </h4>
 
                   {userVotes.length > 0 ? (
