@@ -177,18 +177,18 @@ export default function LoginPage({
               Welcome!
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
-              Log in with your official <strong className="text-white">Student Number (LRN)</strong> or <strong className="text-white">Teacher Email</strong> and password to access active elections.
+              Log in with your official <strong className="text-white">12-digit LRN (Student Number)</strong> or <strong className="text-white">Teacher Email</strong> and password to access active elections.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label text-slate-200 font-bold text-xs uppercase tracking-wider block mb-1.5">
-                STUDENT NUMBER (LRN) / TEACHER EMAIL
+                STUDENT NUMBER (12-DIGIT LRN) / TEACHER EMAIL
               </label>
               <input
                 type="text"
-                placeholder="e.g. 2026-001 or teacher@deped.gov.ph"
+                placeholder="12-digit LRN (e.g. 101338190001) or teacher email"
                 autoComplete="username"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value)}
@@ -207,7 +207,7 @@ export default function LoginPage({
                 <input
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  placeholder="Enter password (or leave blank)"
+                  placeholder="Enter password (or leave blank if 1st time)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full p-3.5 pl-4 pr-12 border border-slate-600 rounded-xl text-base bg-slate-900/90 text-white outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/30 transition-all placeholder:text-slate-500 font-sans shadow-inner"

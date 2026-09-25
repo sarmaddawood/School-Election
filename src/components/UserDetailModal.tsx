@@ -198,12 +198,26 @@ export default function UserDetailModal({
                     <span className="font-bold text-[var(--ink)] uppercase">{user.role}</span>
                   </div>
                   {user.role === "student" && (
-                    <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
-                      <span className="text-zinc-500">YEAR LEVEL:</span>
-                      <span className="font-bold text-[var(--accent)]">
-                        Year {user.yearLevel || "Not Configured"}
-                      </span>
-                    </div>
+                    <>
+                      <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                        <span className="text-zinc-500">GRADE LEVEL:</span>
+                        <span className="font-bold text-[var(--accent)]">
+                          Grade {user.yearLevel || "Not Configured"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                        <span className="text-zinc-500">SECTION:</span>
+                        <span className="font-bold text-[var(--ink)]">
+                          {user.section || "Not Configured"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-dashed border-[var(--border)]">
+                        <span className="text-zinc-500">ROOM NUMBER:</span>
+                        <span className="font-bold text-[var(--ink)]">
+                          {user.room ? user.room.replace(/^room\s*/i, "") : "Not Configured"}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

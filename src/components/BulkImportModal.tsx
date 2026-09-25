@@ -57,7 +57,7 @@ export default function BulkImportModal({
   if (!isOpen) return null;
 
   const downloadSampleTemplate = () => {
-    const csvContent = "studentNumber,fullName,gradeLevel,section,room\n2026-0001,Juan Dela Cruz,10,Rizal,Room 204\n2026-0002,Pedro Penduko,11,Bonifacio,Room 305\n";
+    const csvContent = "studentNumber,fullName,gradeLevel,section,room\n101338190001,Juan Dela Cruz,7,GLASSFISH,20\n101338190002,Maria Santos,7,SAILFISH,21\n";
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -479,7 +479,7 @@ export default function BulkImportModal({
                   </label>
                   <textarea
                     rows={6}
-                    placeholder={`studentNumber,fullName,gradeLevel,section,room\n2026-0001,John Doe,10,Rizal,Room 204`}
+                    placeholder={`studentNumber,fullName,gradeLevel,section,room\n101338190001,Juan Dela Cruz,7,GLASSFISH,20`}
                     value={pastedText}
                     onChange={(e) => {
                       setPastedText(e.target.value);

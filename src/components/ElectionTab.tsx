@@ -402,7 +402,7 @@ export default function ElectionTab({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Grade 10 Representative Election 2026"
+                    placeholder="e.g. SSLG General Election or Grade 7 Representative"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
@@ -473,7 +473,7 @@ export default function ElectionTab({
                           list={`available-${scope}-datalist`}
                           value={scopeValue}
                           onChange={(e) => setScopeValue(e.target.value)}
-                          placeholder={scope === "section" ? "e.g. GLASSFISH, Rizal, Gold..." : "e.g. Room 101, Lab 2, 204..."}
+                          placeholder={scope === "section" ? "e.g. GLASSFISH, SAILFISH, GARFISH..." : "e.g. Room 101, Lab 2, 204..."}
                           className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white"
                         />
                         <datalist id={`available-${scope}-datalist`}>

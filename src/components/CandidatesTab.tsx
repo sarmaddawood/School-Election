@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Award, ChevronDown, UserPlus, Sparkles, Search, CheckCircle, Flag } from "lucide-react";
+import { Plus, Trash2, Award, ChevronDown, UserPlus, Sparkles, Search, CheckCircle, Flag, Filter, X, RotateCcw } from "lucide-react";
 import { Election, Position, Candidate, User, Vote, PartyList } from "../types";
 import CandidateModal from "./CandidateModal";
 import ConfirmModal from "./ConfirmModal";
@@ -68,6 +68,9 @@ export default function CandidatesTab({
   const [selectedElectionId, setSelectedElectionId] = useState("");
   const [selectedPositionId, setSelectedPositionId] = useState("");
   const [selectedYearLevel, setSelectedYearLevel] = useState("");
+  const [selectedSection, setSelectedSection] = useState("");
+  const [selectedNominationStatus, setSelectedNominationStatus] = useState<"all" | "unnominated" | "nominated">("all");
+  const [studentSortBy, setStudentSortBy] = useState<"name-asc" | "name-desc" | "section-asc" | "lrn-asc">("name-asc");
   const [manifesto, setManifesto] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
@@ -94,6 +97,8 @@ export default function CandidatesTab({
 
   useEffect(() => {
     if (selectedElectionId) {
+      setSelectedSection("");
+      setSelectedYearLevel("");
       const electionPositions = positions.filter((p) => p.electionId === selectedElectionId);
       if (electionPositions.length > 0) {
         setSelectedPositionId(electionPositions[0].id);
@@ -270,22 +275,107 @@ export default function CandidatesTab({
 
   const filteredPositions = positions.filter((p) => p.electionId === selectedElectionId);
 
-  // Search matching students for nomination
-  const searchedStudents = users
-    .filter((u) => u.role === "student")
-    .filter((u) => (selectedYearLevel ? u.yearLevel === parseInt(selectedYearLevel) : true))
-    .filter((u) => {
-      if (!studentSearchTerm.trim()) return true;
-      const term = studentSearchTerm.toLowerCase();
-      const sNum = u.studentNumber.toLowerCase();
-      const name = (u.fullName || "").toLowerCase();
-      const sec = (u.section || "").toLowerCase();
-      return sNum.includes(term) || name.includes(term) || sec.includes(term);
-    })
-    .filter((u) => {
-      if (!onlyEligible || !currentElection || currentElection.scope === "all" || !currentElection.scope) return true;
-      return isStudentEligible(u, currentElection).eligible;
+  // Available grade levels from student accounts
+  const availableGrades = useMemo(() => {
+    const grades = new Set<number>();
+    users.forEach((u) => {
+      if (u.role === "student" && typeof u.yearLevel === "number" && !isNaN(u.yearLevel)) {
+        grades.add(u.yearLevel);
+      }
     });
+    return Array.from(grades).sort((a, b) => a - b);
+  }, [users]);
+
+  // Available sections from student accounts, dynamically filtered by selected grade or scope
+  const availableSections = useMemo(() => {
+    const sections = new Set<string>();
+    users.forEach((u) => {
+      if (u.role === "student" && u.section && u.section.trim()) {
+        const sec = u.section.trim();
+        if (selectedYearLevel) {
+          if (u.yearLevel === parseInt(selectedYearLevel)) {
+            sections.add(sec);
+          }
+        } else if (onlyEligible && currentElection?.scope === "grade" && currentElection?.targetGradeLevel) {
+          if (u.yearLevel === currentElection.targetGradeLevel) {
+            sections.add(sec);
+          }
+        } else {
+          sections.add(sec);
+        }
+      }
+    });
+    return Array.from(sections).sort((a, b) => a.localeCompare(b));
+  }, [users, selectedYearLevel, onlyEligible, currentElection]);
+
+  // Search, filter, and sort matching students for nomination
+  const searchedStudents = useMemo(() => {
+    return users
+      .filter((u) => u.role === "student")
+      .filter((u) => (selectedYearLevel ? u.yearLevel === parseInt(selectedYearLevel) : true))
+      .filter((u) => {
+        if (!selectedSection) return true;
+        return (u.section || "").trim().toLowerCase() === selectedSection.trim().toLowerCase();
+      })
+      .filter((u) => {
+        if (!studentSearchTerm.trim()) return true;
+        const term = studentSearchTerm.toLowerCase().trim();
+        const sNum = (u.studentNumber || "").toLowerCase();
+        const name = (u.fullName || "").toLowerCase();
+        const sec = (u.section || "").toLowerCase();
+        const rm = (u.room || "").toLowerCase();
+        return sNum.includes(term) || name.includes(term) || sec.includes(term) || rm.includes(term);
+      })
+      .filter((u) => {
+        if (!onlyEligible || !currentElection || currentElection.scope === "all" || !currentElection.scope) return true;
+        return isStudentEligible(u, currentElection).eligible;
+      })
+      .filter((u) => {
+        if (selectedNominationStatus === "all") return true;
+        const isNominatedThisPosition = candidates.some(
+          (c) => c.positionId === selectedPositionId && c.userId === u.id
+        );
+        const isNominatedThisElection = candidates.some(
+          (c) => c.electionId === selectedElectionId && c.userId === u.id
+        );
+        if (selectedNominationStatus === "unnominated") {
+          return !isNominatedThisPosition && !isNominatedThisElection;
+        }
+        if (selectedNominationStatus === "nominated") {
+          return isNominatedThisPosition || isNominatedThisElection;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (studentSortBy === "name-asc") {
+          return (a.fullName || "").localeCompare(b.fullName || "");
+        }
+        if (studentSortBy === "name-desc") {
+          return (b.fullName || "").localeCompare(a.fullName || "");
+        }
+        if (studentSortBy === "section-asc") {
+          const secCompare = (a.section || "").localeCompare(b.section || "");
+          if (secCompare !== 0) return secCompare;
+          return (a.fullName || "").localeCompare(b.fullName || "");
+        }
+        if (studentSortBy === "lrn-asc") {
+          return (a.studentNumber || "").localeCompare(b.studentNumber || "");
+        }
+        return 0;
+      });
+  }, [
+    users,
+    selectedYearLevel,
+    selectedSection,
+    studentSearchTerm,
+    onlyEligible,
+    currentElection,
+    selectedNominationStatus,
+    studentSortBy,
+    candidates,
+    selectedPositionId,
+    selectedElectionId,
+  ]);
 
   const handleDelete = (id: string, name: string) => {
     setDeleteConfirmCandidate({ id, name });
@@ -480,7 +570,7 @@ export default function CandidatesTab({
                     <Flag size={12} /> Manage Party-Lists
                   </label>
                   <div className="grid grid-cols-[1fr_90px_auto] gap-2">
-                    <input type="text" value={newPartyName} onChange={(e) => setNewPartyName(e.target.value)} placeholder="Party-List name" className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
+                    <input type="text" value={newPartyName} onChange={(e) => setNewPartyName(e.target.value)} placeholder="Party-List name (e.g. LEAD, AGILA)" className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
                     <input type="text" value={newPartyAcronym} onChange={(e) => setNewPartyAcronym(e.target.value.toUpperCase())} placeholder="Acronym" maxLength={12} className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
                     <button type="button" onClick={handleCreatePartyList} disabled={!newPartyName.trim() || savingParty} className="px-3 py-2 bg-indigo-600 disabled:bg-indigo-200 text-white rounded-lg text-[10px] font-bold cursor-pointer disabled:cursor-not-allowed">ADD</button>
                   </div>
@@ -514,7 +604,7 @@ export default function CandidatesTab({
                 </div>
                 <textarea
                   rows={2}
-                  placeholder="Platform statement or pledges..."
+                  placeholder="Platform statement, advocacies, or pledges..."
                   value={manifesto}
                   onChange={(e) => setManifesto(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white resize-none"
@@ -524,9 +614,14 @@ export default function CandidatesTab({
               {/* INSTANT SEARCH & NOMINATE DIRECT BUTTONS */}
               <div className="pt-2 border-t border-slate-100 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                  <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                    Search & Nominate Student
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                      Search & Nominate Student
+                    </label>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700">
+                      {searchedStudents.length}
+                    </span>
+                  </div>
                   {currentElection && currentElection.scope && currentElection.scope !== "all" && (
                     <label className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 cursor-pointer">
                       <input
@@ -540,29 +635,164 @@ export default function CandidatesTab({
                   )}
                 </div>
 
+                {/* Search Bar with Clear Button */}
                 <div className="relative">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Search by Student Number or Name..."
+                    placeholder="Search by student name, 12-digit LRN, or section..."
                     value={studentSearchTerm}
                     onChange={(e) => setStudentSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white font-sans"
+                    className="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500 focus:bg-white font-sans transition-all"
                   />
+                  {studentSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setStudentSearchTerm("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-full cursor-pointer transition-colors"
+                      title="Clear search"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Controls: Grade Level, Section, Nomination Status */}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {/* Grade Level Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={selectedYearLevel}
+                        onChange={(e) => {
+                          setSelectedYearLevel(e.target.value);
+                          setSelectedSection("");
+                        }}
+                        className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
+                      >
+                        <option value="">All Grades</option>
+                        {availableGrades.map((g) => (
+                          <option key={g} value={g}>
+                            Grade {g}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={13}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                      />
+                    </div>
+
+                    {/* Section Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={selectedSection}
+                        onChange={(e) => setSelectedSection(e.target.value)}
+                        className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
+                      >
+                        <option value="">All Sections</option>
+                        {availableSections.map((sec) => (
+                          <option key={sec} value={sec}>
+                            {sec}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={13}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                      />
+                    </div>
+
+                    {/* Nomination Status */}
+                    <div className="relative col-span-2 sm:col-span-1">
+                      <select
+                        value={selectedNominationStatus}
+                        onChange={(e) => setSelectedNominationStatus(e.target.value as any)}
+                        className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="unnominated">Not Nominated</option>
+                        <option value="nominated">Nominated</option>
+                      </select>
+                      <ChevronDown
+                        size={13}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Section Filter Chips for 1-tap filtering */}
+                  {availableSections.length > 0 && availableSections.length <= 8 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSection("")}
+                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border whitespace-nowrap transition-all cursor-pointer ${
+                          !selectedSection
+                            ? "bg-sky-600 text-white border-sky-600 shadow-xs"
+                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        All
+                      </button>
+                      {availableSections.map((sec) => (
+                        <button
+                          key={sec}
+                          type="button"
+                          onClick={() => setSelectedSection(selectedSection === sec ? "" : sec)}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border whitespace-nowrap transition-all cursor-pointer ${
+                            selectedSection === sec
+                              ? "bg-sky-600 text-white border-sky-600 shadow-xs"
+                              : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                          }`}
+                        >
+                          {sec}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Active Filter Bar & Reset */}
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5 px-0.5">
+                    <span className="font-medium text-slate-600">
+                      Showing <strong className="text-slate-900">{searchedStudents.length}</strong> {searchedStudents.length === 1 ? "student" : "students"}
+                    </span>
+                    {(studentSearchTerm || selectedYearLevel || selectedSection || selectedNominationStatus !== "all") && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStudentSearchTerm("");
+                          setSelectedYearLevel("");
+                          setSelectedSection("");
+                          setSelectedNominationStatus("all");
+                        }}
+                        className="text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer flex items-center gap-1 text-[11px]"
+                      >
+                        <RotateCcw size={11} />
+                        <span>Reset Filters</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                   {searchedStudents.length === 0 ? (
                     <div className="text-center py-6 text-slate-400 text-xs">
                       {onlyEligible && currentElection && currentElection.scope !== "all"
-                        ? "No scope-eligible students found matching your search."
+                        ? "No scope-eligible students found matching your filters."
                         : "No matching student accounts found."}
                     </div>
                   ) : (
                     searchedStudents.map((st) => {
-                      const isAlreadyCandidate = candidates.some(
+                      const isNominatedThisPosition = candidates.some(
                         (c) => c.positionId === selectedPositionId && c.userId === st.id
                       );
+                      const otherCandidacy = candidates.find(
+                        (c) => c.electionId === selectedElectionId && c.positionId !== selectedPositionId && c.userId === st.id
+                      );
+                      const otherPosName = otherCandidacy
+                        ? positions.find((p) => p.id === otherCandidacy.positionId)?.name || "Another Position"
+                        : null;
                       const eligibility = isStudentEligible(st, currentElection);
 
                       return (
@@ -575,8 +805,12 @@ export default function CandidatesTab({
                           }`}
                         >
                           <div className="flex items-center gap-2.5 overflow-hidden pr-2">
-                            <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0 border border-sky-200">
-                              {st.fullName[0]}
+                            <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0 border border-sky-200 overflow-hidden">
+                              {st.photoUrl && st.photoUrl !== "null" && st.photoUrl !== "" && st.photoUrl !== "undefined" ? (
+                                <img src={st.photoUrl} alt={st.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                              ) : (
+                                st.fullName[0]
+                              )}
                             </div>
                             <div className="truncate">
                               <p className="text-xs font-bold text-slate-800 truncate">{st.fullName}</p>
@@ -586,10 +820,15 @@ export default function CandidatesTab({
                             </div>
                           </div>
 
-                          {isAlreadyCandidate ? (
+                          {isNominatedThisPosition ? (
                             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 flex items-center gap-1 shrink-0">
                               <CheckCircle size={12} />
                               Nominated
+                            </span>
+                          ) : otherPosName ? (
+                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1 shrink-0" title={`Already nominated for ${otherPosName}`}>
+                              <Award size={12} />
+                              In {otherPosName}
                             </span>
                           ) : !eligibility.eligible ? (
                             <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 shrink-0">
@@ -628,7 +867,7 @@ export default function CandidatesTab({
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Filter nominees..."
+                  placeholder="Filter roster by nominee or position..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full sm:w-60 pl-8 pr-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-sky-500 transition-colors"

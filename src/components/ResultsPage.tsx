@@ -281,7 +281,7 @@ export default function ResultsPage({
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search non-voted students..."
+                placeholder="Search by name, 12-digit LRN, section..."
                 value={unvotedSearchTerm}
                 onChange={(e) => setUnvotedSearchTerm(e.target.value)}
                 className="w-full pl-8 pr-3.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-sky-500"

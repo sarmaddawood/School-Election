@@ -1,6 +1,6 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera, FileLock2 } from "lucide-react";
+import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera, FileLock2, Filter, ChevronDown, RotateCcw } from "lucide-react";
 import { User as UserType, UserRole, Candidate, Position, Election, Vote } from "../types";
 import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
@@ -69,6 +69,10 @@ export default function UsersTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [selectedSection, setSelectedSection] = useState<string>("all");
+  const [selectedRoom, setSelectedRoom] = useState<string>("all");
+  const [selectedRole, setSelectedRole] = useState<string>("all");
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<{ id: string; name: string } | null>(null);
   const [selectedDetailUser, setSelectedDetailUser] = useState<UserType | null>(null);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
@@ -280,10 +284,107 @@ export default function UsersTab({
     }
   };
 
-  const filteredUsers = users.filter((u) => {
-    const q = searchQuery.toLowerCase();
-    return u.fullName.toLowerCase().includes(q) || u.studentNumber.toLowerCase().includes(q);
-  });
+  const availableGrades = useMemo(() => {
+    const grades = new Set<number>();
+    users.forEach((u) => {
+      if (typeof u.yearLevel === "number" && !isNaN(u.yearLevel) && u.yearLevel > 0) {
+        grades.add(u.yearLevel);
+      }
+    });
+    [7, 8, 9, 10, 11, 12].forEach((g) => grades.add(g));
+    return Array.from(grades).sort((a, b) => a - b);
+  }, [users]);
+
+  const availableSections = useMemo(() => {
+    const sections = new Set<string>();
+    users.forEach((u) => {
+      if (u.section && u.section.trim()) {
+        sections.add(u.section.trim());
+      }
+    });
+    return Array.from(sections).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  }, [users]);
+
+  const availableRooms = useMemo(() => {
+    const rooms = new Set<string>();
+    users.forEach((u) => {
+      if (u.room && u.room.trim()) {
+        const clean = u.room.trim().replace(/^room\s*/i, "");
+        if (clean) rooms.add(clean);
+      }
+    });
+    return Array.from(rooms).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+  }, [users]);
+
+  const normalizeRoom = (r?: string) => (r || "").toLowerCase().replace(/^room\s*/i, "").trim();
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (selectedGrade !== "all") {
+        if (String(u.yearLevel || "") !== selectedGrade) {
+          return false;
+        }
+      }
+
+      if (selectedSection !== "all") {
+        if ((u.section || "").trim().toLowerCase() !== selectedSection.trim().toLowerCase()) {
+          return false;
+        }
+      }
+
+      if (selectedRoom !== "all") {
+        if (normalizeRoom(u.room) !== normalizeRoom(selectedRoom)) {
+          return false;
+        }
+      }
+
+      if (selectedRole !== "all") {
+        if (u.role !== selectedRole) {
+          return false;
+        }
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const cleanQRoom = normalizeRoom(q);
+
+        const nameMatch = u.fullName.toLowerCase().includes(q);
+        const lrnMatch = u.studentNumber.toLowerCase().includes(q);
+        const sectionMatch = (u.section || "").toLowerCase().includes(q);
+        const roomMatch =
+          (u.room || "").toLowerCase().includes(q) ||
+          (cleanQRoom.length > 0 && normalizeRoom(u.room).includes(cleanQRoom));
+        const gradeMatch = u.yearLevel
+          ? `grade ${u.yearLevel}`.includes(q) ||
+            `gr. ${u.yearLevel}`.includes(q) ||
+            `gr ${u.yearLevel}`.includes(q) ||
+            String(u.yearLevel) === q
+          : false;
+        const roleMatch = u.role.toLowerCase().includes(q);
+
+        if (!nameMatch && !lrnMatch && !sectionMatch && !roomMatch && !gradeMatch && !roleMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [users, selectedGrade, selectedSection, selectedRoom, selectedRole, searchQuery]);
+
+  const isFiltered =
+    selectedGrade !== "all" ||
+    selectedSection !== "all" ||
+    selectedRoom !== "all" ||
+    selectedRole !== "all" ||
+    searchQuery.trim() !== "";
+
+  const handleClearFilters = () => {
+    setSelectedGrade("all");
+    setSelectedSection("all");
+    setSelectedRoom("all");
+    setSelectedRole("all");
+    setSearchQuery("");
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -368,7 +469,7 @@ export default function UsersTab({
                 whileFocus={{ scale: 1.01 }}
                 type="text"
                 required
-                placeholder="e.g. Liam Henderson"
+                placeholder="e.g. Juan Dela Cruz"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
@@ -377,13 +478,13 @@ export default function UsersTab({
 
             <div className="space-y-1.5">
               <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                {role === "teacher" ? "DepEd Email" : "Student Number (LRN)"}
+                {role === "teacher" ? "DepEd Email" : "Student Number (12-Digit LRN)"}
               </label>
               <motion.input
                 whileFocus={{ scale: 1.01 }}
                 type={role === "teacher" ? "email" : "text"}
                 required
-                placeholder={role === "teacher" ? "e.g. teacher@deped.gov.ph" : "e.g. 101338190001 (LRN)"}
+                placeholder={role === "teacher" ? "e.g. teacher@deped.gov.ph" : "12-digit LRN (e.g. 101338190001)"}
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(role === "teacher" ? e.target.value.trim() : e.target.value.toUpperCase().replace(/\s+/g, ""))}
                 className="w-full px-4 py-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]"
@@ -455,7 +556,7 @@ export default function UsersTab({
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">Room</label>
-                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="Room 204" value={room} onChange={(e) => setRoom(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
+                      <motion.input whileFocus={{ scale: 1.01 }} type="text" placeholder="20" value={room} onChange={(e) => setRoom(e.target.value)} className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none transition-all focus:border-[var(--accent)]" />
                     </div>
                   </div>
                 </motion.div>
@@ -558,23 +659,167 @@ export default function UsersTab({
           variants={itemVariants}
           className="lg:col-span-7 bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-5 md:p-6 space-y-4 shadow-xs"
         >
+          {/* Header & Search */}
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-[var(--border)] pb-3">
-            <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider">
-              VOTER DIRECTORY ({filteredUsers.length})
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-display font-extrabold text-sm text-[var(--ink)] uppercase tracking-wider">
+                VOTER DIRECTORY
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/20">
+                {filteredUsers.length}
+              </span>
+              {isFiltered && (
+                <span className="text-[9px] text-zinc-400 font-mono">
+                  (of {users.length})
+                </span>
+              )}
+            </div>
 
             <div className="relative max-w-xs w-full">
               <input
                 type="text"
-                placeholder="SEARCH REGISTRY..."
+                placeholder="Search name, LRN, section, room..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                className="w-full pl-9 pr-8 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs text-[var(--ink)] outline-none focus:border-[var(--accent)] transition-all placeholder:text-zinc-400"
               />
               <Search
-                size={12}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
+                size={13}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-0.5 cursor-pointer"
+                  title="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Filters Bar (Grade, Section, Room, Role) */}
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-xl p-2.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-zinc-500 text-[10px] font-bold uppercase tracking-wider">
+                <Filter size={12} className="text-[var(--accent)]" />
+                <span>Filters</span>
+                {isFiltered && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                )}
+              </div>
+              {isFiltered && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="text-[10px] font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <RotateCcw size={10} />
+                  <span>Reset All</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* Grade Level Dropdown */}
+              <div className="relative">
+                <select
+                  aria-label="Filter by Grade Level"
+                  value={selectedGrade}
+                  onChange={(e) => setSelectedGrade(e.target.value)}
+                  className={`w-full px-2.5 py-1.5 border rounded-lg text-[11px] font-semibold appearance-none cursor-pointer pr-6 outline-none transition-all ${
+                    selectedGrade !== "all"
+                      ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)] font-bold"
+                      : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:border-zinc-400"
+                  }`}
+                >
+                  <option value="all">All Grades</option>
+                  {availableGrades.map((g) => (
+                    <option key={g} value={String(g)}>
+                      Grade {g}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                />
+              </div>
+
+              {/* Section Dropdown */}
+              <div className="relative">
+                <select
+                  aria-label="Filter by Section"
+                  value={selectedSection}
+                  onChange={(e) => setSelectedSection(e.target.value)}
+                  className={`w-full px-2.5 py-1.5 border rounded-lg text-[11px] font-semibold appearance-none cursor-pointer pr-6 outline-none transition-all ${
+                    selectedSection !== "all"
+                      ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)] font-bold"
+                      : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:border-zinc-400"
+                  }`}
+                >
+                  <option value="all">All Sections</option>
+                  {availableSections.map((sec) => (
+                    <option key={sec} value={sec}>
+                      {sec}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                />
+              </div>
+
+              {/* Room Number Dropdown */}
+              <div className="relative">
+                <select
+                  aria-label="Filter by Room Number"
+                  value={selectedRoom}
+                  onChange={(e) => setSelectedRoom(e.target.value)}
+                  className={`w-full px-2.5 py-1.5 border rounded-lg text-[11px] font-semibold appearance-none cursor-pointer pr-6 outline-none transition-all ${
+                    selectedRoom !== "all"
+                      ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)] font-bold"
+                      : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:border-zinc-400"
+                  }`}
+                >
+                  <option value="all">All Rooms</option>
+                  {availableRooms.map((rm) => (
+                    <option key={rm} value={rm}>
+                      Room {rm}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                />
+              </div>
+
+              {/* Role Dropdown */}
+              <div className="relative">
+                <select
+                  aria-label="Filter by Role"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className={`w-full px-2.5 py-1.5 border rounded-lg text-[11px] font-semibold appearance-none cursor-pointer pr-6 outline-none transition-all ${
+                    selectedRole !== "all"
+                      ? "bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)] font-bold"
+                      : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink)] hover:border-zinc-400"
+                  }`}
+                >
+                  <option value="all">All Roles</option>
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <ChevronDown
+                  size={12}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                />
+              </div>
             </div>
           </div>
 
@@ -615,7 +860,10 @@ export default function UsersTab({
                         </span>
                       </div>
                       <p className="text-[10px] text-zinc-500 font-mono mt-0.5 truncate">
-                        {u.studentNumber} {u.yearLevel ? `• Gr. ${u.yearLevel}` : ""} {u.section ? `(${u.section})` : ""}
+                        {u.studentNumber}
+                        {u.yearLevel ? ` • Gr. ${u.yearLevel}` : ""}
+                        {u.section ? ` • ${u.section}` : ""}
+                        {u.room ? ` • Rm. ${u.room.replace(/^room\s*/i, "")}` : ""}
                       </p>
                     </div>
                   </div>
@@ -643,24 +891,33 @@ export default function UsersTab({
             {filteredUsers.length === 0 && (
               <div className="text-center py-8 text-zinc-500 bg-[var(--bg)] rounded-xl border border-dashed border-[var(--border)]">
                 <Users size={24} className="mx-auto mb-2 text-[var(--accent)]" />
-                <p className="text-[10px] uppercase tracking-wider">No registry files found matching request query.</p>
+                <p className="text-[10px] uppercase tracking-wider font-bold">No registry files found matching filters.</p>
+                {isFiltered && (
+                  <button
+                    type="button"
+                    onClick={handleClearFilters}
+                    className="mt-3 px-3 py-1.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <RotateCcw size={11} /> Reset Filters & Search
+                  </button>
+                )}
               </div>
             )}
           </div>
 
+          {nextCursor && (
+            <div className="flex justify-center mt-4">
+              <button
+                type="button"
+                onClick={() => fetchUsers(nextCursor)}
+                disabled={loadingUsers}
+                className="px-4 py-2 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
+              >
+                {loadingUsers ? "Loading..." : "Load More"}
+              </button>
+            </div>
+          )}
 
-            {nextCursor && (
-              <div className="flex justify-center mt-4">
-                <button
-                  type="button"
-                  onClick={() => fetchUsers(nextCursor)}
-                  disabled={loadingUsers}
-                  className="px-4 py-2 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-xl font-bold text-xs uppercase tracking-wider transition-all"
-                >
-                  {loadingUsers ? "Loading..." : "Load More"}
-                </button>
-              </div>
-            )}
           {/* Desktop Table View (>= md) */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-collapse text-left text-xs">
@@ -668,6 +925,7 @@ export default function UsersTab({
                 <tr className="border-b border-[var(--border)] text-zinc-500 uppercase font-bold tracking-widest text-[9px]">
                   <th className="py-3 px-2">VOTER PROFILE</th>
                   <th className="py-3 px-2">STUDENT NUMBER</th>
+                  <th className="py-3 px-2">COHORT / ROOM</th>
                   <th className="py-3 px-2">ROLE</th>
                   <th className="py-3 px-2 text-right">ACTIONS</th>
                 </tr>
@@ -696,6 +954,23 @@ export default function UsersTab({
                       </td>
                       <td className="py-3 px-2 text-zinc-500 font-mono text-xs uppercase">
                         {u.studentNumber}
+                      </td>
+                      <td className="py-3 px-2 font-mono text-[11px]">
+                        {u.role === "student" ? (
+                          <div>
+                            <span className="text-[var(--ink)] font-bold">
+                              {u.yearLevel ? `Gr. ${u.yearLevel}` : "Gr. -"}
+                              {u.section ? ` • ${u.section}` : ""}
+                            </span>
+                            {u.room && (
+                              <span className="block text-[10px] text-zinc-500 font-medium">
+                                Rm. {u.room.replace(/^room\s*/i, "")}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
                       </td>
                       <td className="py-3 px-2">
                         <span
@@ -734,9 +1009,18 @@ export default function UsersTab({
 
                 {filteredUsers.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="text-center py-8 text-zinc-500">
+                    <td colSpan={5} className="text-center py-8 text-zinc-500">
                       <Users size={24} className="mx-auto mb-2 text-[var(--accent)]" />
-                      <p className="text-[10px] uppercase tracking-wider">No registry files found matching request query.</p>
+                      <p className="text-[10px] uppercase tracking-wider font-bold">No registry files found matching filters.</p>
+                      {isFiltered && (
+                        <button
+                          type="button"
+                          onClick={handleClearFilters}
+                          className="mt-3 px-3 py-1.5 bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--accent)] text-[var(--ink)] rounded-lg text-[10px] font-bold uppercase transition-all cursor-pointer inline-flex items-center gap-1.5"
+                        >
+                          <RotateCcw size={11} /> Reset Filters & Search
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )}
