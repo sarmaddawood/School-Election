@@ -1,8 +1,18 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Trash2, Award, ChevronDown, Check, X, Edit2, Save } from "lucide-react";
-import { Election, Position } from "../types";
+import { Election, Position, ElectionPhase } from "../types";
 import ConfirmModal from "./ConfirmModal";
+
+const getElectionPhase = (startStr?: string, endStr?: string): ElectionPhase => {
+  if (!startStr || !endStr) return "upcoming";
+  const now = new Date();
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  if (now < start) return "upcoming";
+  if (now <= end) return "live";
+  return "ended";
+};
 
 const STANDARD_POSITIONS = [
   "President",
@@ -293,29 +303,55 @@ export default function PositionsTab({
               ADD NEW POSITION
             </h3>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
-                  Select Election
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedElectionId}
-                    onChange={(e) => setSelectedElectionId(e.target.value)}
-                    className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)]"
-                  >
-                    {(Array.isArray(elections) ? elections : []).map((el) => (
-                      <option key={el.id} value={el.id} className="bg-[var(--surface)] text-[var(--ink)]">
-                        {el.title}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown
-                    size={14}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
-                  />
-                </div>
-              </div>
+            {(() => {
+              const selectedElection = elections.find((el) => el.id === selectedElectionId);
+              const selectedPhase = selectedElection ? getElectionPhase(selectedElection.startsAt, selectedElection.endsAt) : null;
+              return (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
+                      Select Election
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedElectionId}
+                        onChange={(e) => setSelectedElectionId(e.target.value)}
+                        className="w-full px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-none text-xs text-[var(--ink)] appearance-none cursor-pointer pr-10 outline-none focus:border-[var(--accent)]"
+                      >
+                        {(Array.isArray(elections) ? elections : []).map((el) => {
+                          const phase = getElectionPhase(el.startsAt, el.endsAt);
+                          const tag = phase === "live" ? " [LIVE]" : phase === "ended" ? " [ENDED]" : "";
+                          return (
+                            <option key={el.id} value={el.id} className="bg-[var(--surface)] text-[var(--ink)]">
+                              {el.title}{tag}
+                            </option>
+                          );
+                        })}
+                      </select>
+                      <ChevronDown
+                        size={14}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                      />
+                    </div>
+                    {selectedPhase === "live" && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono mt-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span>
+                          <strong>Election is LIVE:</strong> Positions configured here update the ballot in real time.
+                        </span>
+                      </div>
+                    )}
+                    {selectedPhase === "ended" && (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-[10px] font-mono mt-1.5">
+                        <span>
+                          <strong>Election Concluded:</strong> Ballot positions are finalized for this election.
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
               <div className="space-y-1.5" ref={dropdownRef}>
                 <label className="text-[9px] font-bold text-zinc-500 tracking-wider uppercase">
@@ -434,16 +470,18 @@ export default function PositionsTab({
               </div>
 
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={selectedPhase === "ended" ? {} : { scale: 1.02 }}
+                whileTap={selectedPhase === "ended" ? {} : { scale: 0.98 }}
                 type="submit"
-                disabled={submitting}
-                className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                disabled={submitting || selectedPhase === "ended"}
+                className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:cursor-not-allowed"
               >
                 <Plus size={14} />
-                {submitting ? "ADDING POSITION..." : "ADD POSITION"}
+                {submitting ? "ADDING POSITION..." : selectedPhase === "ended" ? "ELECTION CONCLUDED" : "ADD POSITION"}
               </motion.button>
             </form>
+          );
+        })()}
           </motion.div>
 
           <motion.div
@@ -457,21 +495,41 @@ export default function PositionsTab({
             <div className="space-y-6">
               {(Array.isArray(elections) ? elections : []).map((el) => {
                 const electionPositions = (Array.isArray(positions) ? positions : []).filter((p) => p.electionId === el.id);
+                const phase = getElectionPhase(el.startsAt, el.endsAt);
                 return (
                   <motion.div
                     key={el.id}
                     variants={itemVariants}
                     className="space-y-3"
                   >
-                    <div className="flex items-center gap-2 border-b border-[var(--border)] pb-1.5">
-                      <motion.span
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="h-1.5 w-1.5 rounded-none bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]"
-                      />
-                      <h4 className="font-display font-bold text-[10px] text-zinc-500 uppercase tracking-widest">
-                        {el.title}
-                      </h4>
+                    <div className="flex items-center justify-between border-b border-[var(--border)] pb-1.5">
+                      <div className="flex items-center gap-2">
+                        <motion.span
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                          className={`h-1.5 w-1.5 rounded-none ${
+                            phase === "live"
+                              ? "bg-emerald-500 shadow-[0_0_8px_#10b981]"
+                              : phase === "upcoming"
+                              ? "bg-amber-500 shadow-[0_0_8px_#f59e0b]"
+                              : "bg-zinc-400"
+                          }`}
+                        />
+                        <h4 className="font-display font-bold text-[10px] text-zinc-500 uppercase tracking-widest">
+                          {el.title}
+                        </h4>
+                      </div>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 font-bold uppercase rounded-sm border ${
+                          phase === "live"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
+                            : phase === "upcoming"
+                            ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+                            : "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
+                        }`}
+                      >
+                        {phase}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2">
@@ -524,18 +582,22 @@ export default function PositionsTab({
                                 </span>
                                 <div className="flex items-center gap-1">
                                   <motion.button
-                                    whileHover={{ scale: 1.1, color: "var(--accent)" }}
-                                    whileTap={{ scale: 0.9 }}
+                                    whileHover={phase === "ended" ? {} : { scale: 1.1, color: "var(--accent)" }}
+                                    whileTap={phase === "ended" ? {} : { scale: 0.9 }}
                                     onClick={() => startEditing(pos.id, pos.name)}
-                                    className="p-1.5 text-zinc-400 hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-sm transition-all cursor-pointer"
+                                    disabled={phase === "ended"}
+                                    title={phase === "ended" ? "Positions cannot be modified for concluded elections" : "Edit position"}
+                                    className="p-1.5 text-zinc-400 hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] rounded-sm transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-zinc-400 disabled:hover:bg-transparent"
                                   >
                                     <Edit2 size={13} />
                                   </motion.button>
                                   <motion.button
-                                    whileHover={{ scale: 1.1, color: "#e11d48" }}
-                                    whileTap={{ scale: 0.9 }}
+                                    whileHover={phase === "ended" ? {} : { scale: 1.1, color: "#e11d48" }}
+                                    whileTap={phase === "ended" ? {} : { scale: 0.9 }}
                                     onClick={() => handleDelete(pos.id, pos.name)}
-                                    className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer"
+                                    disabled={phase === "ended"}
+                                    title={phase === "ended" ? "Positions cannot be modified for concluded elections" : "Delete position"}
+                                    className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-sm transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-zinc-400 disabled:hover:bg-transparent"
                                   >
                                     <Trash2 size={13} />
                                   </motion.button>

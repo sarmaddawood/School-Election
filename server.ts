@@ -1923,8 +1923,8 @@ export function createElectionApp() {
         res.status(400).json({ error: "Invalid election" });
         return;
       }
-      if (getElectionPhase({ id: electionId, ...electionDoc.data() }) !== "upcoming") {
-        res.status(409).json({ error: "Positions cannot be changed after voting has started" });
+      if (getElectionPhase({ id: electionId, ...electionDoc.data() }) === "ended") {
+        res.status(409).json({ error: "Positions cannot be changed after the election has ended" });
         return;
       }
 
@@ -1955,8 +1955,8 @@ export function createElectionApp() {
         return;
       }
       const positionElection = await getOne("elections", positionDoc.data()?.electionId);
-      if (!positionElection || getElectionPhase(positionElection) !== "upcoming") {
-        res.status(409).json({ error: "Positions cannot be changed after voting has started" });
+      if (positionElection && getElectionPhase(positionElection) === "ended") {
+        res.status(409).json({ error: "Positions cannot be changed after the election has ended" });
         return;
       }
 
@@ -1997,8 +1997,8 @@ export function createElectionApp() {
         return;
       }
       const positionElection = await getOne("elections", positionDoc.data()?.electionId);
-      if (!positionElection || getElectionPhase(positionElection) !== "upcoming") {
-        res.status(409).json({ error: "Positions cannot be changed after voting has started" });
+      if (positionElection && getElectionPhase(positionElection) === "ended") {
+        res.status(409).json({ error: "Positions cannot be changed after the election has ended" });
         return;
       }
       await positionRef.update({ name: cleanName, normalizedName: cleanName.toLocaleLowerCase() });
