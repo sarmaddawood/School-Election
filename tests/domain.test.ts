@@ -76,6 +76,20 @@ test("database integrity validation checks references, eligibility, and duplicat
   const errors = validateDatabaseSnapshot(invalid);
   assert.ok(errors.some((error) => /duplicate effective vote/i.test(error)));
   assert.ok(errors.some((error) => /invalid candidate/i.test(error)));
+
+  const duplicateCandidateElection = {
+    ...snapshot,
+    positions: [
+      { id: "p1", electionId: "e1", name: "President" },
+      { id: "p2", electionId: "e1", name: "Vice President" },
+    ],
+    candidates: [
+      { id: "c1", electionId: "e1", positionId: "p1", userId: "s1" },
+      { id: "c2", electionId: "e1", positionId: "p2", userId: "s1" },
+    ],
+  };
+  const candErrors = validateDatabaseSnapshot(duplicateCandidateElection);
+  assert.ok(candErrors.some((error) => /already nominated/i.test(error)));
 });
 
 test("election validation rejects invalid windows and scoped Party-Lists", () => {

@@ -263,8 +263,8 @@ export function validateDatabaseSnapshot(snapshot: DatabaseSnapshot): string[] {
     const election = elections.get(candidate.electionId);
     const position = positions.get(candidate.positionId);
     const user = users.get(candidate.userId);
-    const nominationKey = `${candidate.positionId}\u0000${candidate.userId}`;
-    if (nominations.has(nominationKey)) errors.push(`Candidate ${candidate.id}: student is already nominated for the position`);
+    const nominationKey = `${candidate.electionId}\u0000${candidate.userId}`;
+    if (nominations.has(nominationKey)) errors.push(`Candidate ${candidate.id}: student is already nominated in this election`);
     nominations.add(nominationKey);
     if (!election) errors.push(`Candidate ${candidate.id}: election does not exist`);
     if (!position || position.electionId !== candidate.electionId) errors.push(`Candidate ${candidate.id}: position does not belong to election`);

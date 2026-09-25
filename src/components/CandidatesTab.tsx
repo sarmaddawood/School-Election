@@ -98,7 +98,18 @@ export default function CandidatesTab({
   useEffect(() => {
     if (selectedElectionId) {
       setSelectedSection("");
-      setSelectedYearLevel("");
+      const election = elections.find((e) => e.id === selectedElectionId);
+      if (election?.scope === "grade") {
+        const rawGrade = election.targetGradeLevel ?? election.scopeValue;
+        const g = typeof rawGrade === "number" ? rawGrade : Number.parseInt(String(rawGrade ?? "").replace(/\D+/g, ""), 10);
+        setSelectedYearLevel(Number.isFinite(g) ? String(g) : "");
+      } else {
+        setSelectedYearLevel("");
+      }
+      if (election?.scope === "section") {
+        setSelectedSection(election.targetSection || election.scopeValue || "");
+      }
+
       const electionPositions = positions.filter((p) => p.electionId === selectedElectionId);
       if (electionPositions.length > 0) {
         setSelectedPositionId(electionPositions[0].id);
@@ -116,7 +127,7 @@ export default function CandidatesTab({
         })
         .catch(() => setPartyLists([]));
     }
-  }, [selectedElectionId, positions, token]);
+  }, [selectedElectionId, positions, token, elections]);
 
   const handleAiPolish = async () => {
     if (!selectedPositionId) {
@@ -200,10 +211,28 @@ export default function CandidatesTab({
     }
   };
 
+  // Candidates in the selected election
+  const currentElectionCandidates = useMemo(() => {
+    return (Array.isArray(candidates) ? candidates : []).filter(
+      (c) => c.electionId === selectedElectionId
+    );
+  }, [candidates, selectedElectionId]);
+
   // Direct Nominate Action for a specific student
   const handleNominateStudent = async (studentId: string, studentName: string) => {
     if (!selectedElectionId || !selectedPositionId) {
       setErrorNotification("Please select an election and position first");
+      return;
+    }
+
+    const alreadyNominated = currentElectionCandidates.find(
+      (c) =>
+        c.userId === studentId ||
+        (c.fullName && studentName && c.fullName.trim().toLowerCase() === studentName.trim().toLowerCase())
+    );
+    if (alreadyNominated) {
+      const pos = positions.find((p) => p.id === alreadyNominated.positionId);
+      setErrorNotification(`${studentName} is already nominated as ${pos?.name || "a candidate"} in this election.`);
       return;
     }
 
@@ -239,8 +268,6 @@ export default function CandidatesTab({
       setSubmitting(false);
     }
   };
-
-  const [onlyEligible, setOnlyEligible] = useState(true);
 
   const currentElection = elections.find((e) => e.id === selectedElectionId);
 
@@ -289,15 +316,15 @@ export default function CandidatesTab({
   // Available sections from student accounts, dynamically filtered by selected grade or scope
   const availableSections = useMemo(() => {
     const sections = new Set<string>();
+    const targetGrade = currentElection?.scope === "grade"
+      ? (currentElection.targetGradeLevel ?? Number.parseInt(String(currentElection.scopeValue ?? "").replace(/\D+/g, ""), 10))
+      : (selectedYearLevel ? parseInt(selectedYearLevel) : null);
+
     users.forEach((u) => {
       if (u.role === "student" && u.section && u.section.trim()) {
         const sec = u.section.trim();
-        if (selectedYearLevel) {
-          if (u.yearLevel === parseInt(selectedYearLevel)) {
-            sections.add(sec);
-          }
-        } else if (onlyEligible && currentElection?.scope === "grade" && currentElection?.targetGradeLevel) {
-          if (u.yearLevel === currentElection.targetGradeLevel) {
+        if (targetGrade && Number.isFinite(targetGrade)) {
+          if (u.yearLevel === targetGrade) {
             sections.add(sec);
           }
         } else {
@@ -306,17 +333,53 @@ export default function CandidatesTab({
       }
     });
     return Array.from(sections).sort((a, b) => a.localeCompare(b));
-  }, [users, selectedYearLevel, onlyEligible, currentElection]);
+  }, [users, selectedYearLevel, currentElection]);
 
-  // Search, filter, and sort matching students for nomination
+  // Search, filter, and sort matching students for nomination based on the election scope
   const searchedStudents = useMemo(() => {
     return users
       .filter((u) => u.role === "student")
-      .filter((u) => (selectedYearLevel ? u.yearLevel === parseInt(selectedYearLevel) : true))
+      // 1. Election Scope Filtering:
+      // - overall ("all" or undefined): all students appear
+      // - grade ("grade"): only students of that grade appear
+      // - section ("section"): only students of that section appear
+      // - room ("room"): only students of that room appear
       .filter((u) => {
+        if (!currentElection) return true;
+        const scope = currentElection.scope || "all";
+        const val = (currentElection.scopeValue || "").trim();
+
+        if (scope === "grade") {
+          const rawGrade = currentElection.targetGradeLevel ?? val;
+          const targetGrade = typeof rawGrade === "number" ? rawGrade : Number.parseInt(String(rawGrade ?? "").replace(/\D+/g, ""), 10);
+          return Number.isFinite(targetGrade) && u.yearLevel === targetGrade;
+        }
+        if (scope === "section") {
+          const targetSec = (currentElection.targetSection || val).toLowerCase();
+          if (!targetSec || !u.section) return false;
+          const uSec = u.section.trim().toLowerCase();
+          return uSec === targetSec || uSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim() === targetSec.replace(/^grade\s*\d+\s*[-–—:]\s*/i, "").trim();
+        }
+        if (scope === "room") {
+          const targetRoom = (currentElection.targetRoom || val).toLowerCase();
+          if (!targetRoom || !u.room) return false;
+          const uRoom = u.room.trim().toLowerCase();
+          return uRoom === targetRoom || uRoom.replace(/^room\s*/i, "").trim() === targetRoom.replace(/^room\s*/i, "").trim();
+        }
+        return true;
+      })
+      // 2. Secondary Year Level filter (for overall elections)
+      .filter((u) => {
+        if (currentElection?.scope === "grade") return true;
+        return selectedYearLevel ? u.yearLevel === parseInt(selectedYearLevel) : true;
+      })
+      // 3. Secondary Section filter (for overall or grade-level elections)
+      .filter((u) => {
+        if (currentElection?.scope === "section") return true;
         if (!selectedSection) return true;
         return (u.section || "").trim().toLowerCase() === selectedSection.trim().toLowerCase();
       })
+      // 4. Search input by name, student number, section, or room
       .filter((u) => {
         if (!studentSearchTerm.trim()) return true;
         const term = studentSearchTerm.toLowerCase().trim();
@@ -326,23 +389,20 @@ export default function CandidatesTab({
         const rm = (u.room || "").toLowerCase();
         return sNum.includes(term) || name.includes(term) || sec.includes(term) || rm.includes(term);
       })
-      .filter((u) => {
-        if (!onlyEligible || !currentElection || currentElection.scope === "all" || !currentElection.scope) return true;
-        return isStudentEligible(u, currentElection).eligible;
-      })
+      // 5. Nomination Status filter (All, Not Nominated, Nominated)
       .filter((u) => {
         if (selectedNominationStatus === "all") return true;
-        const isNominatedThisPosition = candidates.some(
-          (c) => c.positionId === selectedPositionId && c.userId === u.id
-        );
-        const isNominatedThisElection = candidates.some(
-          (c) => c.electionId === selectedElectionId && c.userId === u.id
+        const isNominatedInElection = currentElectionCandidates.some(
+          (c) =>
+            c.userId === u.id ||
+            (u.studentNumber && c.userId === u.studentNumber) ||
+            (c.fullName && u.fullName && c.fullName.trim().toLowerCase() === u.fullName.trim().toLowerCase())
         );
         if (selectedNominationStatus === "unnominated") {
-          return !isNominatedThisPosition && !isNominatedThisElection;
+          return !isNominatedInElection;
         }
         if (selectedNominationStatus === "nominated") {
-          return isNominatedThisPosition || isNominatedThisElection;
+          return isNominatedInElection;
         }
         return true;
       })
@@ -365,16 +425,13 @@ export default function CandidatesTab({
       });
   }, [
     users,
+    currentElection,
     selectedYearLevel,
     selectedSection,
     studentSearchTerm,
-    onlyEligible,
-    currentElection,
     selectedNominationStatus,
     studentSortBy,
-    candidates,
-    selectedPositionId,
-    selectedElectionId,
+    currentElectionCandidates,
   ]);
 
   const handleDelete = (id: string, name: string) => {
@@ -622,16 +679,21 @@ export default function CandidatesTab({
                       {searchedStudents.length}
                     </span>
                   </div>
-                  {currentElection && currentElection.scope && currentElection.scope !== "all" && (
-                    <label className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={onlyEligible}
-                        onChange={(e) => setOnlyEligible(e.target.checked)}
-                        className="w-3.5 h-3.5 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
-                      />
-                      <span>Scope-Eligible Only</span>
-                    </label>
+                  {currentElection && currentElection.scope && currentElection.scope !== "all" ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span>Scope:</span>
+                      <span>
+                        {currentElection.scope === "grade"
+                          ? `Grade ${currentElection.targetGradeLevel || currentElection.scopeValue} only`
+                          : currentElection.scope === "section"
+                          ? `Section ${currentElection.targetSection || currentElection.scopeValue} only`
+                          : `Room ${currentElection.targetRoom || currentElection.scopeValue} only`}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">
+                      Overall (All Students)
+                    </span>
                   )}
                 </div>
 
@@ -662,45 +724,63 @@ export default function CandidatesTab({
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {/* Grade Level Dropdown */}
                     <div className="relative">
-                      <select
-                        value={selectedYearLevel}
-                        onChange={(e) => {
-                          setSelectedYearLevel(e.target.value);
-                          setSelectedSection("");
-                        }}
-                        className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
-                      >
-                        <option value="">All Grades</option>
-                        {availableGrades.map((g) => (
-                          <option key={g} value={g}>
-                            Grade {g}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={13}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                      />
+                      {currentElection?.scope === "grade" ? (
+                        <div className="w-full px-2.5 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 truncate flex items-center justify-between">
+                          <span>Grade {currentElection.targetGradeLevel || currentElection.scopeValue}</span>
+                          <span className="text-[9px] uppercase tracking-wider bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Scope</span>
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            value={selectedYearLevel}
+                            onChange={(e) => {
+                              setSelectedYearLevel(e.target.value);
+                              setSelectedSection("");
+                            }}
+                            className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
+                          >
+                            <option value="">All Grades</option>
+                            {availableGrades.map((g) => (
+                              <option key={g} value={g}>
+                                Grade {g}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown
+                            size={13}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                          />
+                        </>
+                      )}
                     </div>
 
                     {/* Section Dropdown */}
                     <div className="relative">
-                      <select
-                        value={selectedSection}
-                        onChange={(e) => setSelectedSection(e.target.value)}
-                        className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
-                      >
-                        <option value="">All Sections</option>
-                        {availableSections.map((sec) => (
-                          <option key={sec} value={sec}>
-                            {sec}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown
-                        size={13}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                      />
+                      {currentElection?.scope === "section" ? (
+                        <div className="w-full px-2.5 py-2 bg-violet-50 border border-violet-200 rounded-xl text-xs font-bold text-violet-800 truncate flex items-center justify-between">
+                          <span>Section {currentElection.targetSection || currentElection.scopeValue}</span>
+                          <span className="text-[9px] uppercase tracking-wider bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded font-bold">Scope</span>
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            value={selectedSection}
+                            onChange={(e) => setSelectedSection(e.target.value)}
+                            className="w-full px-2.5 py-2 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-sky-500 focus:bg-white appearance-none cursor-pointer pr-7 transition-colors truncate"
+                          >
+                            <option value="">All Sections</option>
+                            {availableSections.map((sec) => (
+                              <option key={sec} value={sec}>
+                                {sec}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown
+                            size={13}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                          />
+                        </>
+                      )}
                     </div>
 
                     {/* Nomination Status */}
@@ -757,13 +837,13 @@ export default function CandidatesTab({
                     <span className="font-medium text-slate-600">
                       Showing <strong className="text-slate-900">{searchedStudents.length}</strong> {searchedStudents.length === 1 ? "student" : "students"}
                     </span>
-                    {(studentSearchTerm || selectedYearLevel || selectedSection || selectedNominationStatus !== "all") && (
+                    {(studentSearchTerm || (currentElection?.scope !== "grade" && selectedYearLevel) || (currentElection?.scope !== "section" && selectedSection) || selectedNominationStatus !== "all") && (
                       <button
                         type="button"
                         onClick={() => {
                           setStudentSearchTerm("");
-                          setSelectedYearLevel("");
-                          setSelectedSection("");
+                          if (currentElection?.scope !== "grade") setSelectedYearLevel("");
+                          if (currentElection?.scope !== "section") setSelectedSection("");
                           setSelectedNominationStatus("all");
                         }}
                         className="text-sky-600 hover:text-sky-800 font-bold hover:underline cursor-pointer flex items-center gap-1 text-[11px]"
@@ -778,31 +858,30 @@ export default function CandidatesTab({
                 <div className="max-h-64 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                   {searchedStudents.length === 0 ? (
                     <div className="text-center py-6 text-slate-400 text-xs">
-                      {onlyEligible && currentElection && currentElection.scope !== "all"
-                        ? "No scope-eligible students found matching your filters."
+                      {currentElection?.scope === "grade"
+                        ? `No Grade ${currentElection.targetGradeLevel || currentElection.scopeValue} students found matching your filters.`
+                        : currentElection?.scope === "section"
+                        ? `No Section ${currentElection.targetSection || currentElection.scopeValue} students found matching your filters.`
+                        : currentElection?.scope === "room"
+                        ? `No Room ${currentElection.targetRoom || currentElection.scopeValue} students found matching your filters.`
                         : "No matching student accounts found."}
                     </div>
                   ) : (
                     searchedStudents.map((st) => {
-                      const isNominatedThisPosition = candidates.some(
-                        (c) => c.positionId === selectedPositionId && c.userId === st.id
+                      const nominatedCandidate = currentElectionCandidates.find(
+                        (c) =>
+                          c.userId === st.id ||
+                          (st.studentNumber && c.userId === st.studentNumber) ||
+                          (c.fullName && st.fullName && c.fullName.trim().toLowerCase() === st.fullName.trim().toLowerCase())
                       );
-                      const otherCandidacy = candidates.find(
-                        (c) => c.electionId === selectedElectionId && c.positionId !== selectedPositionId && c.userId === st.id
-                      );
-                      const otherPosName = otherCandidacy
-                        ? positions.find((p) => p.id === otherCandidacy.positionId)?.name || "Another Position"
-                        : null;
-                      const eligibility = isStudentEligible(st, currentElection);
+                      const isNominatedThisPosition = nominatedCandidate && nominatedCandidate.positionId === selectedPositionId;
+                      const nominatedPos = nominatedCandidate ? positions.find((p) => p.id === nominatedCandidate.positionId) : null;
+                      const nominatedPosName = nominatedPos?.name || "Another Position";
 
                       return (
                         <div
                           key={st.id}
-                          className={`flex items-center justify-between p-3 border rounded-xl transition-all ${
-                            !eligibility.eligible
-                              ? "bg-slate-50/60 border-slate-200 opacity-75"
-                              : "bg-slate-50 hover:bg-slate-100 border-slate-200"
-                          }`}
+                          className="flex items-center justify-between p-3 border rounded-xl transition-all bg-slate-50 hover:bg-slate-100 border-slate-200"
                         >
                           <div className="flex items-center gap-2.5 overflow-hidden pr-2">
                             <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs shrink-0 border border-sky-200 overflow-hidden">
@@ -825,14 +904,13 @@ export default function CandidatesTab({
                               <CheckCircle size={12} />
                               Nominated
                             </span>
-                          ) : otherPosName ? (
-                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1 shrink-0" title={`Already nominated for ${otherPosName}`}>
+                          ) : nominatedCandidate ? (
+                            <span
+                              className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200 flex items-center gap-1 shrink-0"
+                              title={`Already nominated for ${nominatedPosName} in this election`}
+                            >
                               <Award size={12} />
-                              In {otherPosName}
-                            </span>
-                          ) : !eligibility.eligible ? (
-                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 shrink-0">
-                              {eligibility.reason || "Outside Scope"}
+                              Nominated ({nominatedPosName})
                             </span>
                           ) : (
                             <button

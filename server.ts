@@ -2078,12 +2078,32 @@ export function createElectionApp() {
       }
 
       const duplicateQuery = await db.collection("candidates")
-        .where("positionId", "==", positionId)
+        .where("electionId", "==", electionId)
         .where("userId", "==", userId)
         .get();
 
       if (!duplicateQuery.empty) {
-        res.status(400).json({ error: "Candidate already nominated for this position" });
+        let existingPosId = "";
+        duplicateQuery.forEach((doc: any) => {
+          const d = doc.data();
+          if (d?.positionId) existingPosId = d.positionId;
+        });
+        const existingPos = existingPosId ? await getOne("positions", existingPosId) : null;
+        res.status(400).json({
+          error: existingPos?.name
+            ? `Candidate is already nominated for ${existingPos.name} in this election`
+            : "Candidate is already nominated for a position in this election",
+        });
+        return;
+      }
+
+      const duplicateNameQuery = await db.collection("candidates")
+        .where("electionId", "==", electionId)
+        .where("fullName", "==", user.fullName)
+        .get();
+
+      if (!duplicateNameQuery.empty) {
+        res.status(400).json({ error: "A candidate with this name is already nominated in this election" });
         return;
       }
 
@@ -2118,7 +2138,7 @@ export function createElectionApp() {
       res.status(201).json(newCandidate);
     } catch (err: any) {
       const duplicate = err?.code === 409 || String(err?.message || "").toLowerCase().includes("unique");
-      res.status(duplicate ? 409 : (err.status || 500)).json({ error: duplicate ? "Candidate already nominated for this position" : (err.message || "Failed to nominate candidate") });
+      res.status(duplicate ? 409 : (err.status || 500)).json({ error: duplicate ? "Candidate already nominated in this election" : (err.message || "Failed to nominate candidate") });
     }
   });
 
