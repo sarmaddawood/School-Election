@@ -113,7 +113,7 @@ export default function VoteConfirmationModal({
                       <span className="text-[10px] font-bold text-sky-700 bg-sky-100/60 px-2 py-0.5 rounded-md uppercase tracking-wider">
                         {position.name}
                       </span>
-                      <h4 className="font-display font-extrabold text-slate-900 text-base tracking-tight uppercase truncate mt-1">
+                      <h4 className="font-display font-extrabold text-slate-900 text-base tracking-tight uppercase break-words leading-snug mt-1">
                         {candidate.fullName}
                       </h4>
                       <p className="text-[11px] font-semibold text-slate-500 mt-0.5">

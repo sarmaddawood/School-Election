@@ -1035,90 +1035,73 @@ export default function VotePage({
                                   key={winner.id}
                                   layout
                                   whileHover={{ scale: 1.01 }}
-                                  className="glass-panel p-5 sm:p-6 relative overflow-hidden flex flex-col justify-between space-y-4 border-2 border-amber-300/80 bg-gradient-to-br from-amber-50/50 via-[var(--surface)] to-[var(--surface)] shadow-md hover:shadow-lg transition-all"
+                                  className="glass-panel p-5 sm:p-6 relative overflow-hidden flex flex-col space-y-3.5 border-2 border-amber-300/80 bg-gradient-to-br from-amber-50/50 via-[var(--surface)] to-[var(--surface)] shadow-md hover:shadow-lg transition-all"
                                 >
-                                  <div className="space-y-3.5">
-                                    {/* Top Banner: Winner & Vote Count */}
-                                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-3">
-                                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black uppercase tracking-wider">
-                                        <Trophy size={13} className="text-amber-600 fill-amber-500" />
-                                        <span>{winners.length > 1 ? "CO-WINNER (TIE)" : "OFFICIAL WINNER"}</span>
-                                      </div>
-                                      <span className="text-[10px] font-black text-amber-800 font-mono bg-amber-50 px-2 py-0.5 border border-amber-200">
-                                        {winner.voteCount || 0} {winner.voteCount === 1 ? "VOTE" : "VOTES"} ({votePercent}%)
-                                      </span>
+                                  {/* Top Banner: Winner & Vote Count */}
+                                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-3">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black uppercase tracking-wider">
+                                      <Trophy size={13} className="text-amber-600 fill-amber-500" />
+                                      <span>{winners.length > 1 ? "CO-WINNER (TIE)" : "OFFICIAL WINNER"}</span>
                                     </div>
+                                    <span className="text-[10px] font-black text-amber-800 font-mono bg-amber-50 px-2 py-0.5 border border-amber-200">
+                                      {winner.voteCount || 0} {winner.voteCount === 1 ? "VOTE" : "VOTES"} ({votePercent}%)
+                                    </span>
+                                  </div>
 
-                                    {/* Identity row: Photo + Name + Party + Grade */}
-                                    <div
-                                      className="flex items-center gap-3.5 cursor-pointer group"
-                                      onClick={() => {
-                                        setModalCandidate(winner);
-                                        setModalPosition(pos.name);
-                                      }}
-                                    >
-                                      {winner.photoUrl && winner.photoUrl !== "null" && winner.photoUrl !== "" && winner.photoUrl !== "undefined" ? (
-                                        <img
-                                          src={winner.photoUrl}
-                                          alt={winner.fullName}
-                                          className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border-2 border-amber-400 shadow-md shrink-0 group-hover:scale-105 transition-transform"
-                                          referrerPolicy="no-referrer"
-                                        />
-                                      ) : (
-                                        <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-amber-100 border-2 border-amber-400 text-amber-700 font-display font-black text-2xl sm:text-3xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                                          {winner.fullName[0]}
-                                        </div>
-                                      )}
+                                  {/* Identity row: Photo + Name + Party + Grade */}
+                                  <div
+                                    className="flex items-center gap-3.5 cursor-pointer group"
+                                    onClick={() => {
+                                      setModalCandidate(winner);
+                                      setModalPosition(pos.name);
+                                    }}
+                                  >
+                                    {winner.photoUrl && winner.photoUrl !== "null" && winner.photoUrl !== "" && winner.photoUrl !== "undefined" ? (
+                                      <img
+                                        src={winner.photoUrl}
+                                        alt={winner.fullName}
+                                        className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border-2 border-amber-400 shadow-md shrink-0 group-hover:scale-105 transition-transform"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                    ) : (
+                                      <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-amber-100 border-2 border-amber-400 text-amber-700 font-display font-black text-2xl sm:text-3xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                                        {winner.fullName[0]}
+                                      </div>
+                                    )}
 
-                                      <div className="space-y-1 min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                          <span className={`text-[9px] font-bold px-2 py-0.5 border uppercase ${
-                                            isIndependent
-                                              ? "bg-slate-100 text-slate-700 border-slate-300"
-                                              : "bg-indigo-100 text-indigo-800 border-indigo-300"
-                                          }`}>
-                                            {partyName}
+                                    <div className="space-y-1 min-w-0 flex-1">
+                                      <div className="flex flex-wrap items-center gap-1.5">
+                                        <span className={`text-[9px] font-bold px-2 py-0.5 border uppercase ${
+                                          isIndependent
+                                            ? "bg-slate-100 text-slate-700 border-slate-300"
+                                            : "bg-indigo-100 text-indigo-800 border-indigo-300"
+                                        }`}>
+                                          {partyName}
+                                        </span>
+                                        {winner.yearLevel && (
+                                          <span className="text-[9px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 border border-zinc-200 uppercase font-mono">
+                                            GRADE {winner.yearLevel}
                                           </span>
-                                          {winner.yearLevel && (
-                                            <span className="text-[9px] font-bold text-zinc-600 bg-zinc-100 px-2 py-0.5 border border-zinc-200 uppercase font-mono">
-                                              GRADE {winner.yearLevel}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <h3 className="font-display font-black text-base sm:text-lg text-[var(--ink)] group-hover:text-amber-600 transition-colors uppercase tracking-wider truncate">
-                                          {winner.fullName}
-                                        </h3>
-                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                                          Elected to {pos.name}
-                                        </p>
+                                        )}
                                       </div>
-                                    </div>
-
-                                    {/* Platform & Manifesto */}
-                                    <div className="space-y-1.5 bg-[var(--surface)] p-3.5 border border-[var(--border)] rounded-none">
-                                      <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-wider">
-                                        <Sparkles size={11} className="text-amber-500" />
-                                        <span>CAMPAIGN PLATFORM & MANIFESTO</span>
-                                      </div>
-                                      <p className="text-xs text-[var(--ink)] leading-relaxed italic line-clamp-3">
-                                        "{winner.manifesto || "No campaign platform details provided."}"
+                                      <h3 className="font-display font-black text-base sm:text-lg text-[var(--ink)] group-hover:text-amber-600 transition-colors uppercase tracking-wider break-words leading-snug">
+                                        {winner.fullName}
+                                      </h3>
+                                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                                        Elected to {pos.name}
                                       </p>
                                     </div>
                                   </div>
 
-                                  {/* Action / View Profile Button */}
-                                  <div className="pt-2 border-t border-[var(--border)]">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setModalCandidate(winner);
-                                        setModalPosition(pos.name);
-                                      }}
-                                      className="w-full py-2.5 bg-[var(--surface)] hover:bg-amber-600 hover:text-white text-[var(--ink)] border border-[var(--border)] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                                    >
-                                      <Info size={13} />
-                                      <span>VIEW FULL PLATFORM & PROFILE</span>
-                                    </button>
+                                  {/* Platform & Manifesto */}
+                                  <div className="space-y-1.5 bg-[var(--surface)] p-3.5 border border-[var(--border)] rounded-none">
+                                    <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-wider">
+                                      <Sparkles size={11} className="text-amber-500" />
+                                      <span>CAMPAIGN PLATFORM & MANIFESTO</span>
+                                    </div>
+                                    <p className="text-xs text-[var(--ink)] leading-relaxed italic line-clamp-3">
+                                      "{winner.manifesto || "No campaign platform details provided."}"
+                                    </p>
                                   </div>
                                 </motion.div>
                               );
