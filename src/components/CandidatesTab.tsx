@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Award, ChevronDown, UserPlus, Sparkles, Search, CheckCircle, Flag, Filter, X, RotateCcw } from "lucide-react";
+import { Plus, Trash2, Award, ChevronDown, UserPlus, Sparkles, Search, CheckCircle, Flag, Filter, X, RotateCcw, Lock } from "lucide-react";
 import { Election, Position, Candidate, User, Vote, PartyList, ElectionPhase } from "../types";
 import CandidateModal from "./CandidateModal";
 import ConfirmModal from "./ConfirmModal";
@@ -594,9 +594,10 @@ export default function CandidatesTab({
                   </div>
                 )}
                 {selectedPhase === "ended" && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-mono rounded-xl mt-1.5">
+                  <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-mono rounded-xl mt-1.5">
+                    <Lock size={13} className="text-amber-700 shrink-0" />
                     <span>
-                      <strong>Election Concluded:</strong> Ballot candidate rosters are finalized for this election.
+                      <strong className="font-bold text-amber-950">Election Concluded:</strong> Ballot candidate rosters are finalized for this election.
                     </span>
                   </div>
                 )}

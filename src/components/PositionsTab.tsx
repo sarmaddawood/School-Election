@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Award, ChevronDown, Check, X, Edit2, Save } from "lucide-react";
+import { Plus, Trash2, Award, ChevronDown, Check, X, Edit2, Save, Lock } from "lucide-react";
 import { Election, Position, ElectionPhase } from "../types";
 import ConfirmModal from "./ConfirmModal";
 
@@ -334,20 +334,21 @@ export default function PositionsTab({
                       />
                     </div>
                     {selectedPhase === "live" && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono mt-1.5">
-                        <span className="relative flex h-2 w-2">
+                      <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-300 text-emerald-800 text-[11px] font-mono mt-1.5 rounded-sm">
+                        <span className="relative flex h-2 w-2 shrink-0">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
                         <span>
-                          <strong>Election is LIVE:</strong> Positions configured here update the ballot in real time.
+                          <strong className="font-bold text-emerald-950">Election is LIVE:</strong> Positions configured here update the ballot in real time.
                         </span>
                       </div>
                     )}
                     {selectedPhase === "ended" && (
-                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-100 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-[10px] font-mono mt-1.5">
+                      <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-300 text-amber-900 text-[11px] font-mono mt-1.5 rounded-sm">
+                        <Lock size={13} className="text-amber-700 shrink-0" />
                         <span>
-                          <strong>Election Concluded:</strong> Ballot positions are finalized for this election.
+                          <strong className="font-bold text-amber-950">Election Concluded:</strong> Ballot positions are finalized for this election.
                         </span>
                       </div>
                     )}
@@ -476,7 +477,7 @@ export default function PositionsTab({
                 disabled={submitting || selectedPhase === "ended"}
                 className="w-full py-3 bg-[var(--accent)] hover:opacity-90 disabled:opacity-50 text-[var(--surface)] rounded-none font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg disabled:cursor-not-allowed"
               >
-                <Plus size={14} />
+                {selectedPhase === "ended" ? <Lock size={14} /> : <Plus size={14} />}
                 {submitting ? "ADDING POSITION..." : selectedPhase === "ended" ? "ELECTION CONCLUDED" : "ADD POSITION"}
               </motion.button>
             </form>
@@ -522,10 +523,10 @@ export default function PositionsTab({
                       <span
                         className={`text-[9px] px-1.5 py-0.5 font-bold uppercase rounded-sm border ${
                           phase === "live"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-300"
                             : phase === "upcoming"
-                            ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-                            : "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
+                            ? "bg-amber-50 text-amber-700 border-amber-300"
+                            : "bg-slate-100 text-slate-700 border-slate-300"
                         }`}
                       >
                         {phase}

@@ -383,7 +383,7 @@ export default function DashboardTab({
                         </span>
                         <div 
                           className={`w-full rounded-t-md relative transition-all duration-500 origin-bottom shadow-xs ${
-                            cohort.percent > 0 ? "bg-[var(--accent)]" : "bg-zinc-200 dark:bg-zinc-700/60"
+                            cohort.percent > 0 ? "bg-[var(--accent)]" : "bg-zinc-200"
                           }`}
                           style={{ height: `${cohort.percent > 0 ? Math.max(8, cohort.percent * 0.75) : 3}%`, minHeight: cohort.percent > 0 ? "8px" : "3px" }}
                         >
