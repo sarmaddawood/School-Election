@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera, FileLock2, Filter, ChevronDown, RotateCcw } from "lucide-react";
+import { Plus, Trash2, Search, Users, Upload, X, Image as ImageIcon, Download, FileSpreadsheet, Camera, FileLock2, Filter, ChevronDown, RotateCcw, Pencil, KeyRound } from "lucide-react";
 import { User as UserType, UserRole, Candidate, Position, Election, Vote } from "../types";
 import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
@@ -75,6 +75,8 @@ export default function UsersTab({
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<{ id: string; name: string } | null>(null);
   const [selectedDetailUser, setSelectedDetailUser] = useState<UserType | null>(null);
+  const [detailInitialEdit, setDetailInitialEdit] = useState(false);
+  const [detailInitialResetPassword, setDetailInitialResetPassword] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isAddUserCropOpen, setIsAddUserCropOpen] = useState(false);
 
@@ -833,7 +835,11 @@ export default function UsersTab({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -5 }}
                   transition={{ duration: 0.12 }}
-                  onClick={() => setSelectedDetailUser(u)}
+                  onClick={() => {
+                    setSelectedDetailUser(u);
+                    setDetailInitialEdit(false);
+                    setDetailInitialResetPassword(false);
+                  }}
                   className="p-3 bg-[var(--bg)] border border-[var(--border)] rounded-xl flex items-center justify-between gap-3 active:scale-[0.99] transition-all cursor-pointer shadow-xs hover:border-[var(--accent)]"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -868,6 +874,34 @@ export default function UsersTab({
                     </div>
                   </div>
                   <div className="shrink-0 flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDetailUser(u);
+                        setDetailInitialEdit(true);
+                        setDetailInitialResetPassword(false);
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all cursor-pointer"
+                      title={`Edit details for ${u.fullName}`}
+                      aria-label={`Edit details for ${u.fullName}`}
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedDetailUser(u);
+                        setDetailInitialEdit(false);
+                        setDetailInitialResetPassword(true);
+                      }}
+                      className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                      title={`Reset password for ${u.fullName}`}
+                      aria-label={`Reset password for ${u.fullName}`}
+                    >
+                      <KeyRound size={14} />
+                    </button>
                     {u.id !== "admin-1" ? (
                       <button
                         type="button"
@@ -875,10 +909,10 @@ export default function UsersTab({
                           e.stopPropagation();
                           handleDelete(u.id, u.fullName);
                         }}
-                        className="p-2 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                        className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
                         aria-label={`Delete ${u.fullName}`}
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={14} />
                       </button>
                     ) : (
                       <span className="text-[8px] text-zinc-400 font-bold uppercase tracking-wider bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200" onClick={(e) => e.stopPropagation()}>LOCK</span>
@@ -939,7 +973,11 @@ export default function UsersTab({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -5 }}
                       transition={{ duration: 0.12 }}
-                      onClick={() => setSelectedDetailUser(u)}
+                      onClick={() => {
+                        setSelectedDetailUser(u);
+                        setDetailInitialEdit(false);
+                        setDetailInitialResetPassword(false);
+                      }}
                       className="hover:bg-[var(--bg)] transition-colors cursor-pointer"
                     >
                       <td className="py-3 px-2 font-bold text-[var(--ink)] uppercase tracking-wider flex items-center gap-2.5">
@@ -986,22 +1024,54 @@ export default function UsersTab({
                         </span>
                       </td>
                       <td className="py-3 px-2 text-right">
-                        {u.id !== "admin-1" ? (
+                        <div className="flex items-center justify-end gap-1">
+                          <motion.button
+                            whileHover={{ scale: 1.1, color: "#d97706" }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDetailUser(u);
+                              setDetailInitialEdit(true);
+                              setDetailInitialResetPassword(false);
+                            }}
+                            className="p-1.5 text-zinc-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all cursor-pointer"
+                            title={`Edit details for ${u.fullName}`}
+                            aria-label={`Edit details for ${u.fullName}`}
+                          >
+                            <Pencil size={13} />
+                          </motion.button>
                           <motion.button
                             whileHover={{ scale: 1.1, color: "#e11d48" }}
                             whileTap={{ scale: 0.9 }}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(u.id, u.fullName);
+                              setSelectedDetailUser(u);
+                              setDetailInitialEdit(false);
+                              setDetailInitialResetPassword(true);
                             }}
                             className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                            aria-label={`Delete ${u.fullName}`}
+                            title={`Reset password for ${u.fullName}`}
+                            aria-label={`Reset password for ${u.fullName}`}
                           >
-                            <Trash2 size={13} />
+                            <KeyRound size={13} />
                           </motion.button>
-                        ) : (
-                          <span className="text-[9px] text-zinc-400 italic font-bold uppercase tracking-widest" onClick={(e) => e.stopPropagation()}>SYSTEM LOCK</span>
-                        )}
+                          {u.id !== "admin-1" ? (
+                            <motion.button
+                              whileHover={{ scale: 1.1, color: "#e11d48" }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(u.id, u.fullName);
+                              }}
+                              className="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                              aria-label={`Delete ${u.fullName}`}
+                            >
+                              <Trash2 size={13} />
+                            </motion.button>
+                          ) : (
+                            <span className="text-[9px] text-zinc-400 italic font-bold uppercase tracking-widest px-1.5" onClick={(e) => e.stopPropagation()}>LOCK</span>
+                          )}
+                        </div>
                       </td>
                     </motion.tr>
                   ))}
@@ -1061,8 +1131,19 @@ export default function UsersTab({
         elections={[]}
         votes={[]}
         isOpen={selectedDetailUser !== null}
-        onClose={() => setSelectedDetailUser(null)}
+        onClose={() => {
+          setSelectedDetailUser(null);
+          setDetailInitialEdit(false);
+          setDetailInitialResetPassword(false);
+        }}
         token={token}
+        initialEditMode={detailInitialEdit}
+        initialResetPassword={detailInitialResetPassword}
+        onRefreshData={fetchUsers}
+        onUserUpdated={(updated) => {
+          setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+          setSelectedDetailUser(updated);
+        }}
         setErrorNotification={setErrorNotification}
         setSuccessNotification={setSuccessNotification}
       />

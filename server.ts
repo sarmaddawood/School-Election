@@ -1669,6 +1669,228 @@ export function createElectionApp() {
     }
   });
 
+  app.put("/api/users/:id", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { fullName, studentNumber, role, yearLevel, section, room } = req.body;
+    const requester = (req as any).user;
+
+    try {
+      const userRef = db.collection("users").doc(id);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const targetUser = userDoc.data()!;
+
+      if (requester.role === "teacher") {
+        if (targetUser.role !== "student") {
+          res.status(403).json({ error: "Teachers may edit student accounts only" });
+          return;
+        }
+        if (role && role !== "student") {
+          res.status(403).json({ error: "Teachers cannot change user roles" });
+          return;
+        }
+      }
+
+      if (targetUser.role === "admin" && requester.role !== "admin") {
+        res.status(403).json({ error: "Cannot modify administrator accounts" });
+        return;
+      }
+
+      const updates: Record<string, any> = {};
+
+      if (fullName !== undefined) {
+        const cleanFullName = String(fullName || "").trim();
+        if (!cleanFullName) {
+          res.status(400).json({ error: "Full Name is required" });
+          return;
+        }
+        if (cleanFullName.length > 255) {
+          res.status(400).json({ error: "Full Name must not exceed 255 characters" });
+          return;
+        }
+        updates.fullName = cleanFullName;
+      }
+
+      if (studentNumber !== undefined) {
+        const finalStudentNumber = normalizeStudentNumber(studentNumber);
+        const studentNumberError = validateStudentNumber(finalStudentNumber);
+        if (studentNumberError) {
+          res.status(400).json({ error: studentNumberError });
+          return;
+        }
+
+        const currentNum = normalizeStudentNumber(targetUser.studentNumber || targetUser.username);
+        if (finalStudentNumber !== currentNum) {
+          if (id === "admin-1" || targetUser.id === "admin-1") {
+            res.status(400).json({ error: "Root administrator identifier cannot be altered" });
+            return;
+          }
+
+          const duplicates = await databases.listDocuments(APPWRITE_DB, "users", [
+            Query.equal("studentNumber", finalStudentNumber),
+            Query.limit(2),
+          ]);
+          const duplicate = duplicates.documents.find((d: any) => d.$id !== id);
+          if (duplicate) {
+            res.status(409).json({ error: `Student Number "${finalStudentNumber}" is already registered` });
+            return;
+          }
+          updates.studentNumber = finalStudentNumber;
+        }
+      }
+
+      const targetRole = role !== undefined ? role : targetUser.role;
+      if (role !== undefined) {
+        if (role !== "student" && role !== "teacher" && role !== "admin") {
+          res.status(400).json({ error: "Invalid role assigned" });
+          return;
+        }
+        if ((id === "admin-1" || targetUser.id === "admin-1") && role !== "admin") {
+          res.status(400).json({ error: "Root administrator role cannot be altered" });
+          return;
+        }
+        updates.role = role;
+      }
+
+      if (targetRole === "student") {
+        if (yearLevel !== undefined) {
+          const parsedYear = yearLevel === null || yearLevel === "" ? null : Number.parseInt(yearLevel, 10);
+          if (parsedYear === null || !Number.isInteger(parsedYear) || parsedYear < 1 || parsedYear > 12) {
+            res.status(400).json({ error: "A valid grade level from 1 to 12 is required for students" });
+            return;
+          }
+          updates.yearLevel = parsedYear;
+        }
+      } else {
+        if (yearLevel !== undefined) {
+          updates.yearLevel = null;
+        }
+      }
+
+      if (section !== undefined) {
+        const cleanSection = String(section || "").trim();
+        if (cleanSection.length > 255) {
+          res.status(400).json({ error: "Section must not exceed 255 characters" });
+          return;
+        }
+        updates.section = cleanSection || null;
+      }
+
+      if (room !== undefined) {
+        const cleanRoom = String(room || "").trim();
+        if (cleanRoom.length > 255) {
+          res.status(400).json({ error: "Room must not exceed 255 characters" });
+          return;
+        }
+        updates.room = cleanRoom || null;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        res.json({ message: "No changes requested", user: toPublicUser(targetUser) });
+        return;
+      }
+
+      await userRef.update(updates);
+
+      if (updates.fullName || updates.yearLevel) {
+        try {
+          const candSnapshot = await db.collection("candidates").where("userId", "==", id).get();
+          const candUpdates: Record<string, any> = {};
+          if (updates.fullName) candUpdates.fullName = updates.fullName;
+          if (updates.yearLevel) candUpdates.yearLevel = updates.yearLevel;
+          candSnapshot.forEach(async (doc: any) => {
+            await db.collection("candidates").doc(doc.id).update(candUpdates);
+          });
+        } catch (candErr) {
+          console.warn("Could not sync candidate names:", candErr);
+        }
+      }
+
+      invalidateUserCache(id);
+
+      const updatedUser = { ...targetUser, ...updates, id };
+      res.json({
+        message: "Student details updated successfully",
+        user: toPublicUser(updatedUser),
+      });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to update user details" });
+    }
+  });
+
+  app.post("/api/users/:id/reset-password", requireAdminOrTeacher, async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { newPassword, forceSetup } = req.body;
+    const requester = (req as any).user;
+
+    try {
+      const userRef = db.collection("users").doc(id);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const targetUser = userDoc.data()!;
+
+      if (requester.role === "teacher" && targetUser.role !== "student") {
+        res.status(403).json({ error: "Teachers may reset passwords for student accounts only" });
+        return;
+      }
+
+      if (targetUser.role === "admin" && requester.role !== "admin") {
+        res.status(403).json({ error: "Cannot reset administrator passwords" });
+        return;
+      }
+
+      if (forceSetup || !newPassword || String(newPassword).trim() === "") {
+        await userRef.update({
+          password: "",
+          hasSetPassword: false,
+        });
+        invalidateUserCache(id);
+        res.json({
+          message: `Password reset. ${targetUser.fullName} will be prompted to create a new password on next login.`,
+          user: toPublicUser({ ...targetUser, password: "", hasSetPassword: false }),
+          resetMode: "force_setup",
+        });
+        return;
+      }
+
+      const passwordError = validatePassword(newPassword);
+      if (passwordError) {
+        res.status(400).json({ error: passwordError });
+        return;
+      }
+
+      const trimmedPassword = String(newPassword).trim();
+      if (trimmedPassword.length < 6) {
+        res.status(400).json({ error: "Password must be at least 6 characters long" });
+        return;
+      }
+
+      const hashedPassword = await hashPassword(trimmedPassword);
+      await userRef.update({
+        password: hashedPassword,
+        hasSetPassword: true,
+      });
+
+      invalidateUserCache(id);
+
+      res.json({
+        message: `Password updated successfully for ${targetUser.fullName}.`,
+        user: toPublicUser({ ...targetUser, password: hashedPassword, hasSetPassword: true }),
+        resetMode: "direct_password",
+      });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || "Failed to reset password" });
+    }
+  });
+
   app.put("/api/users/:id/photo", requireAuth, async (req: Request, res: Response) => {
     const { id } = req.params;
     const { photoUrl } = req.body;

@@ -1088,6 +1088,10 @@ export default function CandidatesTab({
         votes={votes}
         isOpen={selectedDetailUser !== null}
         onClose={() => setSelectedDetailUser(null)}
+        token={token}
+        onRefreshData={fetchLocalData}
+        setErrorNotification={setErrorNotification}
+        setSuccessNotification={setSuccessNotification}
       />
       <ConfirmModal
         isOpen={deleteConfirmCandidate !== null}

@@ -22,6 +22,8 @@ test("every frontend API operation has a matching backend route", () => {
     ["POST", "/api/users"],
     ["POST", "/api/users/bulk"],
     ["DELETE", "/api/users/:id"],
+    ["PUT", "/api/users/:id"],
+    ["POST", "/api/users/:id/reset-password"],
     ["PUT", "/api/users/:id/photo"],
     ["GET", "/api/elections"],
     ["POST", "/api/elections"],
@@ -94,6 +96,8 @@ test("critical Appwrite uniqueness and query indexes are declared", () => {
 test("backend role middleware protects every privileged feature", () => {
   const protectedDeclarations = [
     `app.post("/api/users/bulk", requireAdminOrTeacher`,
+    `app.put("/api/users/:id", requireAdminOrTeacher`,
+    `app.post("/api/users/:id/reset-password", requireAdminOrTeacher`,
     `app.get("/api/elections/:id/turnout", requireAdminOrTeacher`,
     `app.get("/api/votes", requireAdminOrTeacher`,
     `app.post("/api/elections", requireAdmin`,
