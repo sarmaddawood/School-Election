@@ -196,4 +196,24 @@ test("positions remain configurable even when the election is live", () => {
   assert.doesNotMatch(putRoute, /Positions cannot be changed after voting has started/);
 });
 
+test("candidates and party-lists remain configurable even when the election is live", () => {
+  const partyPostStart = serverSource.indexOf('app.post("/api/partylists"');
+  const partyPostEnd = serverSource.indexOf('app.delete("/api/partylists/:id"', partyPostStart);
+  assert.ok(partyPostStart >= 0 && partyPostEnd > partyPostStart);
+  const partyPostRoute = serverSource.slice(partyPostStart, partyPostEnd);
+  assert.doesNotMatch(partyPostRoute, /Party-Lists cannot be changed after voting has started/);
+
+  const candPostStart = serverSource.indexOf('app.post("/api/candidates"');
+  const candPostEnd = serverSource.indexOf('app.delete("/api/candidates/:id"', candPostStart);
+  assert.ok(candPostStart >= 0 && candPostEnd > candPostStart);
+  const candPostRoute = serverSource.slice(candPostStart, candPostEnd);
+  assert.doesNotMatch(candPostRoute, /Candidates cannot be changed after voting has started/);
+
+  const candDeleteStart = candPostEnd;
+  const candDeleteEnd = serverSource.indexOf('// --- Votes API ---', candDeleteStart);
+  assert.ok(candDeleteStart >= 0 && candDeleteEnd > candDeleteStart);
+  const candDeleteRoute = serverSource.slice(candDeleteStart, candDeleteEnd);
+  assert.doesNotMatch(candDeleteRoute, /Candidates cannot be changed after voting has started/);
+});
+
 

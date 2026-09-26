@@ -2157,8 +2157,8 @@ export function createElectionApp() {
         res.status(400).json({ error: "Party-Lists are enabled only for school-wide elections with Party-List support" });
         return;
       }
-      if (getElectionPhase(election) !== "upcoming") {
-        res.status(409).json({ error: "Party-Lists cannot be changed after voting has started" });
+      if (getElectionPhase(election) === "ended") {
+        res.status(409).json({ error: "Party-Lists cannot be changed after the election has ended" });
         return;
       }
       const cleanName = String(name).trim();
@@ -2194,8 +2194,8 @@ export function createElectionApp() {
         return;
       }
       const partyElection = await getOne("elections", partyList.electionId);
-      if (!partyElection || getElectionPhase(partyElection) !== "upcoming") {
-        res.status(409).json({ error: "Party-Lists cannot be changed after voting has started" });
+      if (partyElection && getElectionPhase(partyElection) === "ended") {
+        res.status(409).json({ error: "Party-Lists cannot be changed after the election has ended" });
         return;
       }
       await db.collection("partyLists").doc(id).delete();
@@ -2401,8 +2401,8 @@ export function createElectionApp() {
         res.status(400).json({ error: "The selected position does not belong to this election" });
         return;
       }
-      if (getElectionPhase(election) !== "upcoming") {
-        res.status(409).json({ error: "Candidates cannot be changed after voting has started" });
+      if (getElectionPhase(election) === "ended") {
+        res.status(409).json({ error: "Candidates cannot be changed after the election has ended" });
         return;
       }
       if (!isEligibleForElection({ id: userId, ...user }, election)) {
@@ -2487,8 +2487,8 @@ export function createElectionApp() {
       }
       const candidate = candidateDoc.data()!;
       const candidateElection = await getOne("elections", candidate.electionId);
-      if (!candidateElection || getElectionPhase(candidateElection) !== "upcoming") {
-        res.status(409).json({ error: "Candidates cannot be changed after voting has started" });
+      if (candidateElection && getElectionPhase(candidateElection) === "ended") {
+        res.status(409).json({ error: "Candidates cannot be changed after the election has ended" });
         return;
       }
       await candidateRef.delete();

@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Trash2, Award, ChevronDown, UserPlus, Sparkles, Search, CheckCircle, Flag, Filter, X, RotateCcw } from "lucide-react";
-import { Election, Position, Candidate, User, Vote, PartyList } from "../types";
+import { Election, Position, Candidate, User, Vote, PartyList, ElectionPhase } from "../types";
 import CandidateModal from "./CandidateModal";
 import ConfirmModal from "./ConfirmModal";
 import UserDetailModal from "./UserDetailModal";
+
+const getElectionPhase = (startStr?: string, endStr?: string): ElectionPhase => {
+  if (!startStr || !endStr) return "upcoming";
+  const now = new Date();
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  if (now < start) return "upcoming";
+  if (now <= end) return "live";
+  return "ended";
+};
 
 interface CandidatesTabProps {
   
@@ -176,6 +186,11 @@ export default function CandidatesTab({
 
   const handleCreatePartyList = async () => {
     if (!newPartyName.trim()) return;
+    const currentEl = elections.find((e) => e.id === selectedElectionId);
+    if (currentEl && getElectionPhase(currentEl.startsAt, currentEl.endsAt) === "ended") {
+      setErrorNotification("Party-Lists cannot be created for concluded elections");
+      return;
+    }
     setSavingParty(true);
     try {
       const response = await fetch("/api/partylists", {
@@ -197,6 +212,11 @@ export default function CandidatesTab({
   };
 
   const handleDeletePartyList = async (id: string) => {
+    const currentEl = elections.find((e) => e.id === selectedElectionId);
+    if (currentEl && getElectionPhase(currentEl.startsAt, currentEl.endsAt) === "ended") {
+      setErrorNotification("Party-Lists cannot be removed from concluded elections");
+      return;
+    }
     try {
       const response = await fetch(`/api/partylists/${id}`, {
         method: "DELETE",
@@ -222,6 +242,12 @@ export default function CandidatesTab({
   const handleNominateStudent = async (studentId: string, studentName: string) => {
     if (!selectedElectionId || !selectedPositionId) {
       setErrorNotification("Please select an election and position first");
+      return;
+    }
+
+    const currentEl = elections.find((e) => e.id === selectedElectionId);
+    if (currentEl && getElectionPhase(currentEl.startsAt, currentEl.endsAt) === "ended") {
+      setErrorNotification("Candidates cannot be nominated for concluded elections");
       return;
     }
 
@@ -270,6 +296,7 @@ export default function CandidatesTab({
   };
 
   const currentElection = elections.find((e) => e.id === selectedElectionId);
+  const selectedPhase = currentElection ? getElectionPhase(currentElection.startsAt, currentElection.endsAt) : null;
 
   const isStudentEligible = (student: User, el?: Election): { eligible: boolean; reason?: string } => {
     if (!el) return { eligible: true };
@@ -442,6 +469,14 @@ export default function CandidatesTab({
     if (!deleteConfirmCandidate) return;
     const { id } = deleteConfirmCandidate;
 
+    const targetCand = candidates.find((c) => c.id === id);
+    const targetEl = targetCand ? elections.find((e) => e.id === targetCand.electionId) : null;
+    if (targetEl && getElectionPhase(targetEl.startsAt, targetEl.endsAt) === "ended") {
+      setErrorNotification("Candidates cannot be removed from concluded elections");
+      setDeleteConfirmCandidate(null);
+      return;
+    }
+
     try {
       const response = await fetch(`/api/candidates/${id}`, {
         method: "DELETE",
@@ -532,17 +567,39 @@ export default function CandidatesTab({
                     onChange={(e) => setSelectedElectionId(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 appearance-none cursor-pointer pr-10 outline-none focus:border-sky-500 focus:bg-white"
                   >
-                    {(Array.isArray(elections) ? elections : []).map((el) => (
-                      <option key={el.id} value={el.id}>
-                        {el.title} ({el.scope ? el.scope.toUpperCase() : "SCHOOLWIDE"})
-                      </option>
-                    ))}
+                    {(Array.isArray(elections) ? elections : []).map((el) => {
+                      const phase = getElectionPhase(el.startsAt, el.endsAt);
+                      const tag = phase === "live" ? " [LIVE]" : phase === "ended" ? " [ENDED]" : "";
+                      return (
+                        <option key={el.id} value={el.id}>
+                          {el.title}{tag} ({el.scope ? el.scope.toUpperCase() : "SCHOOLWIDE"})
+                        </option>
+                      );
+                    })}
                   </select>
                   <ChevronDown
                     size={16}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                   />
                 </div>
+                {selectedPhase === "live" && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-mono rounded-xl mt-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>
+                      <strong>Election is LIVE:</strong> Candidates nominated here update the ballot in real time.
+                    </span>
+                  </div>
+                )}
+                {selectedPhase === "ended" && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-mono rounded-xl mt-1.5">
+                    <span>
+                      <strong>Election Concluded:</strong> Ballot candidate rosters are finalized for this election.
+                    </span>
+                  </div>
+                )}
                 {currentElection && (
                   <div className="flex items-center gap-1.5 pt-1">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Scope:</span>
@@ -629,14 +686,14 @@ export default function CandidatesTab({
                   <div className="grid grid-cols-[1fr_90px_auto] gap-2">
                     <input type="text" value={newPartyName} onChange={(e) => setNewPartyName(e.target.value)} placeholder="Party-List name (e.g. LEAD, AGILA)" className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
                     <input type="text" value={newPartyAcronym} onChange={(e) => setNewPartyAcronym(e.target.value.toUpperCase())} placeholder="Acronym" maxLength={12} className="min-w-0 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-500" />
-                    <button type="button" onClick={handleCreatePartyList} disabled={!newPartyName.trim() || savingParty} className="px-3 py-2 bg-indigo-600 disabled:bg-indigo-200 text-white rounded-lg text-[10px] font-bold cursor-pointer disabled:cursor-not-allowed">ADD</button>
+                    <button type="button" onClick={handleCreatePartyList} disabled={!newPartyName.trim() || savingParty || selectedPhase === "ended"} className="px-3 py-2 bg-indigo-600 disabled:bg-indigo-200 text-white rounded-lg text-[10px] font-bold cursor-pointer disabled:cursor-not-allowed">ADD</button>
                   </div>
                   {partyLists.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {partyLists.map((partyList) => (
                         <span key={partyList.id} className="inline-flex items-center gap-1.5 bg-white border border-indigo-200 text-indigo-800 px-2 py-1 rounded-lg text-[10px] font-bold">
                           {partyList.name}{partyList.acronym ? ` (${partyList.acronym})` : ""}
-                          <button type="button" onClick={() => handleDeletePartyList(partyList.id)} className="text-rose-500 hover:text-rose-700 cursor-pointer" aria-label={`Remove ${partyList.name}`}><Trash2 size={11} /></button>
+                          <button type="button" onClick={() => handleDeletePartyList(partyList.id)} disabled={selectedPhase === "ended"} className="text-rose-500 hover:text-rose-700 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed" aria-label={`Remove ${partyList.name}`}><Trash2 size={11} /></button>
                         </span>
                       ))}
                     </div>
@@ -912,6 +969,10 @@ export default function CandidatesTab({
                               <Award size={12} />
                               Nominated ({nominatedPosName})
                             </span>
+                          ) : selectedPhase === "ended" ? (
+                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 shrink-0">
+                              Concluded
+                            </span>
                           ) : (
                             <button
                               type="button"
@@ -976,10 +1037,32 @@ export default function CandidatesTab({
 
                 return (
                   <motion.div key={el.id} variants={itemVariants} className="space-y-4">
-                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-                      <h4 className="font-display font-bold text-xs text-sky-600 uppercase tracking-wider">
-                        {el.title}
-                      </h4>
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            getElectionPhase(el.startsAt, el.endsAt) === "live"
+                              ? "bg-emerald-500 animate-pulse"
+                              : getElectionPhase(el.startsAt, el.endsAt) === "upcoming"
+                              ? "bg-amber-500"
+                              : "bg-slate-400"
+                          }`}
+                        />
+                        <h4 className="font-display font-bold text-xs text-sky-600 uppercase tracking-wider">
+                          {el.title}
+                        </h4>
+                      </div>
+                      <span
+                        className={`text-[9px] px-2 py-0.5 font-bold uppercase rounded-md border ${
+                          getElectionPhase(el.startsAt, el.endsAt) === "live"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : getElectionPhase(el.startsAt, el.endsAt) === "upcoming"
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-slate-100 text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        {getElectionPhase(el.startsAt, el.endsAt)}
+                      </span>
                     </div>
 
                     <div className="space-y-4 pl-1">
@@ -1044,14 +1127,21 @@ export default function CandidatesTab({
                                         </div>
                                       </div>
                                     </div>
-                                    <motion.button
-                                      whileHover={{ scale: 1.1, color: "#e11d48" }}
-                                      whileTap={{ scale: 0.9 }}
-                                      onClick={() => handleDelete(cand.id, cand.fullName)}
-                                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 ml-3"
-                                    >
-                                      <Trash2 size={15} />
-                                    </motion.button>
+                                    {(() => {
+                                      const isEnded = getElectionPhase(el.startsAt, el.endsAt) === "ended";
+                                      return (
+                                        <motion.button
+                                          whileHover={isEnded ? {} : { scale: 1.1, color: "#e11d48" }}
+                                          whileTap={isEnded ? {} : { scale: 0.9 }}
+                                          onClick={() => !isEnded && handleDelete(cand.id, cand.fullName)}
+                                          disabled={isEnded}
+                                          title={isEnded ? "Candidates cannot be modified for concluded elections" : "Remove candidate"}
+                                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0 ml-3 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-slate-400 disabled:hover:bg-transparent"
+                                        >
+                                          <Trash2 size={15} />
+                                        </motion.button>
+                                      );
+                                    })()}
                                   </motion.div>
                                 ))}
                               </AnimatePresence>
